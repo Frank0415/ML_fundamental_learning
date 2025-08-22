@@ -19,6 +19,16 @@ net = nn.Sequential(
     nn.Linear(84, 10),
 )
 
+'''
+Consider:
+- Changing to MaxPool2d
+- Changing number of channels
+- Changing kernel sizes
+- Changing number of hidden units in the fully connected layers
+- Changing learning rate, batch size, number of epochs
+- Adding dropout layers
+'''
+
 def init_weights(m):
     if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
         nn.init.xavier_uniform_(m.weight)
