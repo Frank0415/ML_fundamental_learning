@@ -38,10 +38,10 @@ def train_and_evaluate(batch_size=256, lr=0.1, num_epochs=5):
         root="./data", train=False, transform=trans, download=True
     )
     train_loader = torch.utils.data.DataLoader(
-        mnist_train, batch_size=batch_size, shuffle=True, num_workers=8
+        mnist_train, batch_size=batch_size, shuffle=True, num_workers=4
     )
     test_loader = torch.utils.data.DataLoader(
-        mnist_test, batch_size=batch_size, shuffle=False, num_workers=8
+        mnist_test, batch_size=batch_size, shuffle=False, num_workers=4
     )
     num_inputs = 784
     num_outputs = 10
