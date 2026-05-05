@@ -8,6 +8,7 @@ from .modules_basic import (
     Linear
 )
 from .tensor_ops import TensorBackend
+from .tensor_functions import Attn_Softmax, LayerNorm
 from .nn import (
     max,
     softmax,
@@ -115,7 +116,17 @@ class MultiHeadAttention(Module):
             result = softmax(qk / np.sqrt(self.attn_hidden_dim), dim=3) @ v
         else:
             # BEGIN ASSIGN3_3
-            raise NotImplementedError
+            qk = q @ kT
+            qk = qk / np.sqrt(self.attn_hidden_dim)
+            if self.causal:
+                qk = qk + self.create_causal_mask(batch_size, num_head, queries_len)
+            # Create a zero mask for the fused softmax (no padding masking)
+            mask = tensor_from_numpy(
+                np.zeros((batch_size, qk.shape[-1]), dtype=np.float32),
+                backend=self.backend,
+            )
+            qk = Attn_Softmax.apply(qk, mask)
+            result = qk @ v
             # END ASSIGN3_3
 
         return result
@@ -201,7 +212,9 @@ class TransformerLayer(Module):
             self.ln_2 = LayerNorm1d(n_embd, ln_eps, backend)
         else:
             # BEGIN ASSIGN3_3
-            raise NotImplementedError
+            # Use fused kernel-backed layernorm; LayerNorm1d provides the weight/bias parameters
+            self.ln_1 = LayerNorm1d(n_embd, ln_eps, backend)
+            self.ln_2 = LayerNorm1d(n_embd, ln_eps, backend)
             # END ASSIGN3_3
 
     def forward(self, x):
@@ -223,7 +236,20 @@ class TransformerLayer(Module):
             )
         else:
             # BEGIN ASSIGN3_3
-            raise NotImplementedError
+            x = x + self.attention(
+                LayerNorm.apply(
+                    x.view(batch_size * seq_len, x_dim),
+                    self.ln_1.weights.value,
+                    self.ln_1.bias.value,
+                ).view(batch_size, seq_len, x_dim)
+            )
+            x = x + self.ff(
+                LayerNorm.apply(
+                    x.view(batch_size * seq_len, x_dim),
+                    self.ln_2.weights.value,
+                    self.ln_2.bias.value,
+                ).view(batch_size, seq_len, x_dim)
+            )
             # END ASSIGN3_3
 
         return x
@@ -283,7 +309,7 @@ class DecoderLM(Module):
             self.ln = LayerNorm1d(n_embd, ln_eps, backend)
         else:
             # BEGIN ASSIGN3_3
-            raise NotImplementedError
+            self.ln = LayerNorm1d(n_embd, ln_eps, backend)
             # END ASSIGN3_3
         
     def forward(self, idx):
@@ -313,7 +339,22 @@ class DecoderLM(Module):
             return self.lm_head(x).view(batch_size, seq_len, self.n_vocab)
         else:
             # BEGIN ASSIGN3_3
-            raise NotImplementedError
+            tok_emb = self.token_embeddings(idx)
+            pos_ids = tensor_from_numpy(
+                np.arange(seq_len).reshape(1, seq_len).astype(np.float32), backend=self.backend
+            )
+            pos_emb = self.position_embeddings(pos_ids)
+            x = self.dropout(tok_emb + pos_emb)
+            x = self.t_layer_1(x)
+            x = self.t_layer_2(x)
+            x = self.t_layer_3(x)
+            x = self.t_layer_4(x)
+            x = LayerNorm.apply(
+                x.view(batch_size * seq_len, self.n_embd),
+                self.ln.weights.value,
+                self.ln.bias.value,
+            )
+            return self.lm_head(x).view(batch_size, seq_len, self.n_vocab)
             # END ASSIGN3_3
 
         return x
