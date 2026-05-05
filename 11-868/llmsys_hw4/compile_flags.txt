@@ -1,0 +1,9 @@
+--cuda-path=/opt/cuda
+--cuda-gpu-arch=sm_52
+-std=c++17
+-L/opt/cuda/lib64
+-I/opt/cuda/include
+-I/opt/cuda/targets/x86_64-linux/include/cccl
+-I/usr/lib/gcc/x86_64-pc-linux-gnu/14.3.1/include/c++
+-I/usr/lib/gcc/x86_64-pc-linux-gnu/14.3.1/include/c++/x86_64-pc-linux-gnu
+-I/usr/lib/gcc/x86_64-pc-linux-gnu/14.3.1/include
