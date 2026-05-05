@@ -380,6 +380,10 @@ __global__ void reduceKernel(float *out, int *out_shape, int *out_strides,
   int elements_to_process = a_shape[reduce_dim];
   int total_threads = blockDim.x;
   int current_thread = threadIdx.x;
+
+  // FIX: Initialize shared cache to reduce_value for all threads
+  cache[current_thread] = reduce_value;
+
   if (current_thread < elements_to_process) {
     int elements_per_thread =
         ceilf(((float)elements_to_process) / ((float)total_threads));
