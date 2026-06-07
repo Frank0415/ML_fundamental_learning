@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGLang 多模态推理参考 — minivLLM 多模态推理</title>
+<style>
+  :root { --bg: #fafafa; --fg: #1a1a1a; --border: #d0d0d0; --code-bg: #f4f4f4; --accent: #2563eb; --danger: #dc2626; --warn: #d97706; --ok: #16a34a; --info: #0ea5e9; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.7; max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem; background: var(--bg); color: var(--fg); }
+  h1 { font-size: 1.8rem; border-bottom: 2px solid var(--border); padding-bottom: 0.4rem; }
+  h2 { font-size: 1.35rem; margin-top: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.2rem; }
+  h3 { font-size: 1.1rem; margin-top: 1.5rem; }
+  code, pre { font-family: "SF Mono", Monaco, "Cascadia Code", Consolas, monospace; font-size: 0.88rem; }
+  code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; }
+  pre { background: var(--code-bg); padding: 0.9rem 1.1rem; overflow-x: auto; border-radius: 5px; line-height: 1.45; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { border: 1px solid var(--border); padding: 0.45rem 0.7rem; text-align: left; font-size: 0.92rem; }
+  th { background: #f0f0f0; font-weight: 600; }
+  .box { border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.2rem; margin: 1rem 0; }
+  .box-info { border-color: var(--info); background: #f0f9ff; }
+  .box-warn { border-color: var(--warn); background: #fffbeb; }
+  .box-bad { border-color: var(--danger); background: #fef2f2; }
+  .nav { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 1.5rem 0; }
+  .nav li { margin: 0; }
+  .nav a { color: var(--accent); text-decoration: none; padding: 0.3rem 0.6rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem; }
+  .nav a:hover { background: #eff6ff; text-decoration: none; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.82rem; color: #888; }
+</style>
+</head>
+<body>
+
+<h1>09 · SGLang 多模态推理参考</h1>
+
+<p>
+  SGLang 是另一款高性能 LLM 推理 runtime，其核心创新 RadixAttention（基于 Radix Tree 的 prefix caching）提供了比 vLLM 更细粒度的 KV cache 共享机制。SGLang 对多模态（VLM）推理的支持正在快速演进中。
+</p>
+
+<h2>1. SGLang 的 RadixAttention 与 VLM</h2>
+
+<p>
+  SGLang 的 Radix Tree 为纯文本推理提供了非常自然的 prefix 共享：所有到达系统的 prompt 自动插入 Radix Tree，后续请求自动匹配共享 prefix。但在多模态场景中，Radix Tree 遇到了与 vLLM hash-based caching 相同的问题：visual token 的 KV 值因图像而异。
+</p>
+
+<p>
+  SGLang 社区目前对多模态 prefix caching 的讨论集中在以下方向：
+</p>
+
+<ul>
+  <li><strong>文本-视觉分离节点</strong>：在 Radix Tree 中标记视觉 token 的边界，文本节点正常参与 prefix 匹配，视觉节点根据 image hash 单独匹配。</li>
+  <li><strong>图像哈希作为节点标签</strong>：每个视觉 token 节点附带一个 image_embedding 哈希值。只有哈希值匹配时，才复用该视觉节点及其后代的 KV cache。</li>
+  <li><strong>截断匹配</strong>：当一个请求的 sequence 到达视觉 token 边界时，自动截断 prefix 匹配，之后的部分视为全新 prefix 单独计算。</li>
+</ul>
+
+<h2>2. SGLang 多模态 Serving 的实践经验</h2>
+
+<p>
+  尽管 Radix Tree 在多模态场景下尚未完美适配，SGLang 在实际 VLM serving 中仍有以下优势：
+</p>
+
+<table>
+  <tr><th>特性</th><th>SGLang 的做法</th><th>对 12GB 的价值</th></tr>
+  <tr><td>Radix Tree 文本 prefix</td><td>视觉 token 之前的纯文本部分依然可共享</td><td>节省系统提示的重复 prefill，约 20~50MB/请求</td></tr>
+  <tr><td>Continuous Batching</td><td>支持 prefill 和 decode 混合 batch</td><td>提升 12GB 下的吞吐效率</td></tr>
+  <tr><td>Token 级 Block 管理</td><td>与 vLLM 类似的 block 级分配</td><td>相同的碎片率优势</td></tr>
+  <tr><td>Structured Output</td><td>JSON / Regex 约束解码</td><td>对文档解析 VLM 任务特别有用（如 OCR 结构化提取）</td></tr>
+  <tr><td>RadixAttention Skip</td><td>对于已完全匹配的 prefix，跳过 attention 计算</td><td>显存和延迟双优化</td></tr>
+</table>
+
+<h2>3. SGLang vs vLLM 在 12GB VLM 上的对比</h2>
+
+<table>
+  <tr><th>维度</th><th>vLLM</th><th>SGLang</th></tr>
+  <tr><td>KV Cache 机制</td><td>PagedAttention + hash-based APC</td><td>RadixAttention + Radix Tree</td></tr>
+  <tr><td>多模态支持</td><td>已较为成熟（v0.5+）</td><td>快速演进中，部分 VLM 已支持</td></tr>
+  <tr><td>Prefix 共享粒度</td><td>Block 级（16 token 对齐）</td><td>Token 级（精确到每个 token）</td></tr>
+  <tr><td>12GB 友好度</td><td>非常友好（block size 可定制）</td><td>友好（相同的 block 管理）</td></tr>
+  <tr><td>社区成熟度</td><td>更成熟，VLM 文档更完善</td><td>快速增长，部分 VLM 仍为实验性</td></tr>
+  <tr><td>适用场景</td><td>通用 VLM serving</td><td>多轮对话 + 渐进式 prefix（如 agent 场景）</td></tr>
+</table>
+
+<h2>4. SGLang 的架构对 minivLLM 的启发</h2>
+
+<p>
+  SGLang 的以下几个设计思想对 minivLLM 的多模态扩展具有参考价值：
+</p>
+
+<ul>
+  <li><strong>前缀树的自动性</strong>：不需要显式配置哪些 prefix 共享。所有 prompt 自动参与共享。这个"零配置 prefix sharing"的思路很适合 minivLLM 这类教学型引擎——用户不需要关心 KV 共享的内部机制。</li>
+  <li><strong>引用计数释放</strong>：Radix Tree 节点的引用计数机制让 KV 缓存的生命周期管理变得清晰。当最后一个引用该 prefix 的请求完成，KV block 自动释放。vLLM 的 hash-based 方案没有这个内置的引用追踪。</li>
+  <li><strong>Skip Attention</strong>：对于完全命中的 prefix，SGLang 直接跳过 attention 计算，将结果复用。这在大 batch 场景下节约了大量计算，在 12GB 的小 batch 场景下效果虽有限，但思路值得借鉴。</li>
+</ul>
+
+<h2>5. 我们这次实验中的参考状态</h2>
+
+<div class="box box-bad">
+  <h3 style="margin-top:0">SGLang 参考路径未执行</h3>
+  <p>
+    在 Task 10 的 reference 矩阵实验中，我们仅测试了 HF transformers 的 <code>model.generate()</code> 路径，未安装和运行 SGLang runtime。原因有二：一是 4 个 VLM 模型在基础 HF 加载阶段就已全部失败（缺 <code>accelerate</code>），二是 SGLang 本身需要 CUDA 环境（<code>torch.cuda.is_available()</code>），macOS MPS 下无法运行。
+  </p>
+  <p>
+    SGLang 的 RadixAttention 在当前 minivLLM 实现中作为设计参考存在，而非运行依赖。minivLLM 的 PagedKV（Task 6）采用 vLLM 风格的 correctness-first 实现，但 SGLang 的 Radix Tree 概念在 learning 笔记中有完整记录（<code>learning/notes/10_sglang源码参考.md</code> + <code>learning/papers/12_sglang_radixattention.md</code>）。
+  </p>
+</div>
+
+<h2>6. 页面导航</h2>
+
+<ul class="nav">
+  <li><a href="index.html">← 文档首页</a></li>
+  <li><a href="03_vit和图像patch.html">03 · ViT 与图像 Patch 编码</a></li>
+  <li><a href="04_clip和图文对齐.html">04 · CLIP 与图文对齐</a></li>
+  <li><a href="05_qwen_vl多模态输入.html">05 · Qwen-VL 多模态输入</a></li>
+  <li><a href="06_多模态prefill_decode.html">06 · 多模态 Prefill/Decode</a></li>
+  <li><a href="07_多模态kv_cache管理.html">07 · 多模态 KV Cache 管理</a></li>
+  <li><a href="08_vllm多模态推理参考.html">08 · vLLM 多模态推理参考</a></li>
+  <li><a href="01_已有引擎审计.html">01 · 已有引擎审计</a></li>
+  <li><a href="02_paged_attention基础.html">02 · Paged Attention 基础</a></li>
+</ul>
+
+<footer>
+  minivLLM 多模态推理实验工作区 · Wave 4 / Task 14 · 2026-06-07
+</footer>
+
+</body>
+</html>

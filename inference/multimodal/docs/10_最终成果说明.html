@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>minivLLM 多模态推理 — 最终成果说明</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .verdict-block {
+    margin: 1.2rem 0;
+    padding: 0.8rem 1rem;
+    border-left: 4px solid var(--ok);
+    background: #f0fdf4;
+    border-radius: 0 4px 4px 0;
+  }
+  .verdict-block.warn {
+    border-left-color: var(--warn);
+    background: #fffbeb;
+  }
+  .verdict-block.fail {
+    border-left-color: var(--danger);
+    background: #fef2f2;
+  }
+  .metric-table th:first-child { width: 32%; }
+  .phase-badge {
+    display: inline-block;
+    padding: 0.12em 0.55em;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-right: 0.3em;
+  }
+  .phase-done  { background: #dcfce7; color: var(--ok); }
+  .phase-degraded { background: #fef3c7; color: var(--warn); }
+  .back-link {
+    display: inline-block;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+
+<p class="back-link"><a href="index.html">← 返回文档导航</a></p>
+
+<h1>10 · 最终成果说明</h1>
+
+<p class="intro">
+  本文档是 minivLLM 多模态推理实验工作区 6 周最小 VLM 执行计划的最终交付物。记录项目背景、路线完成度、关键验证数字、已知限制以及后续建议。全部内容为中文。
+</p>
+
+<!-- ================================================================== -->
+<h2>1. 项目背景</h2>
+
+<p>
+  本项目目标：在约 12GB 显存内，从纯文本推理引擎 <code>minivLLM</code> 出发，逐步构建一个可运行的最小多模态（VLM）推理流水线。最终目标是在 minivLLM 上运行 Qwen3-VL-4B 或同类开源 VLM。
+</p>
+
+<p>
+  实验环境：macOS (Apple Silicon, MPS)，<code>transformers 5.8.0</code>，<code>torch 2.11.0</code>，无 NVIDIA GPU / 无 CUDA。引擎代码 <code>minivLLM/</code> 作为只读基础存在，所有实验代码独立于引擎目录，不修改 <code>minivLLM/</code> 底层源码。
+</p>
+
+<p>
+  项目分为 5 个 Wave，每 Wave 约 1 周工作量，覆盖引擎审计、模块修复、paged attention 实现、多模态 pipeline、VLM reference 对照、以及多模态 KV cache 管理。
+</p>
+
+<!-- ================================================================== -->
+<h2>2. 6 周路线总结</h2>
+
+<table>
+  <thead>
+    <tr><th>Wave</th><th>主题</th><th>核心产出</th><th>状态</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Wave 1</td>
+      <td>目录骨架 + 引擎盘点</td>
+      <td>全目录创建、engine_inventory.md（18 模块审计）、12GB 显存预算矩阵</td>
+      <td><span class="phase-badge phase-done">完成</span></td>
+    </tr>
+    <tr>
+      <td>Wave 2</td>
+      <td>文本引擎审计 + Engine Patch</td>
+      <td>3 个构造 Bug 修复（Attn 参数 / act_fn=None / head_dim 接线）、HF 对齐 IDENTICAL（max|diff|=8.2e-5, cos_sim=0.99999994）、contiguous KV cache 接入 prefill/decode 路径</td>
+      <td><span class="phase-badge phase-done">完成</span></td>
+    </tr>
+    <tr>
+      <td>Wave 3</td>
+      <td>Paged Attention + 多模态 Token Pipeline</td>
+      <td>PagedKVCache（BlockManager + BlockTable + correctness-first gather）、contiguous vs paged 对比通过；教学型 token pipeline（5 模块、2 种 visual token 模式、2 种序列布局）</td>
+      <td><span class="phase-badge phase-done">完成</span></td>
+    </tr>
+    <tr>
+      <td>Wave 4</td>
+      <td>inputs_embeds 路径 + VLM Demo + VLM Reference</td>
+      <td>inputs_embeds 正式接入（text_parity max|diff|=0）、最小 VLM demo（random projector 工程跑通）；4 个 VLM reference 模型因缺 accelerate 全部失败，降级 smoke 通过</td>
+      <td><span class="phase-badge phase-degraded">完成（降级）</span></td>
+    </tr>
+    <tr>
+      <td>Wave 5</td>
+      <td>多模态 KV Cache 管理 + 收尾</td>
+      <td>3 策略 × 7 场景 mm cache 模拟器、策略 A false_hit 关键验收（same_text_different_image: A.false_hits=1, B.false_hits=0, C.false_hits=0）、5 份 JSON/HTML 结果</td>
+      <td><span class="phase-badge phase-done">完成</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ================================================================== -->
+<h2>3. 关键产出与验证数字</h2>
+
+<h3>3.1 纯文本引擎：HF Parity IDENTICAL</h3>
+
+<div class="verdict-block">
+  <strong>最终 HF 对齐结果</strong><br>
+  <code>verdict: IDENTICAL</code>，<code>max |diff| = 8.2e-5</code>，<code>cosine similarity = 0.99999994</code><br>
+  模型 <code>Qwen3-0.6B</code>（随机权重），在 <code>validate_model.py --compare-hf --full</code> 下全部通过。
+</div>
+
+<p>经过 3 轮调试修复了 5 个关键 Bug：</p>
+<ul>
+  <li>B1：<code>Qwen3Attn → Attn</code> 构造参数不兼容（<code>S=</code> / <code>is_decode=</code> 不存在）</li>
+  <li>B2：<code>Qwen3FFN.act_fn = None</code>（前向 NoneType not callable）</li>
+  <li>B3：<code>head_dim</code> 未通过 DecoderLayer 传给 Attn（推导值 64 vs 实际 128）</li>
+  <li>B4：RoPE 实现使用 chunk+cat 方式，非 HF 的 rotate_half 方式</li>
+  <li>B5：<code>rope_theta</code> 未传参（默认 10000 vs HF 实际 1,000,000）</li>
+</ul>
+
+<h3>3.2 KV Cache：contiguous 与 paged 均对齐</h3>
+
+<p>
+  <strong>Contiguous KV cache</strong>：已接入 minivLLM prefill/decode 路径，4 个 seq_len（1/8/64/512）的 prefill-then-decode vs full-sequence 对比全部通过（atol=1e-5, rtol=1e-4）。
+</p>
+
+<p>
+  <strong>Paged KV cache</strong>：correctness-first 实现（BlockManager + BlockTable + PagedKVCache + gather_kv_for_attention），使用 <code>torch.gather</code> 完成逻辑-物理地址映射。与 contiguous KV cache 对齐，logits 通过 <code>torch.allclose</code>。<strong>注意：decode 阶段使用 gather fallback，非 CUDA paged_attention kernel；无 CUDA 环境，仅在 CPU/MPS 上验证正确性。</strong>
+</p>
+
+<h3>3.3 多模态 KV Cache 管理：策略 A false_hit 实验</h3>
+
+<p>
+  核心发现：<strong>text-only prefix cache 在多模态推理中不安全。</strong>当用户两次请求使用相同文本前缀但不同图像时，仅基于文本 token 的 cache key（策略 A）会错误复用 KV cache，导致模型基于错误的 visual context 解码。
+</p>
+
+<table class="metric-table">
+  <thead>
+    <tr><th>场景</th><th>策略 A</th><th>策略 B</th><th>策略 C</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>same_text_same_image</td><td>true_hit</td><td>true_hit</td><td>true_hit</td></tr>
+    <tr><td>same_text_different_image（关键）</td><td><strong class="status-bad">false_hit</strong></td><td>safe_miss</td><td>safe_miss</td></tr>
+    <tr><td>same_image_different_question</td><td>safe_miss</td><td>safe_miss</td><td>safe_miss</td></tr>
+    <tr><td>same_image_different_resize</td><td>true_hit*</td><td>true_hit*</td><td>safe_miss</td></tr>
+    <tr><td>multi_image_same_order</td><td>true_hit</td><td>true_hit</td><td>true_hit</td></tr>
+    <tr><td>multi_image_different_order</td><td><strong class="status-bad">false_hit</strong></td><td>safe_miss</td><td>safe_miss</td></tr>
+  </tbody>
+</table>
+
+<p>
+  *Case 4 中策略 A/B 的 true_hit 在语义上是错误的（resize 不同导致 visual layout 不匹配），但按 image_bytes 相同被归为 true_hit + 语义警告。
+</p>
+
+<p>
+  结论：策略 B（text + image_hash）是最小防御线；策略 C（full multimodal metadata）提供完整保护。
+</p>
+
+<h3>3.4 inputs_embeds 路径 + 最小 VLM Demo</h3>
+
+<p>
+  <code>inputs_embeds</code> 路径正式接入 minivLLM 引擎：双输入冲突正确拒绝（<code>ValueError</code>），text_parity 测试通过（<code>input_ids</code> 路径 == <code>inputs_embeds = embed_tokens(input_ids)</code> 路径，<code>max|diff|=0.00e+00</code>），HF parity 无回归。
+</p>
+
+<p>
+  最小 VLM demo（<code>run_minimal_vlm.py</code>）使用随机 tiny-ViT + 随机 linear projector 将图像 embedding 拼接进 LLM，工程路径跑通。<strong>重要声明：随机 projector 不保证语义质量。</strong>真实 VLM 语义需要真实 vision encoder 权重（HF pretrained）和匹配的 projector。
+</p>
+
+<!-- ================================================================== -->
+<h2>4. 已知限制</h2>
+
+<div class="verdict-block fail">
+  <strong>4 个 reference VLM 全部失败</strong><br>
+  在本机 macOS (MPS, 无 CUDA) 环境下，4 个 VLM 候选模型（Qwen3-VL-4B / Qwen2.5-VL-3B / InternVL3.5-4B / SmolVLM2-2.2B）全部加载失败。核心阻塞原因：<code>minivLLM/.venv</code> 未安装 <code>accelerate</code> 包，而 <code>device_map="auto"</code> 强制依赖该包。InternVL3.5-4B 额外面临 <code>InternVLChatConfig</code> 不被 <code>AutoModelForImageTextToText</code> 识别的问题。降级路径（tokenizer-only smoke）通过。
+</div>
+
+<p>其他已知限制：</p>
+
+<ul>
+  <li><strong>Local VLM demo 使用 random projector</strong>：<code>run_minimal_vlm.py</code> 中的 visual-to-text projector 是随机初始化的 <code>nn.Linear</code>，不携带任何预训练语义。真实 VLM 语义需要 HF 预训练权重。</li>
+  <li><strong>无 CUDA / 无 accelerate</strong>：当前环境为 macOS + MPS，无 NVIDIA GPU。所有实验在 CPU 或 MPS 上运行。CUDA paged_attention kernel（vLLM/SGLang 生产级）未在本环境实现。</li>
+  <li><strong>Paged KV 使用 gather fallback</strong>：decode 阶段通过 <code>torch.gather</code> 拼接 KV block，非 GPU-native paged attention kernel。正确性已验证，但性能非优化。</li>
+  <li><strong>无调度器 / 无 batching</strong>：<code>minivLLM</code> 无 scheduler、无 request queue、无批量调度。仅单序列推理。</li>
+  <li><strong>12GB 显存预算为理论值</strong>：所有显存数字是 Paper-based 估算（权重 + KV + 激活），未通过 <code>torch.cuda.memory_stats()</code> 在真实 GPU 上校准。</li>
+  <li><strong>mm cache 策略为纯 Python 模拟器</strong>：3 策略 hash 设计完整、逻辑正确，但未接入真实推理引擎的 KV cache 读/写循环。</li>
+</ul>
+
+<!-- ================================================================== -->
+<h2>5. 后续建议</h2>
+
+<ol>
+  <li>
+    <strong>安装 accelerate 并重试 VLM reference</strong>：
+    <pre><code>minivLLM/.venv/bin/pip install accelerate</code></pre>
+    重新运行 <code>run_qwen_vl_reference.py</code>，验证 3 个 Qwen/SmolVLM 模型能否在 MPS 上加载并前向。<br>
+    InternVL3.5-4B 需要额外排查 <code>InternVLChatConfig</code> 的 <code>AutoModelForImageTextToText</code> 注册问题（可能需要特定加载器或更新的 transformers 版本）。
+  </li>
+  <li>
+    <strong>替换 random projector 为 HF pretrained</strong>：将 <code>run_minimal_vlm.py</code> 中的随机 <code>nn.Linear</code> 替换为从 HF checkpoint 加载的真实 projector（如 Qwen3-VL 的 <code>visual.merger</code>），使 local VLM demo 具备语义。
+  </li>
+  <li>
+    <strong>将 mm cache 策略接入真实推理循环</strong>：将 <code>mm_cache_simulator.py</code> 的 3 策略设计迁移到 minivLLM 引擎的 KV cache 读/写循环，用真实模型前向验证 cache key 命中逻辑。
+  </li>
+  <li>
+    <strong>在 NVIDIA GPU 上重新验证 paged attention 性能</strong>：当前 paged KV 在 MPS 上仅验证正确性。在有 CUDA 的 GPU 上运行 <code>compare_contiguous_vs_paged.py</code>，测量 real fragmentation ratio 和 throughput 差异。
+  </li>
+  <li>
+    <strong>实现 scheduler 与 batch 推理</strong>：参照 vLLM scheduler 架构，实现 <code>RequestState</code> / <code>Lifecycle</code> / 批量 prefill-then-decode 调度。这是从"demo 级别"到"可服务级别"的关键一步。
+  </li>
+</ol>
+
+<!-- ================================================================== -->
+<h2>6. 产物清单</h2>
+
+<table>
+  <thead>
+    <tr><th>类别</th><th>路径</th><th>数量</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>静态文档</td><td><code>docs/01_*.html</code> 至 <code>docs/10_*.html</code></td><td>10 篇</td></tr>
+    <tr><td>学习笔记</td><td><code>learning/papers/</code>（12 篇论文）+ <code>learning/notes/</code>（12 篇笔记）</td><td>24 篇</td></tr>
+    <tr><td>实验脚本</td><td><code>experiments/**/*.py</code></td><td>23 个</td></tr>
+    <tr><td>周报 / 报告</td><td><code>reports/week_1.md</code> 至 <code>reports/week_6.md</code> + <code>engine_inventory.md</code></td><td>7 篇</td></tr>
+    <tr><td>KV cache 实验</td><td><code>experiments/mm_kv_cache_management/results/*.json</code> + <code>*.html</code></td><td>10 个</td></tr>
+    <tr><td>证据文件</td><td><code>.omo/evidence/task-*.txt</code></td><td>10+ 个</td></tr>
+  </tbody>
+</table>
+
+<footer>
+  <p>minivLLM 多模态推理实验工作区 · 最终成果说明 · 更新时间 2026-06-07</p>
+  <p><a href="index.html">返回文档导航</a></p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>已有引擎审计 — minivLLM 文本推理引擎</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --fg: #1a1a1a;
+    --border: #d0d0d0;
+    --code-bg: #f4f4f4;
+    --accent: #2563eb;
+    --danger: #dc2626;
+    --warn: #d97706;
+    --ok: #16a34a;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.7;
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    background: var(--bg);
+    color: var(--fg);
+  }
+  h1 { font-size: 1.8rem; border-bottom: 2px solid var(--border); padding-bottom: 0.4rem; }
+  h2 { font-size: 1.35rem; margin-top: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.2rem; }
+  h3 { font-size: 1.1rem; margin-top: 1.5rem; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { border: 1px solid var(--border); padding: 0.45rem 0.7rem; text-align: left; font-size: 0.92rem; }
+  th { background: #f0f0f0; font-weight: 600; }
+  code, pre { font-family: "SF Mono", Monaco, "Cascadia Code", Consolas, monospace; font-size: 0.88rem; }
+  code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; }
+  pre { background: var(--code-bg); padding: 0.9rem 1.1rem; overflow-x: auto; border-radius: 5px; line-height: 1.45; }
+  .status-ok { color: var(--ok); font-weight: 600; }
+  .status-warn { color: var(--warn); font-weight: 600; }
+  .status-bad { color: var(--danger); font-weight: 600; }
+  .badge {
+    display: inline-block; padding: 0.12em 0.6em; border-radius: 99px; font-size: 0.78rem;
+    font-weight: 600; margin-left: 0.3em;
+  }
+  .badge-blocker { background: #fee2e2; color: var(--danger); }
+  .badge-dormant { background: #fef3c7; color: var(--warn); }
+  .badge-ok { background: #dcfce7; color: var(--ok); }
+  .summary-cards { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1.2rem 0; }
+  .card { flex: 1; min-width: 180px; border: 1px solid var(--border); border-radius: 6px; padding: 1rem; text-align: center; }
+  .card .num { font-size: 2.2rem; font-weight: 700; }
+  .card .label { font-size: 0.85rem; color: #555; margin-top: 0.3rem; }
+  .link-list { list-style: none; padding: 0; }
+  .link-list li { margin: 0.3rem 0; }
+  .link-list a { color: var(--accent); text-decoration: none; }
+  .link-list a:hover { text-decoration: underline; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.82rem; color: #888; }
+</style>
+</head>
+<body>
+
+<h1>已有引擎审计 — minivLLM 文本推理引擎</h1>
+
+<p>
+  本页面基于对 <code>multimodal/minivLLM/</code> 的完整静态审计。
+  审计日期：2026-06-07。审计方法：静态文件读取 + AST/正则分析，未 import 引擎运行。
+  实际引擎目录是 <code>minivLLM/</code>，不移动、不修改。
+</p>
+
+<h2>1. 模块状态总览</h2>
+
+<div class="summary-cards">
+  <div class="card">
+    <div class="num status-ok">8</div>
+    <div class="label">已实现且可运行</div>
+  </div>
+  <div class="card">
+    <div class="num status-warn">3</div>
+    <div class="label">已实现但不确定正确</div>
+  </div>
+  <div class="card">
+    <div class="num status-warn">3</div>
+    <div class="label">部分实现</div>
+  </div>
+  <div class="card">
+    <div class="num status-bad">2</div>
+    <div class="label">未实现</div>
+  </div>
+  <div class="card">
+    <div class="num status-bad">2</div>
+    <div class="label">阻塞 Bug</div>
+  </div>
+</div>
+
+<table>
+  <tr><th>#</th><th>模块</th><th>文件</th><th>状态</th><th>备注</th></tr>
+  <tr><td>1</td><td>tokenizer（嵌入层）</td><td><code>layers/numpy/embedding.py</code></td><td class="status-ok">已实现且可运行</td><td>LMHead 依赖未设置的 context</td></tr>
+  <tr><td>2</td><td>model loader</td><td><code>model/qwen3.py</code><br><code>validate_model.py</code></td><td class="status-ok">已实现且可运行</td><td>Qwen3(cfg) 可构造；HF 权重映射正确</td></tr>
+  <tr><td>3</td><td>attention（MHA/GQA）</td><td><code>layers/numpy/attention.py</code></td><td class="status-warn">已实现但不确定正确</td><td>Attn 类本身正确，但 Qwen3Attn 调用传参不匹配 <span class="badge badge-blocker">B1</span></td></tr>
+  <tr><td>4</td><td>causal mask</td><td><code>attention.py</code> 行 19-31</td><td class="status-ok">已实现且可运行</td><td>有 decode 场景局限说明</td></tr>
+  <tr><td>5</td><td>RoPE</td><td><code>layers/numpy/rope.py</code></td><td class="status-ok">已实现且可运行</td><td>get_rope() 带 LRU 缓存</td></tr>
+  <tr><td>6</td><td>KV cache</td><td><code>core/kv_cache.py</code></td><td class="status-warn">已实现但不确定正确</td><td>contiguous buffer；无 forward 引用 <span class="badge badge-dormant">未接线</span></td></tr>
+  <tr><td>7</td><td>prefill</td><td>—</td><td class="status-warn">部分实现</td><td>无 prefill/decode 分叉</td></tr>
+  <tr><td>8</td><td>decode</td><td>—</td><td class="status-warn">部分实现</td><td>暴力逐 token 全序列重算</td></tr>
+  <tr><td>9</td><td>sampling</td><td>—</td><td class="status-warn">部分实现</td><td>仅 argmax</td></tr>
+  <tr><td>10</td><td>scheduler</td><td>—</td><td class="status-bad">未实现</td><td>无调度/无 batching</td></tr>
+  <tr><td>11</td><td>paged attention</td><td>—</td><td class="status-bad">未实现</td><td>仅有脚手架字段 <span class="badge badge-dormant">休眠</span></td></tr>
+  <tr><td>12</td><td>activation</td><td><code>activation.py</code></td><td class="status-ok">已实现且可运行</td><td>SiluAndMul 正确，但 Qwen3FFN 未用</td></tr>
+  <tr><td>13</td><td>norm</td><td><code>norm.py</code></td><td class="status-ok">已实现且可运行</td><td>RMSNorm + residual 融合</td></tr>
+  <tr><td>14</td><td>linear</td><td><code>linear.py</code></td><td class="status-ok">已实现且可运行</td><td>简单 nn.Linear 包装</td></tr>
+  <tr><td>15</td><td>FFN</td><td><code>model/qwen3.py</code></td><td class="status-warn">已实现但不完整</td><td>act_fn = None <span class="badge badge-blocker">B2</span></td></tr>
+  <tr><td>16</td><td>decoder layer</td><td><code>model/qwen3.py</code></td><td class="status-warn">部分实现</td><td>依赖有 bug 的子组件</td></tr>
+  <tr><td>17</td><td>模型顶层</td><td><code>model/qwen3.py</code></td><td class="status-ok">已实现且可运行</td><td>结构正确</td></tr>
+  <tr><td>18</td><td>config</td><td><code>config.py</code></td><td class="status-ok">已实现且可运行</td><td>含 paged attention 预留字段</td></tr>
+</table>
+
+<h2>2. 阻塞项（Blockers）</h2>
+
+<h3>B1 — Qwen3Attn → Attn 参数不兼容 <span class="badge badge-blocker">TypeError</span></h3>
+<p>
+  <code>model/qwen3.py</code> 行 50-56：<code>Qwen3Attn.__init__</code> 调用 <code>Attn(...)</code> 时传入了 <code>S=self.head_dim</code> 和 <code>is_decode=True</code>，
+  但 <code>Attn.__init__</code> 的签名是 <code>Attn(num_heads, head_dim, num_kv_heads, is_causal=True)</code>——不包含 <code>S</code> 和 <code>is_decode</code>。
+  构造时直接 <code>TypeError</code>，引擎无法实例化。
+</p>
+
+<h3>B2 — Qwen3FFN.act_fn = None <span class="badge badge-blocker">TypeError</span></h3>
+<p>
+  <code>model/qwen3.py</code> 行 87：<code>self.act_fn = None  # TODO: SilU and MUL gate</code>。
+  Forward 时 <code>self.act_fn(gate_up)</code> 触发 <code>TypeError: 'NoneType' object is not callable</code>。
+  正确的 <code>SiluAndMul</code> 实现在 <code>activation.py</code> 中，但 Qwen3FFN 未引用。
+</p>
+
+<h3>B3 — KV Cache 未被引擎接线 <span class="badge badge-dormant">未接线</span></h3>
+<p>
+  <code>core/kv_cache.py</code> 中的 <code>KVCache</code> 类是 contiguous buffer，不是 paged attention。
+  全仓库无任何 <code>KVCache</code> 的 forward 引用——它是 dead code。
+  当前推理是 O(n²) 的 full-sequence attention。
+</p>
+
+<h3>B4 — Context 脚手架未被调用 <span class="badge badge-dormant">休眠</span></h3>
+<p>
+  <code>utils/context.py</code> 中的 <code>set_context()</code> 从未被调用。
+  <code>block_tables</code>、<code>slot_mapping</code> 等 paged attention 字段处于默认零值状态。
+</p>
+
+<h3>B5 — 无调度器</h3>
+<p>
+  代码库中无 scheduler、无 request queue、无 batching。
+  <code>validate_model.py</code> 只演示单序列推理。
+</p>
+
+<h2>3. 目录结构</h2>
+
+<pre>
+minivLLM/
+├── minivllm/
+│   ├── config.py          # 引擎配置
+│   ├── core/kv_cache.py   # KV 缓存（未接线）
+│   ├── layers/numpy/      # 算子层（6 个文件）
+│   ├── model/qwen3.py     # Qwen3 模型实现
+│   └── utils/context.py   # 全局上下文（休眠）
+├── validate_model.py      # 验证脚本
+└── scripts/               # 辅助脚本
+</pre>
+
+<h2>4. 相关笔记</h2>
+
+<ul class="link-list">
+  <li><a href="../learning/notes/01_已有引擎结构.md">01 — 已有引擎结构概览</a></li>
+  <li><a href="../learning/notes/02_attention实现审计.md">02 — Attention 实现审计</a></li>
+  <li><a href="../learning/notes/03_kv_cache实现审计.md">03 — KV Cache 实现审计</a></li>
+  <li><a href="../learning/notes/04_paged_attention实现进度.md">04 — Paged Attention 实现进度</a></li>
+</ul>
+
+<h2>5. 审计结果文件</h2>
+
+<ul class="link-list">
+  <li><a href="../experiments/text_engine_audit/results/attention.json">attention.json</a></li>
+  <li><a href="../experiments/text_engine_audit/results/kv_cache.json">kv_cache.json</a></li>
+  <li><a href="../experiments/text_engine_audit/results/paged_attention.json">paged_attention.json</a></li>
+</ul>
+
+<footer>
+  Atlas Wave 1 — 任务 2 · 引擎 inventory 基线 · 2026-06-07
+</footer>
+
+</body>
+</html>
