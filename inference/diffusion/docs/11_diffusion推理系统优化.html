@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>扩散推理系统优化 — 与 LLM 推理的差异</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-secondary: #8b949e;
+    --accent: #58a6ff;
+    --danger: #f85149;
+    --warning: #d2991d;
+    --success: #3fb950;
+    --code-bg: #1c2128;
+    --blockquote-bg: #1c2333;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+  nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  nav a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 14px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  nav a:hover { background: rgba(88,166,255,0.1); }
+  nav .brand {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text);
+    margin-right: auto;
+  }
+  h1 { font-size: 28px; margin: 32px 0 16px; color: var(--text); }
+  h2 { font-size: 22px; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); color: var(--text); }
+  h3 { font-size: 17px; margin: 28px 0 10px; color: var(--text-secondary); }
+  p { margin: 12px 0; }
+  .conclusion-box {
+    background: var(--blockquote-bg);
+    border-left: 4px solid var(--warning);
+    padding: 16px 20px;
+    margin: 28px 0;
+    border-radius: 0 8px 8px 0;
+  }
+  .conclusion-box.relation {
+    border-left-color: var(--accent);
+  }
+  .conclusion-box.critical {
+    border-left-color: var(--danger);
+  }
+  .conclusion-box h3 { margin-top: 0; }
+  ul, ol { margin: 12px 0 12px 24px; }
+  li { margin: 6px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    text-align: left;
+  }
+  th { background: var(--surface); font-weight: 600; }
+  tr:hover { background: rgba(255,255,255,0.02); }
+  code {
+    background: var(--code-bg);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 13px;
+  }
+  .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .tag-ok { background: rgba(63,185,80,0.15); color: var(--success); }
+  .tag-warn { background: rgba(210,153,29,0.15); color: var(--warning); }
+  .highlight-num {
+    font-weight: 700;
+    color: var(--warning);
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">diffusion-inference 知识库</span>
+  <a href="index.html">首页</a>
+  <a href="01_任务总览.html">01 任务总览</a>
+  <a href="02_老引擎审计.html">02 引擎审计</a>
+  <a href="03_现代diffusion推理最小背景.html">03 推理背景</a>
+  <a href="04_rectified_flow和flow_matching.html">04 Rectified Flow</a>
+  <a href="05_diffusion_transformer架构.html">05 DiT 架构</a>
+  <a href="06_stable_diffusion_3_mmdit.html">06 SD3 MMDiT</a>
+  <a href="07_flux和现代文生图推理.html">07 FLUX</a>
+  <a href="08_sana高效高分辨率生成.html">08 Sana</a>
+  <a href="09_sora_style视频生成架构.html">09 视频架构</a>
+  <a href="10_wan_hunyuan_cogvideox_ltx视频模型.html">10 视频模型</a>
+  <a href="11_diffusion推理系统优化.html">11 系统优化</a>
+  <a href="12_最终成果说明.html">12 成果说明</a>
+</nav>
+
+<h1>11 — Diffusion 推理系统优化</h1>
+
+<p>Diffusion 推理有其独特的系统优化技术栈。它们解决了扩散模型特有的性能瓶颈，但与 LLM 的 KV cache 优化有本质区别。本章基于 T16 和 T17 的实验数据，逐一解释这六项技术。</p>
+
+<h2>1. Prompt Embedding Cache（提示词嵌入缓存）</h2>
+
+<p>扩散模型在推理期间的 text encoding 只执行一次：输入的 prompt 经 T5/CLIP 编码为固定长度的 embedding，在后续所有 denoising step 中复用。如果用户连续生成多张图像，且 prompt 不变，那 text encoding 就是完全重复的计算。</p>
+
+<h3>实验数据（T16）</h3>
+
+<table>
+  <tr><th>指标</th><th>无缓存</th><th>有缓存</th><th>节省</th></tr>
+  <tr><td>总延迟</td><td>0.7544 s</td><td>0.3711 s</td><td><span class="highlight-num">50.8%</span></td></tr>
+  <tr><td>平均每次延迟</td><td>7.544 ms</td><td>3.711 ms</td><td>—</td></tr>
+  <tr><td>allocation 次数</td><td>300</td><td>100</td><td>200 次</td></tr>
+  <tr><td>Cache hit ratio</td><td>—</td><td><span class="highlight-num">52%</span></td><td>—</td></tr>
+</table>
+
+<p><strong>Cache key 设计</strong>：model_id + text_encoder hash + prompt hash + negative_prompt hash + max_sequence_length + dtype + device/offload 策略。这确保了跨模型隔离——一个 FLUX-schnell 的 cache 不会被 SD3-Medium 误命中。实验中验证了跨模型隔离：10 条共享 prompt 在两个模型间全部正确 cache miss。</p>
+
+<p><strong>限制</strong>：embedding cache 能节省 text encoding 时间，但 text encoding 本身通常只占总推理时间的 1-5%（denoiser loop 占大头）。它的价值更多在于避免重复的显存分配和 CPU→GPU 数据传输，而非单纯加速。</p>
+
+<h2>2. Latent Buffer Manager（潜空间缓冲管理器）</h2>
+
+<p>扩散推理的核心循环中，每步 denoiser forward 的输出（噪声预测/矢量场）需要写回当前 latent。如果每步都 <code>torch.empty()</code> 创建新 tensor，会产生大量 GPU 显存碎片。Latent buffer manager 通过预分配 + in-place reset + ping-pong swap 来避免这个问题。</p>
+
+<h3>实验数据（T16）</h3>
+
+<table>
+  <tr><th>模式</th><th>分配次数</th><th>峰值已分配</th><th>每步平均延迟</th></tr>
+  <tr><td>In-place reset</td><td>5</td><td>327,680 B</td><td>0.231 ms</td></tr>
+  <tr><td>Out-of-place reset</td><td>61</td><td>327,680 B</td><td>0.387 ms</td></tr>
+</table>
+
+<p><strong>关键结论</strong>：in-place reset 节省了 <span class="highlight-num">91.8%</span> 的 allocation 次数（5 vs 61），同时每步延迟也低 40%（0.231 vs 0.387 ms）。峰值已分配内存不变（两者都预分配，区别在于是否复用），但 allocation 次数的减少直接转化为更少的 CUDA 同步和更稳定的推理延迟。</p>
+
+<h2>3. Scheduler Step Profiling（调度器步数分析）</h2>
+
+<p>scheduler 的选择直接影响推理质量与速度的平衡。本 benchmark 对比了 Euler（等步长）和 RectifiedFlow（log-linear 步长）在 4/8/16/28/50 步下的表现。</p>
+
+<h3>实验数据（T16）</h3>
+
+<table>
+  <tr><th>步数</th><th>Euler (ms)</th><th>RF (ms)</th><th>差异</th><th>适用场景</th></tr>
+  <tr><td>4</td><td>0.34</td><td>0.34</td><td>0%</td><td>蒸馏模型（schnell/turbo/sprint）</td></tr>
+  <tr><td>8</td><td>0.65</td><td>0.67</td><td>-3.08%</td><td>Lightning / few-step（Hyper-SD）</td></tr>
+  <tr><td>16</td><td>1.37</td><td>1.37</td><td>0%</td><td>中等步数：性价比最优</td></tr>
+  <tr><td>28</td><td>2.35</td><td>2.36</td><td>-0.43%</td><td>SD3 / FLUX-dev 默认</td></tr>
+  <tr><td>50</td><td>4.19</td><td>4.22</td><td>-0.72%</td><td>高步数：边际收益递减</td></tr>
+</table>
+
+<p><strong>关键发现</strong>：延迟与步数呈 <span class="highlight-num">完美线性</span>（R² ≈ 1.000）。50 步 ≈ 4 步 × 12.5。Euler 和 RectifiedFlow 的每步计算量几乎相同（都在做一次 denoiser forward + ODE update），差异仅在步长间距。这意味着 scheduler 优化的空间很小——减少步数的收益远大于切换 scheduler 类型。</p>
+
+<h2>4. CFG Batching（分类器无关引导批处理）</h2>
+
+<p>CFG（Classifier-Free Guidance）在每步需要跑 <strong>两次</strong> denoiser forward：一次 conditional（带 prompt embedding），一次 unconditional（空 prompt embedding）。结果按 <code>v_cond + cfg_scale * (v_cond - v_uncond)</code> 组合。</p>
+
+<p>两种策略：<strong>Sequential CFG</strong>（先跑 cond，再跑 uncond）vs <strong>Batched CFG</strong>（将 cond 和 uncond latent 拼接为双倍 batch，一次 forward 同时处理）。</p>
+
+<h3>实验数据（T17）</h3>
+
+<table>
+  <tr><th>CFG Scale</th><th>Sequential (ms/步)</th><th>Batched (ms/步)</th><th>加速比</th><th>Seq 显存</th><th>Batch 显存</th></tr>
+  <tr><td>1.0</td><td>9.00</td><td>8.82</td><td>1.02×</td><td>1.5 MB</td><td>2.0 MB</td></tr>
+  <tr><td>3.0</td><td>8.97</td><td>8.82</td><td>1.02×</td><td>1.5 MB</td><td>2.0 MB</td></tr>
+  <tr><td>7.5</td><td>8.97</td><td>8.89</td><td>1.01×</td><td>1.5 MB</td><td>2.0 MB</td></tr>
+  <tr><td>15.0</td><td>9.00</td><td>8.92</td><td>1.01×</td><td>1.5 MB</td><td>2.0 MB</td></tr>
+</table>
+
+<p>数值差异 <span class="highlight-num">0.00e+00</span>（理论上完全一致，微小差异仅来自浮点 accumulate order）。12GB VRAM 策略：剩余 &gt; 6GB → Batched CFG；3-6GB → 视具体情况；&lt; 3GB → Sequential CFG。</p>
+
+<h2>5. Attention Memory（注意力显存估算）</h2>
+
+<p>这是扩散推理中 <strong>最大的瓶颈</strong>。DiT/MMDiT 的 full attention 复杂度为 O(N²)，其中 N = latent token 数。1024×1024 图像 → latent 128×128 → patch_size=2 → 4096 tokens → attention matrix 32 MB (fp16)，可接受。但 2048² → 16384 tokens → 512 MB。</p>
+
+<h3>实验数据（T17）</h3>
+
+<table>
+  <tr><th>场景</th><th>Tokens</th><th>Attn Matrix (fp16 MB)</th><th>Total Standard (MB)</th><th>Mem-Eff 估算 (MB)</th><th>节约比</th></tr>
+  <tr><td>DiT 512² (latent 64×64, p=2)</td><td>1024</td><td>2.0</td><td>12.0</td><td>10.0</td><td>1.2×</td></tr>
+  <tr><td>SD3 1024² (128×128, p=2)</td><td>4096</td><td>32.0</td><td>72.0</td><td>40.1</td><td>1.79×</td></tr>
+  <tr><td>SD3 2048² (256×256, p=2)</td><td>16384</td><td>512.0</td><td>672.0</td><td>160.5</td><td>4.19×</td></tr>
+  <tr><td>CogVideoX 49f 480p</td><td>11520</td><td>253.125</td><td>365.6</td><td>112.9</td><td>3.24×</td></tr>
+</table>
+
+<p>O(N²) 复杂度验证：Token 数 ×2 → N² ×4。512² 图像用 standard attention 安全，1024² 推荐 memory-efficient attention，2048² 和长视频 <strong>必须</strong> memory-efficient attention。</p>
+
+<h2>6. VAE Tiling（VAE 分块解码）</h2>
+
+<p>VAE tiling 是应用层优化：将 latent/像素切分成多个 tile，分别做 VAE decode，然后用 overlap blending 消除边界接缝。这不是 torch.compile 或 flash-attn 等价物，而是显式 chunk decode。</p>
+
+<h3>实验数据（T17）</h3>
+
+<table>
+  <tr><th>分辨率</th><th>Mode</th><th>Tiles</th><th>延迟 (ms)</th><th>峰值显存 (MB)</th><th>vs Full 速度</th><th>vs Full 显存</th></tr>
+  <tr><td>1024²</td><td>Full</td><td>1</td><td>29.45</td><td>18.0</td><td>—</td><td>—</td></tr>
+  <tr><td>1024²</td><td>Tiled 16×16</td><td>64</td><td>66.93</td><td>24.5</td><td>2.27×</td><td>1.36×</td></tr>
+  <tr><td>1024²</td><td>Tiled 64×64</td><td>4</td><td>36.61</td><td>28.4</td><td>1.24×</td><td>1.58×</td></tr>
+  <tr><td>2048²</td><td>Full</td><td>1</td><td>117.53</td><td>72.0</td><td>—</td><td>—</td></tr>
+  <tr><td>2048²</td><td>Tiled 32×32</td><td>64</td><td>198.94</td><td>97.4</td><td>1.69×</td><td>1.35×</td></tr>
+</table>
+
+<p>典型开销：overlap=4 latent pixels → 额外 10-20% 计算量。12GB VRAM 下 VAE tiling <strong>几乎总是必要的</strong>。推荐 tile 大小：1024² → 64×64 latent tile；2048² → 32×32 latent tile。</p>
+
+<h2>7. 与 LLM KV Cache 的根本差异</h2>
+
+<div class="conclusion-box critical">
+  <h3>核心认识</h3>
+  <p><strong>Diffusion 主优化不是 LLM KV cache。</strong>但 attention memory 是扩散推理的真实瓶颈。两者的根本差异在于迭代循环的数学本质不同。</p>
+</div>
+
+<table>
+  <tr><th>对比维度</th><th>LLM（自回归解码）</th><th>Diffusion（迭代去噪）</th></tr>
+  <tr><td><strong>状态积累</strong></td><td>每步追加 1 个 token，历史 token 的 key/value 可复用（KV cache 线性增长 O(N)）</td><td>每步 latent 全部刷新，无法复用上一步的计算结果（这是根本差异）</td></tr>
+  <tr><td><strong>注意力复杂度</strong></td><td>GQA + causal mask，每个新 token 只需 attend 历史 token（O(N) per step）</td><td>Full attention，所有 token 两两 attend（O(N²) per step）</td></tr>
+  <tr><td><strong>缓存内容</strong></td><td>KV cache：存储历史 token 的 key/value projection</td><td>Prompt embedding cache：存储 text encoder 输出（每 session 只算 1 次）</td></tr>
+  <tr><td><strong>分页技术</strong></td><td>PagedAttention：将 KV cache 分页管理，类似 OS 虚拟内存</td><td>Latent buffer manager：预分配 + ping-pong swap + in-place reset</td></tr>
+  <tr><td><strong>批处理</strong></td><td>Continuous batching：动态合并请求的相同 phase</td><td>CFG batching：cond+uncond 拼接为双倍 batch，一次 forward</td></tr>
+  <tr><td><strong>显存瓶颈</strong></td><td>KV cache（历史 context 越长，显存越大）</td><td>Attention matrix（分辨率越高，O(N²) 爆炸）</td></tr>
+</table>
+
+<p>为什么不能把 LLM 的 KV cache 直接搬过来？因为扩散的每个 denoising step 都会产生一个全新的 latent（噪声少了，信号多了）。上一轮的 latent 已无参考价值——它不是 "追加了一个新 token"，而是 "换了一张新的图"。LLM KV cache 的前提是 "旧 token 不变，新 token 需要 attend 旧 token"，这个前提在扩散中不成立。</p>
+
+<p>那哪里相似？在 prompt/text encoder 层面。扩散和 LLM 推理的第一步都是 text encode，这个步骤的 cache 策略是通用的：相同的 prompt → 相同的 embedding → 避免重复编码。这一点两者都会做。但进入主循环后，优化路径就完全不同了。</p>
+
+<div class="conclusion-box">
+  <h3>本页结论</h3>
+  <p>扩散推理有六项关键系统优化：prompt embedding cache（52% hit ratio）、latent buffer manager（91.8% allocation 节省）、scheduler profiling（线性 scaling）、CFG batching（sequential vs batched tradeoff）、attention memory（O(N²) 是真实瓶颈）、VAE tiling（高分辨率必备）。与 LLM KV cache 的本质区别在于：LLM 追加状态（token 历史线性累加），扩散刷新状态（latent 每步全换）。你不能把 LLM 的 KV cache 优化照搬到扩散，但可以在 prompt encoding 层面共享 cache 策略，并在 attention 层面同时面临 O(N²) 挑战。</p>
+</div>
+
+<div class="conclusion-box relation">
+  <h3>和我的 diffusion_engine 的关系</h3>
+  <p>本章的所有优化都可以在 <code>diffusion_engine/</code> 中找到对应的实现模块。prompt embedding cache 接口在 <code>core/text_conditioning.py</code>，latent buffer manager 在 <code>core/memory_manager.py</code>，CFG batching 逻辑在 <code>core/pipeline.py</code> 的 denoising loop 中，VAE tiling 在 <code>core/vae_stub.py</code>。实验脚本在 <code>experiments/diffusion_inference_optimization/</code> 下，所有数据来自 2026-06-07 的 benchmark 运行。scheduler 的实现细节见 04 页，attention 的 DiT/MMDiT 实现见 05/06 页。</p>
+</div>
+
+</body>
+</html>

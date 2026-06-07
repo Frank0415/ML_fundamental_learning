@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>05 — Diffusion Transformer (DiT) 架构</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --fg: #222;
+    --accent: #2563eb;
+    --code-bg: #f0f0f0;
+    --border: #ddd;
+    --table-stripe: #f5f5f5;
+    --nav-bg: #f4f4f4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a2e;
+      --fg: #e0e0e0;
+      --accent: #60a5fa;
+      --code-bg: #2a2a3a;
+      --border: #444;
+      --table-stripe: #252535;
+      --nav-bg: #22223a;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", "Noto Sans SC", sans-serif; background: var(--bg); color: var(--fg); line-height: 1.7; max-width: 900px; margin: 0 auto; padding: 20px; }
+  nav { background: var(--nav-bg); padding: 12px 16px; border-radius: 8px; margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 14px; border: 1px solid var(--border); }
+  nav a { color: var(--accent); text-decoration: none; }
+  nav a:hover { text-decoration: underline; }
+  nav .sep { color: #999; }
+  h1 { font-size: 28px; margin: 24px 0 12px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+  h2 { font-size: 22px; margin: 28px 0 12px; color: var(--accent); }
+  h3 { font-size: 18px; margin: 20px 0 8px; }
+  p { margin: 8px 0; }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  pre { background: var(--code-bg); padding: 14px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5; border: 1px solid var(--border); margin: 12px 0; }
+  pre code { background: none; padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+  th { background: var(--nav-bg); font-weight: 600; }
+  tr:nth-child(even) td { background: var(--table-stripe); }
+  .conclusion { background: var(--nav-bg); border-left: 4px solid var(--accent); padding: 16px; margin: 24px 0; border-radius: 0 8px 8px 0; }
+  .conclusion h3 { margin-top: 0; color: var(--accent); }
+  .relation { background: var(--code-bg); padding: 14px; border-radius: 8px; margin: 20px 0; border: 1px solid var(--border); }
+  .diagram { text-align: center; margin: 20px 0; font-family: monospace; font-size: 13px; line-height: 1.8; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html">🏠 首页</a>
+  <span class="sep">›</span>
+  <a href="04_rectified_flow和flow_matching.html">← 04 Flow Matching</a>
+  <span class="sep">›</span>
+  <strong>05 DiT 架构</strong>
+  <span class="sep">›</span>
+  <a href="06_stable_diffusion_3_mmdit.html">06 SD3/MMDiT →</a>
+</nav>
+
+<h1>05 — Diffusion Transformer (DiT) 架构</h1>
+
+<p>本文解释 DiT（<em>Scalable Diffusion Models with Transformers</em>，Peebles &amp; Xie, ICCV 2023）的核心架构：如何用 Transformer 替代 U-Net 做扩散模型的去噪骨干。</p>
+
+<hr>
+
+<h2>1. 为什么用 Transformer 替代 U-Net？</h2>
+
+<p>传统扩散模型（如 Stable Diffusion 1.x/2.x）使用 <strong>U-Net</strong> 作为去噪器。U-Net 的瓶颈：</p>
+<ul>
+  <li><strong>难以 scaling</strong>：U-Net 参数增大会导致显存爆炸（跨分辨率特征图）</li>
+  <li><strong>文本条件注入受限</strong>：cross-attention 仅在少数层注入，文本对齐能力有限</li>
+  <li><strong>无法统一模态</strong>：图像和视频需要不同的架构适配，而非统一 backbone</li>
+</ul>
+
+<p>DiT 提出的答案：<strong>把 latent 切成 patches，用标准 Transformer（ViT 风格）处理</strong>。这带来了：</p>
+<ul>
+  <li>可预测的 scaling 行为（参数翻倍 → 性能变好，不爆炸）</li>
+  <li>自然的文本条件注入（所有层都能 attend 文本 embedding）</li>
+  <li>与 NLP 研究生态对齐（可使用成熟的 Transformer 优化技术）</li>
+</ul>
+
+<h2>2. 核心 Pipeline</h2>
+
+<div class="diagram">
+┌──────────┐    ┌──────────┐    ┌──────────────────────┐    ┌──────────┐    ┌──────────┐
+│ 噪声画像  │ -> │ Patchify │ -> │ DiT Transformer      │ -> │ Unpatch  │ -> │ 预测噪声  │
+│ (B,C,H,W)│    │ (B,N,D)  │    │ Blocks × depth       │    │ (B,C,H,W)│    │ ε_θ 或 v_θ│
+└──────────┘    └──────────┘    │ + Timestep + Text    │    └──────────┘    └──────────┘
+                                └──────────────────────┘
+</div>
+
+<h3>Step 1: Patchify</h3>
+<p>将 (B, C, H, W) 切割为 N = (H/p) × (W/p) 个 patch，每个 patch 展平为 p×p×C 维。</p>
+<table>
+  <tr><th>参数</th><th>示例</th><th>结果</th></tr>
+  <tr><td>latent=(1,4,32,32), p=2</td><td>16×16=256 patches</td><td>(1, 256, 16)</td></tr>
+  <tr><td>latent=(1,4,64,64), p=2</td><td>32×32=1024 patches</td><td>(1, 1024, 16)</td></tr>
+  <tr><td>latent=(1,16,32,32), p=2</td><td>16×16=256 patches</td><td>(1, 256, 64)</td></tr>
+</table>
+
+<h3>Step 2: Position Embedding</h3>
+<p>DiT 使用 <strong>2D sinusoidal position embedding</strong>：每个 patch 的 (row, col) 映射为正弦/余弦编码并相加。这与 NLP 的 1D position encoding 不同，因为图像有二维空间结构。</p>
+<p><em>toy 简化</em>：我们的 TinyDiT 使用可学习的 <code>nn.Parameter</code> 替代。</p>
+
+<h3>Step 3: Timestep Conditioning (AdaLN)</h3>
+<p>timestep t → sinusoidal encoding → SiLU MLP → 调制参数 (shift, scale, gate)。</p>
+<p>这些参数被注入到 <strong>每个 DiT block 的两次 LayerNorm 之前</strong>：</p>
+<pre><code>modulated = LayerNorm(x) * (1 + scale) + shift</code></pre>
+<p>gate 用于控制残差连接的强度：</p>
+<pre><code>x = x + gate * attention_output
+x = x + gate * ffn_output</code></pre>
+
+<h3>Step 4: DiTBlock 内部</h3>
+<p>每个 Block 包含：</p>
+<ul>
+  <li><strong>Attention 子层</strong>：AdaLN → MultiHeadSelfAttention → gate 残差</li>
+  <li><strong>FFN 子层</strong>：AdaLN → Linear → GELU → Linear → gate 残差</li>
+</ul>
+<p>Attention 是 <strong>non-causal full self-attention</strong>：所有 patches 互相 attend，无因果掩码。</p>
+
+<h3>Step 5: Unpatchify + Output</h3>
+<p>最终 Linear 层将 (B, N, hidden) → (B, N, p²C)，再通过 reshape/transpose 重组为 (B, C, H, W)。</p>
+<p>输出可以是 <strong>ε_θ</strong>（预测噪声）或 <strong>v_θ</strong>（预测速度/矢量场），取决于训练目标。</p>
+
+<h2>3. 关键 Shape 对照</h2>
+
+<table>
+  <tr><th>阶段</th><th>输入 Shape</th><th>输出 Shape</th></tr>
+  <tr><td>Patchify</td><td>(B, C, H, W)</td><td>(B, N, p²C)</td></tr>
+  <tr><td>Input Proj</td><td>(B, N, p²C)</td><td>(B, N, D)</td></tr>
+  <tr><td>+ Pos Embed</td><td>(B, N, D)</td><td>(B, N, D)</td></tr>
+  <tr><td>Timestep Emb</td><td>(B,)</td><td>(B, D)</td></tr>
+  <tr><td>Text Proj</td><td>(B, L, D_text)</td><td>(B, L, D)</td></tr>
+  <tr><td>DiTBlock × depth</td><td>(B, N, D) + (B, D) + (B, L, D)?</td><td>(B, N, D)</td></tr>
+  <tr><td>Output Head</td><td>(B, N, D)</td><td>(B, N, p²C)</td></tr>
+  <tr><td>Unpatchify</td><td>(B, N, p²C)</td><td>(B, C, H, W)</td></tr>
+</table>
+
+<h2>4. 与 U-Net 的差异</h2>
+
+<table>
+  <tr><th>维度</th><th>U-Net (SD1.x/2.x)</th><th>DiT (SD3/FLUX)</th></tr>
+  <tr><td>骨干</td><td>卷积 + 下采样/上采样</td><td>Transformer blocks</td></tr>
+  <tr><td>分辨率处理</td><td>多尺度特征图</td><td>固定分辨率 token 序列</td></tr>
+  <tr><td>文本注入</td><td>Cross-attention（仅特定分辨率层）</td><td>所有层均可访问 text tokens</td></tr>
+  <tr><td>位置编码</td><td>卷积隐式编码</td><td>显式 2D sinusoidal</td></tr>
+  <tr><td>Scaling</td><td>参数×10 → 显存×20+</td><td>参数×10 → 可预测提升</td></tr>
+  <tr><td>多模态</td><td>图像专用</td><td>可扩展至视频（spacetime patch）</td></tr>
+</table>
+
+<h2>5. AdaLN-Zero 机制（真实 DiT）</h2>
+
+<p>真实 DiT 论文中的 AdaLN-Zero 包括一个关键初始化技巧：</p>
+<ul>
+  <li>最后输出层的权重初始化为零</li>
+  <li>训练开始时，gate_attn = gate_ffn = 0，所以 <code>x = x + 0 = x</code></li>
+  <li>模型退化为恒等映射，逐步学习非零 gate</li>
+  <li><strong>toy 简化</strong>：我们的 TinyDiT 使用标准 Xavier 初始化，未实现零初始化</li>
+</ul>
+
+<h2>6. 与 LLM Attention 的关键差异</h2>
+
+<table>
+  <tr><th>维度</th><th>LLM (如 GPT)</th><th>DiT</th></tr>
+  <tr><td>注意范围</td><td>因果（causal，只看向前）</td><td>全连接（所有 patches 互相看）</td></tr>
+  <tr><td>KV Cache</td><td>必须（自回归生成需要）</td><td>不需要（每步 latent 全刷新）</td></tr>
+  <tr><td>位置编码</td><td>1D RoPE</td><td>2D sinusoidal / learnable</td></tr>
+  <tr><td>归一化</td><td>RMSNorm（静态）</td><td>AdaLN（动态，依赖 timestep）</td></tr>
+  <tr><td>文本交互</td><td>无（纯文本模型）</td><td>有（text tokens 参与 attention）</td></tr>
+</table>
+
+<h2>7. DiT 在视频生成中的扩展：Spacetime Patch</h2>
+
+<p>图像 DiT 的 patchify 只在 (H, W) 二维上切分。视频 DiT 将这一思想扩展到三维——<strong>spacetime patch</strong> 在 (T, H, W) 三个维度上同时切分视频 latent。</p>
+
+<h3>Spacetime Patch 的计算</h3>
+
+<p>给定视频 latent <code>(B, C, T_latent, H_latent, W_latent)</code> 和 patch 参数 <code>(t_p, h_p, w_p)</code>：</p>
+
+<pre><code>N_spacetime = (T_latent / t_p) × (H_latent / h_p) × (W_latent / w_p)
+每个 patch 展平为：t_p × h_p × w_p × C 维</code></pre>
+
+<table>
+  <tr><th>视频规格</th><th>VAE 压缩后 Latent</th><th>Patch (1,2,2)</th><th>Spacetime Tokens</th><th>Full Attn 矩阵</th></tr>
+  <tr><td>Sora 推测：16f×256²</td><td><code>(C, 4, 32, 32)</code></td><td>4×16×16</td><td>= 1,024</td><td>~2 MB</td></tr>
+  <tr><td>CogVideoX：49f×720×480</td><td><code>(4, 13, 90, 60)</code></td><td>13×45×30</td><td>= 17,550</td><td>~616 MB</td></tr>
+  <tr><td>Wan2.1-1.3B：81f×480×832</td><td><code>(16, 21, 60, 104)</code></td><td>21×30×52</td><td>= 32,760</td><td>~2.1 GB</td></tr>
+  <tr><td>LTX-Video (32×VAE)：121f×720×480</td><td><code>(4, 15, 22, 15)</code></td><td>15×11×8</td><td>= 1,320</td><td>~3.5 MB</td></tr>
+</table>
+
+<p><strong>关键洞察</strong>：LTX-Video 的激进 VAE 压缩（32×空间而非 8×）将 token 数从 40,500+ 降到 1,320——减少了 30×。这意味着 attention 成本降低了近 1000×。在 12GB VRAM 约束下，<strong>减少 token 数比优化 attention 算法更直接有效</strong>。</p>
+
+<h3>3D Position Encoding</h3>
+
+<p>视频 DiT 的位置编码从 2D 扩展到 3D：每个 spacetime patch 的 <code>(t, y, x)</code> 坐标分别编码后相加或拼接。Wan2.1 和 CogVideoX 在 patchify 阶段注入 3D positional encoding，确保模型知道每个 token 在视频时空中的时空位置。</p>
+
+<hr>
+
+<div class="conclusion">
+<h3>本页结论</h3>
+<p>DiT 将 image latent 切割为 patch tokens，用标准 Transformer blocks（带 timestep 调制的 AdaLN）替代 U-Net。核心贡献是证明了 Transformer 可以在扩散模型中替代卷积架构，且具有良好的 scaling 特性。与 LLM 的关键不同在于：attention 是 non-causal 全连接，无 KV cache，归一化由 timestep 动态控制。</p>
+</div>
+
+<div class="relation">
+<h3>和我的 diffusion_engine 的关系</h3>
+<p><code>diffusion_engine/core/dit.py</code> 中的 <code>TinyDiT</code> 是 DiT 的 toy 实现。它包含 patchify/unpatchify、sinusoidal timestep embedding（torch 版）、AdaLN 调制的 DiTBlock、以及可选的 text conditioning。这是一个简化的验证性实现，用于测试 shape 系统和 pipeline 集成，不用于真实图像生成。真实 DiT（如 SD3/FLUX 所用的版本）参数规模可达 2B~12B，特征维度 1536~3072。</p>
+</div>
+
+</body>
+</html>

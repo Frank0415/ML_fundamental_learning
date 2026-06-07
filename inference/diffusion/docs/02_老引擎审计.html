@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>旧引擎审计 — minivLLM 复用决策</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-secondary: #8b949e;
+    --accent: #58a6ff;
+    --danger: #f85149;
+    --warning: #d2991d;
+    --success: #3fb950;
+    --code-bg: #1c2128;
+    --blockquote-bg: #1c2333;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+  nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  nav a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 14px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  nav a:hover { background: rgba(88,166,255,0.1); }
+  nav .brand {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text);
+    margin-right: auto;
+  }
+  h1 { font-size: 28px; margin: 32px 0 16px; color: var(--text); }
+  h2 { font-size: 22px; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); color: var(--text); }
+  h3 { font-size: 17px; margin: 28px 0 10px; color: var(--text-secondary); }
+  p { margin: 12px 0; }
+  .conclusion-box {
+    background: var(--blockquote-bg);
+    border-left: 4px solid var(--danger);
+    padding: 20px 24px;
+    margin: 24px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .conclusion-box h3 { margin-top: 0; color: var(--danger); }
+  .relation-box {
+    background: var(--blockquote-bg);
+    border-left: 4px solid var(--accent);
+    padding: 20px 24px;
+    margin: 24px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+  th {
+    background: var(--surface);
+    font-weight: 600;
+  }
+  td { vertical-align: top; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:600; }
+  .tag-yes { background: rgba(63,185,80,0.15); color: var(--success); }
+  .tag-partial { background: rgba(210,153,29,0.15); color: var(--warning); }
+  .tag-no { background: rgba(248,81,73,0.15); color: var(--danger); }
+  .tag-c { background: rgba(248,81,73,0.12); color: var(--danger); }
+  .tag-b { background: rgba(210,153,29,0.12); color: var(--warning); }
+  .tag-a { background: rgba(63,185,80,0.12); color: var(--success); }
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .comparison-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .comparison-card h4 {
+    font-size: 15px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .comparison-card.left h4 { color: var(--warning); }
+  .comparison-card.right h4 { color: var(--accent); }
+  .comparison-card ul { list-style: none; padding: 0; }
+  .comparison-card li {
+    padding: 6px 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  .comparison-card li::before {
+    content: "· ";
+    color: var(--border);
+  }
+  .flow-diagram {
+    margin: 28px 0;
+  }
+  .flow-diagram .row {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+    gap: 12px;
+  }
+  .flow-diagram .step-label {
+    min-width: 80px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-align: right;
+  }
+  .flow-diagram .step-box {
+    flex: 1;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: "SF Mono", "Fira Code", monospace;
+  }
+  .flow-diagram .step-box.llm { background: rgba(210,153,29,0.08); border: 1px solid rgba(210,153,29,0.3); color: #e2b543; }
+  .flow-diagram .step-box.diff { background: rgba(88,166,255,0.08); border: 1px solid rgba(88,166,255,0.3); color: #79c0ff; }
+  .flow-diagram .arrow {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 18px;
+    padding: 2px 0;
+  }
+  .divider {
+    border: none;
+    border-top: 2px dashed var(--border);
+    margin: 32px 0;
+  }
+  .evidence {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .evidence strong { color: var(--accent); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 20px 0; }
+  .list-box { background: var(--surface); border-radius: 8px; padding: 20px; }
+  .list-box h4 { margin-bottom: 12px; font-size: 15px; }
+  .list-box ul { list-style: none; padding: 0; }
+  .list-box li { padding: 5px 0; font-size: 14px; border-bottom: 1px solid var(--border); }
+  .list-box li:last-child { border-bottom: none; }
+  .list-box li::before { content: "✓ "; color: var(--success); }
+  .list-box.reject h4 { color: var(--danger); }
+  .list-box.reject li::before { content: "✗ "; color: var(--danger); }
+  .list-box.accept h4 { color: var(--success); }
+  .section-nav { display:flex; gap:8px; flex-wrap:wrap; margin:16px 0 28px; }
+  .section-nav a { font-size:13px; color:var(--accent); text-decoration:none; padding:4px 10px; border:1px solid var(--border); border-radius:14px; }
+  .section-nav a:hover { background:rgba(88,166,255,0.08); }
+  footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">diffusion 学习项目 · 知识库</span>
+  <a href="index.html">首页</a>
+  <a href="03_现代diffusion推理最小背景.html">扩散数据流</a>
+  <a href="02_老引擎审计.html">旧引擎审计</a>
+</nav>
+
+<h1>minivLLM 旧引擎审计与复用决策</h1>
+
+<div class="section-nav">
+  <span style="font-size:12px;color:var(--text-secondary);padding:4px 10px;">快速定位 →</span>
+  <a href="#conclusion">本页结论</a>
+  <a href="#relation">与 diffusion_engine 的关系</a>
+  <a href="#table">14 模块盘点</a>
+  <a href="#decision">A/B/C 决策</a>
+  <a href="#kv">KV Cache 对比</a>
+</div>
+
+<!-- ========== 本页结论 ========== -->
+<h2 id="conclusion">本页结论</h2>
+<div class="conclusion-box">
+  <h3>最终决策：C — 完全不适合复用，新建 diffusion_engine/</h3>
+  <p>
+    minivLLM 是一个总计约 900 行的 LLM 推理引擎，专为 Qwen3 自回归文本生成设计。经过对 14 个关键模块的逐项审计，确认其核心架构（GQA + causal mask + RoPE + KV cache + 自回归采样）与扩散模型（DiT/MMDiT）的全注意力并行去噪范式存在<strong>不可调和的结构性差异</strong>。唯一可直接复用的代码是 <code>activation.py</code> 中的 <code>SiluAndMul</code>（11 行）。
+  </p>
+  <p>
+    次选方案 B 被限定为"仅复用 SiluAndMul + 代码风格参考"，不构成对 C 的实质替代。新引擎将在 <code>diffusion_engine/</code> 目录下从零构建，与 <code>minivLLM/</code> 保持物理隔离、依赖隔离和概念隔离。
+  </p>
+</div>
+
+<!-- ========== 与 diffusion_engine 的关系 ========== -->
+<h2 id="relation">和我的 diffusion_engine 的关系</h2>
+<div class="relation-box">
+  <h3>旧引擎对新引擎的价值</h3>
+  <p>
+    <strong>minivLLM 不参与 diffusion_engine 的运行时依赖。</strong>新引擎不从旧引擎 import 任何模块，不在旧引擎目录中创建或修改文件。旧引擎的代码仅供以下几类参考：
+  </p>
+  <ul style="margin:12px 0; padding-left:20px; color:var(--text-secondary);">
+    <li><strong>代码复用</strong>：仅 <code>SiluAndMul</code>（11 行）将直接复制到 <code>diffusion_engine/layers/activation.py</code></li>
+    <li><strong>架构参考</strong>：Pre-Norm 结构、显式 residual 传递、手写 attention 流程——这些是 PyTorch 工程通用模式，不绑定 LLM 语义</li>
+    <li><strong>优化参考</strong>：<code>@torch.compile</code> 配合预计算缓存的模式可迁移到 DiT 的 position embedding 和 timestep embedding</li>
+    <li><strong>反面教材</strong>：<code>Qwen3FFN.act_fn = None</code> 提醒我们模块连接性测试的重要性；paged attention 占位字段提醒我们不要抄袭接口而不实现</li>
+  </ul>
+  <p>
+    <strong>新引擎必须从零写的核心模块</strong>：DiT attention（full attention，无 causal mask，无 GQA）、AdaLN-Zero、timestep embedding、noise scheduler、denoising loop、VAE 集成。这些模块在旧引擎中完全不存在。
+  </p>
+</div>
+
+<!-- ========== 14 模块盘点表 ========== -->
+<h2 id="table">14 个模块盘点</h2>
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>模块</th>
+      <th>旧引擎状态</th>
+      <th>扩散需要吗</th>
+      <th>复用判断</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>Tensor Abstraction</td>
+      <td><span class="tag tag-no">No</span></td>
+      <td>部分</td>
+      <td>不可复用。直接使用 torch.Tensor，无抽象层</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Model Loader</td>
+      <td><span class="tag tag-partial">Partial</span></td>
+      <td>是</td>
+      <td>不可复用。依赖 HF AutoModel，需重写扩散专用 loader</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>Transformer Block</td>
+      <td><span class="tag tag-yes">Yes</span></td>
+      <td>是</td>
+      <td>仅参考 Pre-Norm+residual 结构。需改为 AdaLN+full attention</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>Attention</td>
+      <td><span class="tag tag-yes">Yes</span></td>
+      <td>是（full attention）</td>
+      <td>❌ 不可复用。GQA+causal mask+RoPE 服务自回归，DiT 需重写</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>MLP / FFN</td>
+      <td><span class="tag tag-partial">Partial</span></td>
+      <td>是</td>
+      <td>✅ SiluAndMul 可直接复用（11 行）。FFN 需重写（有 Bug）</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>Norm</td>
+      <td><span class="tag tag-yes">Yes</span></td>
+      <td>是（AdaLN）</td>
+      <td>仅参考 residual 融合模式。需重写为 AdaLN-Zero</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>RoPE</td>
+      <td><span class="tag tag-yes">Yes</span></td>
+      <td>不需要</td>
+      <td>❌ 不可复用。扩散用 2D sinusoidal position embedding</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>Timestep Embedding</td>
+      <td><span class="tag tag-no">No</span></td>
+      <td>是（核心）</td>
+      <td>❌ 不存在。必须从零实现</td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>Scheduler</td>
+      <td><span class="tag tag-no">No</span></td>
+      <td>是（核心）</td>
+      <td>❌ 不存在。noise scheduler 与 LLM 请求调度完全无关</td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>Sampling Loop</td>
+      <td><span class="tag tag-partial">Partial</span></td>
+      <td>是（核心）</td>
+      <td>❌ 不可复用。自回归 greedy vs 迭代去噪，完全不同的循环结构</td>
+    </tr>
+    <tr>
+      <td>11</td>
+      <td>Memory Manager</td>
+      <td><span class="tag tag-no">No</span></td>
+      <td>部分</td>
+      <td>不可复用。无内存管理代码。扩散需要 activation checkpointing</td>
+    </tr>
+    <tr>
+      <td>12</td>
+      <td>KV Cache</td>
+      <td><span class="tag tag-yes">Yes</span></td>
+      <td>不需要</td>
+      <td>❌ 不可复用。扩散 denoising 每步 latent 全刷新，无跨步 KV 复用场景</td>
+    </tr>
+    <tr>
+      <td>13</td>
+      <td>Paged Attention</td>
+      <td><span class="tag tag-no">No</span></td>
+      <td>不需要</td>
+      <td>❌ 占位字段，无实现。扩散不需要 KV 分块管理</td>
+    </tr>
+    <tr>
+      <td>14</td>
+      <td>Config / Context</td>
+      <td><span class="tag tag-partial">Partial</span></td>
+      <td>是（diffusion 专用）</td>
+      <td>仅参考 dataclass 写法。字段需完全重写</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="evidence">
+  <strong>统计</strong>：5 个 Yes &nbsp;|&nbsp; 3 个 Partial &nbsp;|&nbsp; 6 个 No
+  &nbsp;·&nbsp; 唯一可直接复用：SiluAndMul（11 行）
+  &nbsp;·&nbsp; 可参考（仅风格）：7 个
+  &nbsp;·&nbsp; 明确不可复用：6 个
+  &nbsp;·&nbsp; 旧引擎总代码量：约 900 行 Python
+</div>
+
+<!-- ========== A/B/C 决策 ========== -->
+<h2 id="decision">A / B / C 决策论证</h2>
+
+<div class="comparison-grid">
+  <div class="comparison-card left" style="border:2px solid rgba(248,81,73,0.4);">
+    <h4 style="color:var(--danger);">✗ A — 大幅复用（否决）</h4>
+    <ul>
+      <li>要求 &gt;50% 模块可直接使用或仅需小改</li>
+      <li>当前可达比例：1/14（7%），远低于 50%</li>
+      <li>否决理由：minivLLM 是 LLM 推理引擎，非通用 transformer 库</li>
+    </ul>
+  </div>
+  <div class="comparison-card right" style="border:2px solid rgba(210,153,29,0.4);">
+    <h4 style="color:var(--warning);">△ B — 部分复用（次选，严格限定）</h4>
+    <ul>
+      <li>仅在被严格限定为"代码风格参考"时可接受</li>
+      <li>复制 SiluAndMul（11 行）+ 参考 7 个模块的工程模式</li>
+      <li>不能从 Qwen3Attn/Qwen3DecoderLayer 出发"改造"</li>
+      <li>核心模块仍需从零实现（attention/norm/transformer block）</li>
+    </ul>
+  </div>
+</div>
+
+<div class="conclusion-box" style="border-color: var(--danger); margin-top: 16px;">
+  <h3 style="color: var(--danger);">✓ C — 完全不适合，新建 diffusion_engine/（主方案）</h3>
+  <p>minivLLM 的核心架构假设（自回归解码、KV cache、causal mask、RoPE、RMSNorm）与扩散模型的并行去噪范式无交集。改造旧代码的成本大于从零写，且理解旧代码的 LLM 专用逻辑造成的认知负担会拖慢新引擎的开发。</p>
+  <p style="margin-top:8px;"><strong>建策</strong>：在 <code>diffusion_engine/</code> 下新建所有模块，仅从 <code>minivLLM/</code> 复制 <code>SiluAndMul</code>（11 行）并参考 7 个模块的工程风格。</p>
+</div>
+
+<!-- ========== KV Cache 对比 ========== -->
+<h2 id="kv">LLM KV Cache 与 Diffusion 推理循环差异</h2>
+
+<p>
+  这是旧引擎审计中最容易产生误判的点，也是复用决策中需要最清晰阐述的部分。以下是两个推理范式的逐项对比。
+</p>
+
+<h3>推理循环结构对比</h3>
+
+<div class="flow-diagram">
+  <h4 style="color:var(--warning); margin-bottom:12px;">LLM 自回归推理（有 KV cache）</h4>
+  <div class="row">
+    <span class="step-label">Step 0</span>
+    <span class="step-box llm">输入 [token_0] → 计算 K₀, V₀ → 写入 cache → 输出 token_1</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="row">
+    <span class="step-label">Step 1</span>
+    <span class="step-box llm">输入 [token_1] → 读 cache(K₀,V₀) + 计算 K₁,V₁ → 写入 cache → 输出 token_2</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="row">
+    <span class="step-label">Step N</span>
+    <span class="step-box llm">输入 [token_N] → 读 cache(K₀~K_{N-1},V₀~V_{N-1}) + 仅计算 K_N,V_N → 输出 token_{N+1}</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="flow-diagram">
+  <h4 style="color:var(--accent); margin-bottom:12px;">扩散迭代去噪（无 KV cache）</h4>
+  <div class="row">
+    <span class="step-label">Step T</span>
+    <span class="step-box diff">输入 x_T（纯噪声，全 latent）→ 计算 K_T, V_T（全 patches）→ 输出 v_T（矢量场）→ 去噪得 x_{T-1}</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="row">
+    <span class="step-label">Step T-1</span>
+    <span class="step-box diff">输入 x_{T-1}（全 latent，内容不同于 x_T）→ 计算全新的 K_{T-1}, V_{T-1} → 输出 v_{T-1} → 去噪得 x_{T-2}</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="row">
+    <span class="step-label">Step 0</span>
+    <span class="step-box diff">输入 x₀ → 计算 K₀, V₀ → 输出 v₀ → 得到干净 latent → VAE decode</span>
+  </div>
+</div>
+
+<h3>关键差异表</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>维度</th>
+      <th>LLM 自回归推理</th>
+      <th>扩散去噪推理</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>序列长度变化</td>
+      <td>逐步增长（1 → 2 → ... → L）</td>
+      <td>固定（latent patch 数不变）</td>
+    </tr>
+    <tr>
+      <td>历史信息</td>
+      <td>已生成的 token 的 K/V 不变，可缓存</td>
+      <td>每步 latent 全刷新，上一步的 K/V 无意义</td>
+    </tr>
+    <tr>
+      <td>attention 类型</td>
+      <td>Causal（只能看过去）</td>
+      <td>Full（所有 patches 互相 attend）</td>
+    </tr>
+    <tr>
+      <td>attention 复杂度</td>
+      <td>O(L²) 无 cache，O(L) 有 cache</td>
+      <td>O(P²)，P 为 patch 数（固定）</td>
+    </tr>
+    <tr>
+      <td>位置编码</td>
+      <td>RoPE（旋转，支持任意长）</td>
+      <td>2D sinusoidal（固定网格）</td>
+    </tr>
+    <tr>
+      <td>归一化</td>
+      <td>RMSNorm（静态 scale）</td>
+      <td>AdaLN（动态 scale/shift 由 timestep 注入）</td>
+    </tr>
+    <tr>
+      <td>缓存策略</td>
+      <td>KV cache 是核心优化</td>
+      <td>KV cache 无用。优化焦点是 activation checkpointing + CFG batched forward</td>
+    </tr>
+    <tr>
+      <td>迭代终止</td>
+      <td>生成 EOS token 或达到 max_len</td>
+      <td>完成 T → 0 的所有时间步</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>一句话总结</h3>
+<div class="evidence">
+  <strong>LLM 的 KV cache</strong> 依赖于"过去 token 的中间表示不变"这一前提：序列增长，已有 K/V 可复用。<br>
+  <strong>Diffusion 的 denoising</strong> 不满足这一前提：每步输入 latents 完全刷新，K/V 不能跨步复用。<br>
+  <strong>因此 KV cache 对 diffusion 推理是纯粹的冗余代码。</strong>minivLLM 的 <code>KVCache</code> 类不可复用到扩散引擎。扩散优化的正确方向是 activation checkpointing、CFG 双 forward 合并、VAE 解码缓存，而不是 KV cache。
+</div>
+
+<!-- ========== 可参考 / 不可复用 双栏 ========== -->
+<h2>可参考模块 与 明确不复用模块</h2>
+<div class="two-col">
+  <div class="list-box accept">
+    <h4>可参考模块（仅风格/范式）</h4>
+    <ul>
+      <li>SiluAndMul（唯一可直接复制）</li>
+      <li>Linear 薄 wrapper 封装模式</li>
+      <li>RMSNorm residual 融合 API 设计</li>
+      <li>Pre-Norm + 显式 residual 传递</li>
+      <li>Attn 类的 forward 流程模板</li>
+      <li>RoPE 的预计算缓存 + @torch.compile</li>
+      <li>Config dataclass 写法</li>
+      <li>HF 权重对照测试模式</li>
+    </ul>
+  </div>
+  <div class="list-box reject">
+    <h4>明确不复用模块</h4>
+    <ul>
+      <li>KV Cache（扩散不需要 KV 缓存）</li>
+      <li>Paged Attention（占位，无实现）</li>
+      <li>RoPE 位置编码（扩散用 2D sinusoidal）</li>
+      <li>VocabHead / LMHead（扩散用 text encoder）</li>
+      <li>Qwen3Attn（GQA + causal mask）</li>
+      <li>Qwen3DecoderLayer（RMSNorm 结构）</li>
+      <li>Qwen3FFN（有 Bug，结构不匹配）</li>
+      <li>Sampling Loop（自回归 greedy）</li>
+      <li>Context（LLM 推理字段）</li>
+      <li>下载脚本（面向 Qwen3 模型）</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ========== 已知 Bug 警示 ========== -->
+<h2>旧引擎的已知问题</h2>
+<table>
+  <thead>
+    <tr>
+      <th>问题</th>
+      <th>文件</th>
+      <th>影响</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Qwen3FFN.act_fn = None</code></td>
+      <td><code>minivllm/model/qwen3.py:87</code></td>
+      <td>FFN forward 会抛 TypeError。SiluAndMul 已定义但从未连接。说明旧引擎的 FFN 从未被完整端到端测试。</td>
+    </tr>
+    <tr>
+      <td>Paged attention 占位</td>
+      <td><code>minivllm/utils/context.py</code></td>
+      <td><code>block_tables</code> 和 <code>slot_mapping</code> 字段从 vLLM 拷贝但无任何 kernel 使用。无 paged attention 实际实现。</td>
+    </tr>
+    <tr>
+      <td>仅 greedy argmax 采样</td>
+      <td><code>validate_model.py:185-232</code></td>
+      <td>无 temperature/top-k/top-p，不能用于实际文本生成（仅 HF 对比验证用）。</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ========== 对后续任务的建议 ========== -->
+<h2>对后续任务的具体建议</h2>
+<table>
+  <thead>
+    <tr>
+      <th>任务</th>
+      <th>建议</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>T11（DiT 实现）</td>
+      <td>attention 从零写（full attention，无 causal mask，无 GQA）。不要从 Qwen3Attn 改造。</td>
+    </tr>
+    <tr>
+      <td>T12（CFG 采样）</td>
+      <td>采样循环从零写（for t in reversed(timesteps) → CFG 融合 → scheduler step）。不要参考 LLM greedy decoding。</td>
+    </tr>
+    <tr>
+      <td>T16（系统优化）</td>
+      <td>主优化方向：activation checkpointing + CFG batched forward + torch.compile。KV cache 不是目标。</td>
+    </tr>
+  </tbody>
+</table>
+
+<footer>
+  <p>本文由 T3（复用决策与隔离策略说明）生成于 2026-06-07。与 <code>learning/notes/01_老引擎结构审计.md</code> 和 <code>learning/notes/02_是否复用老引擎.md</code> 结论一致。</p>
+  <p>三份文档均选 <strong>C</strong>（完全不适合，新建 diffusion_engine/），次选 <strong>B</strong>（仅复用 SiluAndMul + 代码风格参考）。KV cache 明确标记为不可复用，diffusion 推理循环不等价于 autoregressive decoding。</p>
+</footer>
+
+</body>
+</html>

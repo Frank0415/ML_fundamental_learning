@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>任务总览 — 现代 Diffusion 推理学习项目</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-secondary: #8b949e;
+    --accent: #58a6ff;
+    --danger: #f85149;
+    --warning: #d2991d;
+    --success: #3fb950;
+    --code-bg: #1c2128;
+    --blockquote-bg: #1c2333;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+  nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  nav a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 14px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  nav a:hover { background: rgba(88,166,255,0.1); }
+  nav .brand {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text);
+    margin-right: auto;
+  }
+  h1 { font-size: 28px; margin: 32px 0 16px; color: var(--text); }
+  h2 { font-size: 22px; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); color: var(--text); }
+  h3 { font-size: 17px; margin: 28px 0 10px; color: var(--text-secondary); }
+  p { margin: 12px 0; }
+  .conclusion-box {
+    background: var(--blockquote-bg);
+    border-left: 4px solid var(--warning);
+    padding: 16px 20px;
+    margin: 28px 0;
+    border-radius: 0 8px 8px 0;
+  }
+  .conclusion-box.relation {
+    border-left-color: var(--accent);
+  }
+  .conclusion-box h3 { margin-top: 0; }
+  ul, ol { margin: 12px 0 12px 24px; }
+  li { margin: 6px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    text-align: left;
+  }
+  th { background: var(--surface); font-weight: 600; }
+  tr:hover { background: rgba(255,255,255,0.02); }
+  code {
+    background: var(--code-bg);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 13px;
+  }
+  .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .tag-ok { background: rgba(63,185,80,0.15); color: var(--success); }
+  .tag-warn { background: rgba(210,153,29,0.15); color: var(--warning); }
+  .tag-block { background: rgba(248,81,73,0.15); color: var(--danger); }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">diffusion-inference 知识库</span>
+  <a href="index.html">首页</a>
+  <a href="01_任务总览.html">01 任务总览</a>
+  <a href="02_老引擎审计.html">02 引擎审计</a>
+  <a href="03_现代diffusion推理最小背景.html">03 推理背景</a>
+  <a href="04_rectified_flow和flow_matching.html">04 Rectified Flow</a>
+  <a href="05_diffusion_transformer架构.html">05 DiT 架构</a>
+  <a href="06_stable_diffusion_3_mmdit.html">06 SD3 MMDiT</a>
+  <a href="07_flux和现代文生图推理.html">07 FLUX</a>
+  <a href="08_sana高效高分辨率生成.html">08 Sana</a>
+  <a href="09_sora_style视频生成架构.html">09 视频架构</a>
+  <a href="10_wan_hunyuan_cogvideox_ltx视频模型.html">10 视频模型</a>
+  <a href="11_diffusion推理系统优化.html">11 系统优化</a>
+  <a href="12_最终成果说明.html">12 成果说明</a>
+</nav>
+
+<h1>01 — 任务总览：本项目做什么，不做什么</h1>
+
+<h2>项目定位</h2>
+
+<p>本项目是一个<strong>现代扩散模型推理学习与实现项目</strong>，位于 <code>diffusion/</code> 子目录内，与旧 <code>minivLLM/</code> 引擎完全隔离。</p>
+
+<p>核心目标：从零理解现代扩散模型的推理路径，落地一个最小但完整的 <code>diffusion_engine/</code>，并在 12GB RTX 5070 Ti 上跑通至少一个真实 reference inference。全程中文文档，纯静态 HTML 知识库，不做生产部署。</p>
+
+<h3>四个维度</h3>
+
+<table>
+  <tr><th>维度</th><th>目标</th><th>状态</th></tr>
+  <tr><td><strong>理解</strong></td><td>通过论文卡片、学习笔记、静态知识库，系统建立对 rectified flow、DiT/MMDiT、文生图/文生视频推理数据流的认识</td><td><span class="tag tag-ok">完成</span></td></tr>
+  <tr><td><strong>实现</strong></td><td>从零构建最小 <code>diffusion_engine/</code>，覆盖 scheduler、rectified flow、DiT transformer block、text conditioning、pipeline、memory manager</td><td><span class="tag tag-ok">完成</span></td></tr>
+  <tr><td><strong>运行</strong></td><td>12GB RTX 5070 Ti 上至少跑通一个真实文生图 reference inference；视频小规格尝试并如实记录 blocker</td><td><span class="tag tag-block">脚手架就绪，环境未跑通</span></td></tr>
+  <tr><td><strong>优化</strong></td><td>设计并运行 prompt cache、latent buffer、scheduler benchmark、CFG batching、attention memory、VAE tiling 对照实验</td><td><span class="tag tag-ok">完成</span></td></tr>
+</table>
+
+<h2>为什么不从老 DDPM/U-Net 学起</h2>
+
+<p>本项目有意识地跳过了"从 DDPM/U-Net 入门"的传统学习路线，直接进入现代范式。这不是投机取巧，而是一个明确的技术决策：</p>
+
+<ol>
+  <li><strong>工业界已全面转向</strong>：2024 年后的主流模型（SD3、FLUX、Sana、CogVideoX、Wan2.1、HunyuanVideo）全部基于 rectified flow + DiT/MMDiT 范式。DDPM + U-Net 是 2020-2022 的历史产物，学习它会增加大量与当前实践无关的概念包袱（比如 predicting noise vs predicting velocity、discrete vs continuous timestep、U-Net skip connection 的特定设计）。</li>
+  <li><strong>概念更统一</strong>：rectified flow 在理论上更简洁——一条从噪声到数据的直线路径（或接近直线的路径），配合 ODE solver 完成采样。这比 DDPM 的 denoising score matching + Langevin dynamics 组合更容易建立直觉，也更贴近 LLM 领域的 "single forward pass per step" 风格。</li>
+  <li><strong>与系统优化直接相关</strong>：DiT 的 full attention 在高分辨率下产生 O(N²) 瓶颈，这正是扩散推理优化的核心战场。老 U-Net 的卷积式注意力不会暴露这个问题的严重程度，学 U-Net 无法为后续的 attention memory benchmark 提供足够的动机。</li>
+  <li><strong>时间效率</strong>：6 周时间内，如果先花 2 周学 DDPM/U-Net，那留给现代架构和系统优化的时间只剩 4 周，不够用。直接从现代范式切入，每样学一点就能看到整体画面。</li>
+</ol>
+
+<h2>最终成果是什么</h2>
+
+<p>本项目在 6 周内产出了以下完整交付物集群：</p>
+
+<h3>知识库 (docs/)</h3>
+<ul>
+  <li>12 个中文静态 HTML 页面（01-12），覆盖任务总览、引擎审计、推理背景、rectified flow、DiT 架构、SD3/FLUX/Sana 模型、视频架构、视频模型、系统优化、最终成果说明</li>
+  <li>纯静态，零外部依赖（无 CDN、无 webfont、无 npm），<code>file://</code> 协议可打开</li>
+</ul>
+
+<h3>学习资料 (learning/)</h3>
+<ul>
+  <li>10 篇英文论文/模型卡的中文阅读卡片（papers/01-10）</li>
+  <li>10 篇中文学习笔记（notes/01-10），覆盖环境审计、复用决策、数据流、scheduler 设计、DiT shape 系统、CFG、prompt cache、latent buffer、视频 latent、参考源码走读</li>
+</ul>
+
+<h3>自写引擎 (diffusion_engine/)</h3>
+<ul>
+  <li><code>core/scheduler.py</code>：Euler + rectified flow sampler，支持 image (B,C,H,W) 和 video (B,C,T,H,W)</li>
+  <li><code>core/rectified_flow.py</code>：矢量场构造 + ODE 积分</li>
+  <li><code>core/timestep_embedding.py</code>：sinusoidal + linear timestep embedding</li>
+  <li><code>core/attention.py</code>：full attention（非 causal），支持 self-attention 和 joint attention</li>
+  <li><code>core/transformer_block.py</code>：AdaLN-Zero modulation</li>
+  <li><code>core/dit.py</code>：完整 DiT forward（patchify → blocks → unpatchify）</li>
+  <li><code>core/text_conditioning.py</code>：toy text encoder + prompt embedding cache 接口</li>
+  <li><code>core/pipeline.py</code>：6 步主循环（prompt→encode→init→denoise→CFG→scheduler→decode）</li>
+  <li><code>core/memory_manager.py</code>：latent buffer 预分配、ping-pong swap、显存统计</li>
+  <li><code>core/vae_stub.py</code>：toy VAE encode/decode（含 tiling 支持）</li>
+  <li>36 个 pytest 测试（覆盖 scheduler、rectified flow、DiT shapes、pipeline smoke）</li>
+</ul>
+
+<h3>实验 (experiments/)</h3>
+<ul>
+  <li><code>toy_rectified_flow/</code>：toy vector field 仿真 + trajectory 可视化</li>
+  <li><code>toy_dit_inference/</code>：最小 DiT denoising loop</li>
+  <li><code>reference_image_inference/</code>：3 个真实模型脚手架（Sana/SD3/FLUX）+ memory profiler</li>
+  <li><code>reference_video_inference/</code>：3 个视频模型脚手架（CogVideoX/Wan/LTX）+ blocker 记录</li>
+  <li><code>diffusion_inference_optimization/</code>：6 个系统优化对照实验</li>
+</ul>
+
+<h3>报告 (reports/)</h3>
+<ul>
+  <li><code>engine_inventory.md</code>：旧引擎 14 模块逐一审计（515 行）</li>
+  <li><code>week_1.md</code> ~ <code>week_6.md</code>：6 周进度周报</li>
+  <li><code>final_report.md</code>：最终报告，回答 5 个核心问题</li>
+</ul>
+
+<div class="conclusion-box">
+  <h3>本页结论</h3>
+  <p>本项目是一个面向现代扩散模型的推理学习项目，不走 DDPM/U-Net 旧路线，直接从 rectified flow + DiT/MMDiT 范式切入。6 周产出包括 12 页 HTML 知识库、10 篇笔记、10 篇论文卡片、一个最小但完整的 <code>diffusion_engine/</code>、5 组实验目录、6 份周报和一份最终报告。真实 reference inference 因远程 GPU 环境未就绪而阻塞，脚手架已完整就绪。</p>
+</div>
+
+<div class="conclusion-box relation">
+  <h3>和我的 diffusion_engine 的关系</h3>
+  <p>本页不实现任何代码。它是整个项目的"用户手册首页"——告诉读者这个项目是做什么的、为什么这样做、产出了什么。所有技术细节（scheduler 怎么设计、DiT shape 怎么流转、CFG 怎么做）都在 02-11 各页中展开。本页的价值在于提供全局视图，帮助读者判断"这个项目对我有没有用"以及"应该从哪一页开始读"。</p>
+</div>
+
+</body>
+</html>
