@@ -1,0 +1,39 @@
+[project]
+name = "diffusion-inference"
+version = "0.1.0"
+description = "现代 diffusion 推理学习与实现项目（私有本地项目，不发布）"
+requires-python = ">=3.13"
+authors = [
+    { name = "franksair" }
+]
+readme = "README.md"
+license = { text = "MIT" }
+
+# 核心推理依赖
+dependencies = [
+    "torch>=2.7",
+    "diffusers>=0.32.0",
+    "transformers>=4.45",
+    "accelerate>=0.34",
+    "safetensors",
+    "huggingface-hub>=0.25",
+    "pillow",
+    "numpy",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["diffusion_engine/tests"]
+python_files = ["test_*.py"]
+
+[tool.setuptools.packages.find]
+include = ["diffusion_engine*"]
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"

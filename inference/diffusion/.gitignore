@@ -1,0 +1,49 @@
+# 忽略论文 PDF（体积大，可从 arXiv 公开下载）
+paper/*.pdf
+paper/*.PDF
+
+# PyCharm / JetBrains
+.idea/
+*.iml
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# macOS
+.DS_Store
+
+# 虚拟环境（如果未来在这个目录激活）
+.venv/
+venv/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# 测试 / 缓存
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 训练输出（如果未来加训练）
+*.ckpt
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.gguf
+
+# 大型数据/结果
+results/*.png
+results/*.mp4
+results/*.gif
+
+# 模型权重（如果未来下载到本地）
+models/
+checkpoints/
+weights/
