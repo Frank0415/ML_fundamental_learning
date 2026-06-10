@@ -1,0 +1,87 @@
+{
+  "model": "LTX-Video 2B distilled",
+  "model_id": "Lightricks/LTX-Video",
+  "params_billion": 2.0,
+  "profiling_method": "dry_run (公式估算，非实测)",
+  "timestamp": "2026-06-07T04:28:41.799360",
+  "small_config": {
+    "description": "默认小规格 (T15 推荐)",
+    "num_frames": 16,
+    "height": 256,
+    "width": 256,
+    "dtype": "bf16",
+    "cfg_enabled": true,
+    "vram_estimate": {
+      "weights_gb": 3.73,
+      "text_encoder_gb": 0.56,
+      "latent_gb": 0.01,
+      "attention_activation_gb": 1.5,
+      "vae_buffer_gb": 0.03,
+      "overhead_gb": 0.58,
+      "total_gb": 6.41,
+      "budget_12gb": 6.41,
+      "budget_remaining_gb": 3.79,
+      "feasible_on_12gb": true,
+      "latent_shape": "(B,128,16,32,32)",
+      "n_tokens_total": 4096,
+      "cfg_double_forward": true,
+      "dtype_bytes_per_param": 2
+    }
+  },
+  "minimal_config": {
+    "description": "极限降级 (Level 2)",
+    "num_frames": 8,
+    "height": 192,
+    "width": 192,
+    "dtype": "fp16",
+    "cfg_enabled": false,
+    "vram_estimate": {
+      "weights_gb": 3.73,
+      "text_encoder_gb": 0.56,
+      "latent_gb": 0.0,
+      "attention_activation_gb": 0.12,
+      "vae_buffer_gb": 0.01,
+      "overhead_gb": 0.44,
+      "total_gb": 4.85,
+      "budget_12gb": 4.85,
+      "budget_remaining_gb": 5.35,
+      "feasible_on_12gb": true,
+      "latent_shape": "(B,128,8,24,24)",
+      "n_tokens_total": 1152,
+      "cfg_double_forward": false,
+      "dtype_bytes_per_param": 2
+    }
+  },
+  "regular_config": {
+    "description": "官方常规规格 (LTX-Video 2B distilled 推荐)",
+    "num_frames": 121,
+    "height": 768,
+    "width": 512,
+    "dtype": "bf16",
+    "cfg_enabled": true,
+    "vram_estimate": {
+      "weights_gb": 3.73,
+      "text_encoder_gb": 0.56,
+      "latent_gb": 0.35,
+      "attention_activation_gb": 3088.34,
+      "vae_buffer_gb": 1.42,
+      "overhead_gb": 309.44,
+      "total_gb": 3403.83,
+      "budget_12gb": 3403.83,
+      "budget_remaining_gb": -3393.63,
+      "feasible_on_12gb": false,
+      "latent_shape": "(B,128,121,96,64)",
+      "n_tokens_total": 185856,
+      "cfg_double_forward": true,
+      "dtype_bytes_per_param": 2
+    }
+  },
+  "vram_formula_notes": {
+    "weights": "params × bytes_per_param",
+    "latent_buffer": "C×T×H_latent×W_latent ×2(CFG) × bytes_per_elem",
+    "attention_activation": "N_tokens² × num_heads × 2 × bytes_per_param (粗略)",
+    "vae_buffer": "4 × T × H_pixel × W_pixel × 4_channels × bytes_per_param",
+    "text_encoder": "text_encoder_params × bytes_per_param",
+    "overhead": "10% of subtotal for framework + CUDA context"
+  }
+}

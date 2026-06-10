@@ -1,0 +1,15 @@
+# 视频 Prompt 示例（T15 reference video inference）
+# 格式：一行一条 prompt。中文短动效描述（≤30 字）+ 英文同义。
+# 用途：三个视频脚本的 --prompt 默认候选。
+
+# === 中文（短动效描述，≤30 字）===
+
+一只白猫在草地上缓步走向镜头，阳光穿过树叶洒落。
+细雨落在池塘水面，涟漪一圈圈扩散，倒影晃动。
+烛火在黑暗中轻轻摇曳，光影在木桌上晃动。
+
+# === 英文（同三条）===
+
+A white cat slowly walks toward the camera across a grassy field, sunlight filtering through leaves.
+Raindrops fall on a pond surface, ripples spreading outward, reflections trembling.
+A candle flame flickers gently in darkness, its light dancing on a wooden table.
