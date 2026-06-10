@@ -1,0 +1,44 @@
+{
+  "experiment": "prompt_embedding_cache",
+  "timestamp": "20260607_042951",
+  "config": {
+    "num_prompts": 100,
+    "repeat_ratio": 0.3,
+    "num_unique_prompts": 70,
+    "hidden_size": 64,
+    "max_seq_len": 77,
+    "estimated_text_encoder_latency_s": 0.005
+  },
+  "cache_stats": {
+    "hit_count": 52,
+    "miss_count": 48,
+    "hit_ratio": 0.52,
+    "size": 48,
+    "max_size": 1000
+  },
+  "performance": {
+    "without_cache": {
+      "total_latency_s": 0.7544,
+      "avg_latency_per_call_ms": 7.544,
+      "allocation_count": 300
+    },
+    "with_cache": {
+      "total_latency_s": 0.3711,
+      "avg_latency_per_call_ms": 3.711,
+      "allocation_count": 100
+    },
+    "saved": {
+      "latency_s": 0.3833,
+      "latency_reduction_pct": 50.8,
+      "allocation_saved": 200
+    }
+  },
+  "cross_model_isolation": {
+    "sd3_model_id": "SD3-Medium",
+    "flux_model_id": "FLUX-schnell",
+    "prompts_shared": 10,
+    "flux_cache_misses": 10,
+    "flux_cache_hits": 0,
+    "isolation_verified": true
+  }
+}

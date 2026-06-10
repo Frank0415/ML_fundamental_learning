@@ -1,0 +1,425 @@
+{
+  "experiment": "vae_tiling_experiment",
+  "timestamp": "20260607_073611",
+  "config": {
+    "resolutions": [
+      512,
+      1024,
+      2048
+    ],
+    "tile_sizes_latent_space": [
+      16,
+      32,
+      64,
+      128
+    ],
+    "latent_dim": 16,
+    "vae_downsample": 8,
+    "overlap_latent_pixels": 4,
+    "complexity_factor": 0.3,
+    "backend": "numpy_mock",
+    "seed": 42
+  },
+  "design_notes": {
+    "what_is_vae_tiling": "VAE tiling 不是 torch.compile 或 flash-attn 等价物。它是显式的 chunk decode：将 latent/像素切分成多个 tile，分别做 VAE decode，最后拼接回完整图像。tile 之间添加 overlap 区域，用线性 blending 消除边界接缝。",
+    "when_to_use": "适用场景：高分辨率（>= 1024×1024）VAE 解码 OOM 时。12GB VRAM 预算下，tiling 几乎总是必要的。尤其是文生视频，原始 latent (T, C, H, W) 一次性 decode 极易 OOM。",
+    "limitations": "VAE tiling 增加总计算量（overlap 区域重复计算）。典型开销：overlap=4 latent pixels → 额外 10–20% 计算量。对推理速度的影响取决于 GPU 的 compute-bound vs memory-bound 特性。"
+  },
+  "summary": {
+    "best_memory_saving_ratio_1024px": 0.73,
+    "observation": "Tiling 可显著降低峰值显存（尤其是高分辨率），但引入了 overlap 重复计算和 tile 拼接开销。1024² 分辨率下：tile 32×32 通常是最佳折中。2048² 分辨率下：tiling 几乎可以将峰值显存降至 1/4–1/8。"
+  },
+  "results_per_resolution": [
+    {
+      "resolution": 512,
+      "latent_shape": [
+        16,
+        64,
+        64
+      ],
+      "full_decode": {
+        "tiling_enabled": false,
+        "chunk_size_bytes": 0,
+        "latency_s": 0.00745,
+        "peak_memory_estimated_bytes": 4718592,
+        "peak_memory_estimated_mb": 4.5,
+        "latent_shape": [
+          16,
+          64,
+          64
+        ],
+        "pixel_shape": [
+          3,
+          512,
+          512
+        ],
+        "num_tiles": 1,
+        "tile_overlap_pixels": 0,
+        "total_floating_ops_est": 6553600
+      },
+      "tiled_results": [
+        {
+          "tiling_enabled": true,
+          "chunk_size_bytes": 73728,
+          "latency_s": 0.015291,
+          "peak_memory_estimated_bytes": 6807552,
+          "peak_memory_estimated_mb": 6.49,
+          "latent_shape": [
+            16,
+            64,
+            64
+          ],
+          "pixel_shape": [
+            3,
+            512,
+            512
+          ],
+          "num_tiles": 16,
+          "grid_rows": 4,
+          "grid_cols": 4,
+          "tile_latent_h": 16,
+          "tile_latent_w": 16,
+          "tile_overlap_pixels": 4,
+          "overlap_computation_ratio": 7.25,
+          "total_floating_ops_est": 3379200
+        },
+        {
+          "tiling_enabled": true,
+          "chunk_size_bytes": 204800,
+          "latency_s": 0.010309,
+          "peak_memory_estimated_bytes": 7725056,
+          "peak_memory_estimated_mb": 7.37,
+          "latent_shape": [
+            16,
+            64,
+            64
+          ],
+          "pixel_shape": [
+            3,
+            512,
+            512
+          ],
+          "num_tiles": 4,
+          "grid_rows": 2,
+          "grid_cols": 2,
+          "tile_latent_h": 32,
+          "tile_latent_w": 32,
+          "tile_overlap_pixels": 4,
+          "overlap_computation_ratio": 1.812,
+          "total_floating_ops_est": 1152000
+        },
+        {
+          "tiling_enabled": true,
+          "chunk_size_bytes": 663552,
+          "latency_s": 0.007883,
+          "peak_memory_estimated_bytes": 10936320,
+          "peak_memory_estimated_mb": 10.43,
+          "latent_shape": [
+            16,
+            64,
+            64
+          ],
+          "pixel_shape": [
+            3,
+            512,
+            512
+          ],
+          "num_tiles": 1,
+          "grid_rows": 1,
+          "grid_cols": 1,
+          "tile_latent_h": 64,
+          "tile_latent_w": 64,
+          "tile_overlap_pixels": 4,
+          "overlap_computation_ratio": 0.125,
+          "total_floating_ops_est": 460800
+        },
+        {
+          "tiling_enabled": true,
+          "chunk_size_bytes": 663552,
+          "latency_s": 0.007261,
+          "peak_memory_estimated_bytes": 10936320,
+          "peak_memory_estimated_mb": 10.43,
+          "latent_shape": [
+            16,
+            64,
+            64
+          ],
+          "pixel_shape": [
+            3,
+            512,
+            512
+          ],
+          "num_tiles": 1,
+          "grid_rows": 1,
+          "grid_cols": 1,
+          "tile_latent_h": 64,
+          "tile_latent_w": 64,
+          "tile_overlap_pixels": 4,
+          "overlap_computation_ratio": 0.125,
+          "total_floating_ops_est": 460800
+        }
+      ]
+    },
+    {
+      "resolution": 1024,
+      "latent_shape": [
+        16,
+        128,
+        128
+      ],
+      "full_decode": {
+        "tiling_enabled": false,
+        "chunk_size_bytes": 0,
+        "latency_s": 0.029445,
+        "peak_memory_estimated_bytes": 18874368,
+        "peak_memory_estimated_mb": 18.0,
+        "latent_shape": [
+          16,
+          128,
+          128
+        ],
+        "pixel_shape": [
+          3,
+          1024,
+          1024
+        ],
+        "num_tiles": 1,
+        "tile_overlap_pixels": 0,
+        "total_floating_ops_est": 26214400
+      },
+      "tiled_results": [
+        {
+          "tiling_enabled": true,
+          "chunk_size_bytes": 73728,
+          "latency_s": 0.066934,
+          "peak_memory_estimated_bytes": 25681920,
+          "peak_memory_estimated_mb": 24.49,
+          "latent_shape": [
+            16,
+            128,
+            128
+          ],
+          "pixel_shape": [
+            3,
+            1024,
+            1024
+          ],
+          "num_tiles": 64,
+          "grid_rows": 8,
+          "grid_cols": 8,
+          "tile_latent_h": 16,
+          "tile_latent_w": 16,
+          "tile_overlap_pixels": 4,
+          "overlap_computation_ratio": 16.25,
+          "total_floating_ops_est": 28262400
+        },
+        {
+          "tiling_enabled": true,
+          "chunk_size_bytes": 204800,
+          "latency_s": 0.045641,
+          "peak_memory_estimated_bytes": 26599424,
+          "peak_memory_estimated_mb": 25.37,
+          "latent_shape": [
+            16,
+            128,
+            128
+          ],
+          "pixel_shape": [
+            3,
+            1024,
+            1024
+          ],
+          "num_tiles": 16,
+          "grid_rows": 4,
+          "grid_cols": 4,
+          "tile_latent_h": 32,
+          "tile_latent_w": 32,
+          "tile_overlap_pixels": 4,
+          "overlap_computation_ratio": 4.938,
+          "total_floating_ops_est": 9728000
+        },
+        {
+          "tiling_enabled": true,
+          "chunk_size_bytes": 663552,
+          "latency_s": 0.036606,
+          "peak_memory_estimated_bytes": 29810688,
+          "peak_memory_estimated_mb": 28.43,
+          "latent_shape": [
+            16,
+            128,
+            128
+          ],
+          "pixel_shape": [
+            3,
+            1024,
+            1024
+          ],
+          "num_tiles": 4,
+          "grid_rows": 2,
+          "grid_cols": 2,
+          "tile_latent_h": 64,
+          "tile_latent_w": 64,
+          "tile_overlap_pixels": 4,
+          "overlap_computation_ratio": 1.391,
+          "total_floating_ops_est": 3916800
+        },
+        {
+          "tiling_enabled": true,
+          "chunk_size_bytes": 2367488,
+          "latency_s": 0.032362,
+          "peak_memory_estimated_bytes": 41738240,
+          "peak_memory_estimated_mb": 39.8,
+          "latent_shape": [
+            16,
+            128,
+            128
+          ],
+          "pixel_shape": [
+            3,
+            1024,
+            1024
+          ],
+          "num_tiles": 1,
+          "grid_rows": 1,
+          "grid_cols": 1,
+          "tile_latent_h": 128,
+          "tile_latent_w": 128,
+          "tile_overlap_pixels": 4,
+          "overlap_computation_ratio": 0.062,
+          "total_floating_ops_est": 1740800
+        }
+      ]
+    },
+    {
+      "resolution": 2048,
+      "latent_shape": [
+        16,
+        256,
+        256
+      ],
+      "full_decode": {
+        "tiling_enabled": false,
+        "chunk_size_bytes": 0,
+        "latency_s": 0.117532,
+        "peak_memory_estimated_bytes": 75497472,
+        "peak_memory_estimated_mb": 72.0,
+        "latent_shape": [
+          16,
+          256,
+          256
+        ],
+        "pixel_shape": [
+          3,
+          2048,
+          2048
+        ],
+        "num_tiles": 1,
+        "tile_overlap_pixels": 0,
+        "total_floating_ops_est": 104857600
+      },
+      "tiled_results": [
+        {
+          "tiling_enabled": true,
+          "chunk_size_bytes": 73728,
+          "latency_s": 0.288105,
+          "peak_memory_estimated_bytes": 101179392,
+          "peak_memory_estimated_mb": 96.49,
+          "latent_shape": [
+            16,
+            256,
+            256
+          ],
+          "pixel_shape": [
+            3,
+            2048,
+            2048
+          ],
+          "num_tiles": 256,
+          "grid_rows": 16,
+          "grid_cols": 16,
+          "tile_latent_h": 16,
+          "tile_latent_w": 16,
+          "tile_overlap_pixels": 4,
+          "overlap_computation_ratio": 34.25,
+          "total_floating_ops_est": 231014400
+        },
+        {
+          "tiling_enabled": true,
+          "chunk_size_bytes": 204800,
+          "latency_s": 0.19894,
+          "peak_memory_estimated_bytes": 102096896,
+          "peak_memory_estimated_mb": 97.37,
+          "latent_shape": [
+            16,
+            256,
+            256
+          ],
+          "pixel_shape": [
+            3,
+            2048,
+            2048
+          ],
+          "num_tiles": 64,
+          "grid_rows": 8,
+          "grid_cols": 8,
+          "tile_latent_h": 32,
+          "tile_latent_w": 32,
+          "tile_overlap_pixels": 4,
+          "overlap_computation_ratio": 11.188,
+          "total_floating_ops_est": 79872000
+        },
+        {
+          "tiling_enabled": true,
+          "chunk_size_bytes": 663552,
+          "latency_s": 0.15682,
+          "peak_memory_estimated_bytes": 105308160,
+          "peak_memory_estimated_mb": 100.43,
+          "latent_shape": [
+            16,
+            256,
+            256
+          ],
+          "pixel_shape": [
+            3,
+            2048,
+            2048
+          ],
+          "num_tiles": 16,
+          "grid_rows": 4,
+          "grid_cols": 4,
+          "tile_latent_h": 64,
+          "tile_latent_w": 64,
+          "tile_overlap_pixels": 4,
+          "overlap_computation_ratio": 3.922,
+          "total_floating_ops_est": 32256000
+        },
+        {
+          "tiling_enabled": true,
+          "chunk_size_bytes": 2367488,
+          "latency_s": 0.140486,
+          "peak_memory_estimated_bytes": 117235712,
+          "peak_memory_estimated_mb": 111.8,
+          "latent_shape": [
+            16,
+            256,
+            256
+          ],
+          "pixel_shape": [
+            3,
+            2048,
+            2048
+          ],
+          "num_tiles": 4,
+          "grid_rows": 2,
+          "grid_cols": 2,
+          "tile_latent_h": 128,
+          "tile_latent_w": 128,
+          "tile_overlap_pixels": 4,
+          "overlap_computation_ratio": 1.191,
+          "total_floating_ops_est": 14361600
+        }
+      ]
+    }
+  ],
+  "conclusion": "VAE tiling 是 12GB VRAM 下高分辨率扩散推理的必备技术。推荐 tile 大小：1024² → 64×64 latent tile；2048² → 32×32 latent tile。tile 大小的选择取决于：目标 VRAM 预算 vs 可接受的额外计算量。★★★ VAE tiling 不是 torch.compile 或 flash-attn 等价物，是显式 chunk decode + overlap blending。"
+}

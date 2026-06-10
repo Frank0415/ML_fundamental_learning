@@ -1,0 +1,170 @@
+{
+  "experiment": "scheduler_step_benchmark",
+  "timestamp": "20260607_072355",
+  "config": {
+    "step_list": [
+      4,
+      8,
+      16,
+      28,
+      50
+    ],
+    "scheduler_types": [
+      "euler",
+      "rectified_flow"
+    ],
+    "latent_shape": [
+      1,
+      4,
+      64,
+      64
+    ],
+    "num_scheduler_types": 2,
+    "warmup_runs": 2,
+    "measurement_runs": 5
+  },
+  "results": [
+    {
+      "scheduler_type": "euler",
+      "num_steps": 4,
+      "total_latency_s": 0.00034,
+      "total_latency_std_s": 2e-06,
+      "avg_latency_per_step_ms": 0.0845,
+      "min_step_ms": 0.0835,
+      "max_step_ms": 0.0888,
+      "total_latency_all_steps_ms": 0.34,
+      "quality_note": "distilled-only（schnell/turbo/sprint）：速度最快，质量最低，仅适合 2-4 步蒸馏模型"
+    },
+    {
+      "scheduler_type": "rectified_flow",
+      "num_steps": 4,
+      "total_latency_s": 0.00034,
+      "total_latency_std_s": 6e-06,
+      "avg_latency_per_step_ms": 0.0847,
+      "min_step_ms": 0.0794,
+      "max_step_ms": 0.0932,
+      "total_latency_all_steps_ms": 0.34,
+      "quality_note": "distilled-only（schnell/turbo/sprint）：速度最快，质量最低，仅适合 2-4 步蒸馏模型"
+    },
+    {
+      "scheduler_type": "euler",
+      "num_steps": 8,
+      "total_latency_s": 0.00065,
+      "total_latency_std_s": 5e-06,
+      "avg_latency_per_step_ms": 0.0811,
+      "min_step_ms": 0.0792,
+      "max_step_ms": 0.0879,
+      "total_latency_all_steps_ms": 0.65,
+      "quality_note": "lightning / few-step（Hyper-SD, SD3-Lightning）：速度与质量的平衡点，~1s 推理"
+    },
+    {
+      "scheduler_type": "rectified_flow",
+      "num_steps": 8,
+      "total_latency_s": 0.00067,
+      "total_latency_std_s": 1.2e-05,
+      "avg_latency_per_step_ms": 0.0836,
+      "min_step_ms": 0.0787,
+      "max_step_ms": 0.09,
+      "total_latency_all_steps_ms": 0.67,
+      "quality_note": "lightning / few-step（Hyper-SD, SD3-Lightning）：速度与质量的平衡点，~1s 推理"
+    },
+    {
+      "scheduler_type": "euler",
+      "num_steps": 16,
+      "total_latency_s": 0.00137,
+      "total_latency_std_s": 2.2e-05,
+      "avg_latency_per_step_ms": 0.0855,
+      "min_step_ms": 0.0803,
+      "max_step_ms": 0.1296,
+      "total_latency_all_steps_ms": 1.37,
+      "quality_note": "中等步数：质量明显提升，适合作者推荐的低端设备默认值"
+    },
+    {
+      "scheduler_type": "rectified_flow",
+      "num_steps": 16,
+      "total_latency_s": 0.00137,
+      "total_latency_std_s": 6.2e-05,
+      "avg_latency_per_step_ms": 0.0852,
+      "min_step_ms": 0.0791,
+      "max_step_ms": 0.1853,
+      "total_latency_all_steps_ms": 1.37,
+      "quality_note": "中等步数：质量明显提升，适合作者推荐的低端设备默认值"
+    },
+    {
+      "scheduler_type": "euler",
+      "num_steps": 28,
+      "total_latency_s": 0.00235,
+      "total_latency_std_s": 2.3e-05,
+      "avg_latency_per_step_ms": 0.084,
+      "min_step_ms": 0.0788,
+      "max_step_ms": 0.1319,
+      "total_latency_all_steps_ms": 2.35,
+      "quality_note": "SD3 / FLUX-dev 默认：中高质量，最常用的推理配置"
+    },
+    {
+      "scheduler_type": "rectified_flow",
+      "num_steps": 28,
+      "total_latency_s": 0.00236,
+      "total_latency_std_s": 4e-05,
+      "avg_latency_per_step_ms": 0.0842,
+      "min_step_ms": 0.0788,
+      "max_step_ms": 0.1053,
+      "total_latency_all_steps_ms": 2.36,
+      "quality_note": "SD3 / FLUX-dev 默认：中高质量，最常用的推理配置"
+    },
+    {
+      "scheduler_type": "euler",
+      "num_steps": 50,
+      "total_latency_s": 0.00419,
+      "total_latency_std_s": 5e-05,
+      "avg_latency_per_step_ms": 0.0838,
+      "min_step_ms": 0.0782,
+      "max_step_ms": 0.1188,
+      "total_latency_all_steps_ms": 4.19,
+      "quality_note": "高步数（可能过拟合）：最佳质量，但边际收益递减，~6s+ 推理"
+    },
+    {
+      "scheduler_type": "rectified_flow",
+      "num_steps": 50,
+      "total_latency_s": 0.00422,
+      "total_latency_std_s": 3.6e-05,
+      "avg_latency_per_step_ms": 0.0843,
+      "min_step_ms": 0.0781,
+      "max_step_ms": 0.1082,
+      "total_latency_all_steps_ms": 4.22,
+      "quality_note": "高步数（可能过拟合）：最佳质量，但边际收益递减，~6s+ 推理"
+    }
+  ],
+  "comparison": {
+    "4_steps": {
+      "euler_ms": 0.34,
+      "rectified_flow_ms": 0.34,
+      "diff_ms": 0.0,
+      "diff_pct": 0.0
+    },
+    "8_steps": {
+      "euler_ms": 0.65,
+      "rectified_flow_ms": 0.67,
+      "diff_ms": -0.02,
+      "diff_pct": -3.08
+    },
+    "16_steps": {
+      "euler_ms": 1.37,
+      "rectified_flow_ms": 1.37,
+      "diff_ms": 0.0,
+      "diff_pct": 0.0
+    },
+    "28_steps": {
+      "euler_ms": 2.35,
+      "rectified_flow_ms": 2.36,
+      "diff_ms": -0.01,
+      "diff_pct": -0.43
+    },
+    "50_steps": {
+      "euler_ms": 4.19,
+      "rectified_flow_ms": 4.22,
+      "diff_ms": -0.03,
+      "diff_pct": -0.72
+    }
+  }
+}
