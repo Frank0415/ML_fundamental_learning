@@ -1,0 +1,66 @@
+[
+  {
+    "model": "Sana-0.6B",
+    "model_id": "Efficient-Large-Model/Sana_600M_1024px_diffusers",
+    "gated": false,
+    "license": "Apache 2.0",
+    "prompt": "一只柴犬在樱花树下",
+    "resolution": 1024,
+    "steps": 20,
+    "dtype": "bf16",
+    "dry_run": true,
+    "estimated_vram_gb": 3.33,
+    "vram_budget_gb": 10.2,
+    "verdict": "yes — 安全可跑",
+    "downgrade_advice": []
+  },
+  {
+    "model": "SD3-Medium (no-T5)",
+    "model_id": "stabilityai/stable-diffusion-3-medium-diffusers",
+    "gated": true,
+    "license": "Stability AI Community License",
+    "prompt": "一只柴犬在樱花树下",
+    "resolution": 1024,
+    "steps": 28,
+    "dtype": "fp16",
+    "dry_run": true,
+    "estimated_vram_gb": 5.74,
+    "vram_budget_gb": 10.2,
+    "verdict": "yes — 安全可跑",
+    "downgrade_advice": []
+  },
+  {
+    "model": "FLUX.1-schnell",
+    "model_id": "black-forest-labs/FLUX.1-schnell",
+    "gated": true,
+    "license": "Apache 2.0 (gated)",
+    "prompt": "一只柴犬在樱花树下",
+    "resolution": 1024,
+    "steps": 4,
+    "dtype": "fp16",
+    "dry_run": true,
+    "estimated_vram_gb": 8.4,
+    "vram_budget_gb": 10.2,
+    "verdict": "maybe — 开启 offload 后可尝试",
+    "downgrade_advice": [
+      {
+        "level": 1,
+        "action": "降 resolution: 1024 → 512",
+        "estimated_vram_gb": 8.4,
+        "color": "🟡"
+      },
+      {
+        "level": 2,
+        "action": "启用 CPU offload / sequential offload / VAE tiling",
+        "estimated_vram_gb": "取决于 offload 效果",
+        "color": "🟡"
+      },
+      {
+        "level": 3,
+        "action": "切模型: FLUX → SD3 Medium (no-T5) → Sana-0.6B",
+        "estimated_vram_gb": "显著降低",
+        "color": "🟢"
+      }
+    ]
+  }
+]
