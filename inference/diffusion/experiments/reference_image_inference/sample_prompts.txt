@@ -1,0 +1,16 @@
+# sample_prompts.txt — 文生图 prompt 样本（中英各 5 条，每条 ≤ 50 字）
+# 用途: 供 run_*_if_possible.py 和 profile_memory.py 使用
+
+## 中文 Prompt（5 条）
+一只柴犬在樱花树下微笑，阳光透过花瓣洒落
+雪山脚下的湖泊倒映蓝天，秋天红叶满山
+一只透明的蓝色水母在深海中发光，触须飘逸
+几何抽象画，彩色圆形与三角形交织，蒙德里安风格
+一碗热气腾腾的拉面，叉烧肉和溏心蛋，日式风格
+
+## English Prompts (5 items, each ≤ 50 chars)
+A shiba inu smiling under cherry blossom trees, sunlight
+Snowy mountain lake reflecting blue sky, autumn red leaves
+A glowing blue jellyfish drifting in deep ocean, translucent
+Geometric abstract art, colorful circles and triangles, Mondrian
+A steaming bowl of ramen with chashu pork and soft-boiled egg
