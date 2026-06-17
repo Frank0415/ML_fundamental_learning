@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12 · DiffusionGemma 架构与推理</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-secondary: #8b949e;
+    --accent: #58a6ff;
+    --danger: #f85149;
+    --warning: #d2991d;
+    --success: #3fb950;
+    --code-bg: #1c2128;
+    --blockquote-bg: #1c2333;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+  nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  nav a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 14px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  nav a:hover { background: rgba(88,166,255,0.1); }
+  nav .brand {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text);
+    margin-right: auto;
+  }
+  h1 { font-size: 28px; margin: 32px 0 16px; color: var(--text); }
+  h2 { font-size: 22px; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); color: var(--text); }
+  h3 { font-size: 17px; margin: 28px 0 10px; color: var(--text-secondary); }
+  p { margin: 12px 0; }
+  .conclusion-box {
+    background: var(--blockquote-bg);
+    border-left: 4px solid var(--warning);
+    padding: 16px 20px;
+    margin: 28px 0;
+    border-radius: 0 8px 8px 0;
+  }
+  .conclusion-box.relation {
+    border-left-color: var(--accent);
+  }
+  .conclusion-box.critical {
+    border-left-color: var(--danger);
+  }
+  .conclusion-box h3 { margin-top: 0; }
+  ul, ol { margin: 12px 0 12px 24px; }
+  li { margin: 6px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    text-align: left;
+  }
+  th { background: var(--surface); font-weight: 600; }
+  tr:hover { background: rgba(255,255,255,0.02); }
+  code {
+    background: var(--code-bg);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 13px;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    overflow-x: auto;
+    margin: 16px 0;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 13px;
+  }
+  .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .tag-ok { background: rgba(63,185,80,0.15); color: var(--success); }
+  .tag-warn { background: rgba(210,153,29,0.15); color: var(--warning); }
+  .highlight-num {
+    font-weight: 700;
+    color: var(--warning);
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">diffusion-inference 知识库</span>
+  <a href="index.html">首页</a>
+  <a href="01_任务总览.html">01 任务总览</a>
+  <a href="02_老引擎审计.html">02 引擎审计</a>
+  <a href="03_现代diffusion推理最小背景.html">03 推理背景</a>
+  <a href="04_rectified_flow和flow_matching.html">04 Rectified Flow</a>
+  <a href="05_diffusion_transformer架构.html">05 DiT 架构</a>
+  <a href="06_stable_diffusion_3_mmdit.html">06 SD3 MMDiT</a>
+  <a href="07_flux和现代文生图推理.html">07 FLUX</a>
+  <a href="08_sana高效高分辨率生成.html">08 Sana</a>
+  <a href="09_sora_style视频生成架构.html">09 视频架构</a>
+  <a href="10_wan_hunyuan_cogvideox_ltx视频模型.html">10 视频模型</a>
+  <a href="11_diffusion推理系统优化.html">11 系统优化</a>
+  <a href="12_diffusion_gemma.html">12 DiffusionGemma</a>
+  <a href="13_最终成果说明.html">13 成果说明</a>
+</nav>
+
+<h1>12 — DiffusionGemma 架构与推理</h1>
+
+<p>本文详细探讨 Google DeepMind 最近开源的 <strong>DiffusionGemma</strong>，一个基于离散扩散（Discrete Diffusion）的全新文本生成模型。我们将从自回归的显存瓶颈、文本去噪机制的演进、Encoder-Denoiser 动态架构、分块自回归采样、以及采样调度器等多个维度进行全方位深度解析。</p>
+
+<hr style="border: none; border-top: 1px solid var(--border); margin: 24px 0;">
+
+<h2>1. 自回归的瓶颈与扩散的计算绑定</h2>
+
+<h3>自回归大型语言模型（AR LLM）的显存带宽噩梦</h3>
+<p>传统的自回归大型语言模型（如 GPT-4, Llama 3, Gemma 等）在文本生成时采用<strong>逐个 Token 顺序生成</strong>的机制。这种机制在单用户推理（Batch Size = 1）时，会面临极端的<strong>显存带宽瓶颈（Memory-Bandwidth Bound）</strong>：</p>
+<ul>
+  <li><strong>算术强度极低</strong>：在生成每个 Token 的前向传播中，GPU 必须从其显存（HBM/VRAM）中将全部模型参数（数十 GB）读取到 SRAM/Tensor Cores 中。而读入的权重仅与当前这一个 Token 的激活向量进行一次矩阵乘法。</li>
+  <li><strong>计算单元闲置</strong>：由于显存读取速度（如 1.5 - 3 TB/s）远慢于 GPU 计算单元的算力上限（如数百 TFLOPS），这导致 GPU 的 Tensor Cores 大部分时间都在处于闲置状态，等待数据从显存加载。</li>
+  <li><strong>吞吐与延迟的权衡</strong>：通过 Batching 增加并发可以提高硬件利用率，但由于必须顺序等待每个 Token 生成，单用户的端到端延迟（Latency）完全没有被优化，依然受限于单次前向传播的读显存耗时。</li>
+</ul>
+
+<h3>DiffusionGemma 的计算绑定（Compute-Bound）设计</h3>
+<p>DiffusionGemma 颠覆了这一推理范式。它不是每次前向传播预测一个 Token，而是<strong>一次性预测和提炼一个包含 256 个 Token 的完整画布（Canvas）</strong>：</p>
+<ul>
+  <li><strong>算术强度暴增</strong>：前向传播处理的是长度为 256 的序列，GPU 可以将模型参数加载一次后，在 Tensor Cores 中并行进行 256 个位置的注意力计算和矩阵乘法。这使得计算密度大幅提升。</li>
+  <li><strong>转换瓶颈</strong>：通过将推理从<strong>显存带宽绑定</strong>转化为<strong>计算绑定（Compute-Bound）</strong>，DiffusionGemma 充分释放了现代 GPU 的 Tensor Cores 算力，使得单用户能以极高的速度并生成 Token。</li>
+  <li><strong>性能对比</strong>：在 NVIDIA H100 GPU (FP8) 上，DiffusionGemma 可实现超过 <span class="highlight-num">1100+ Tokens/秒</span> 的超高生成速度；即使在消费级显卡（如 NVIDIA GeForce RTX 5090）上，也能实现 <span class="highlight-num">700+ Tokens/秒</span> 的推理表现。</li>
+</ul>
+
+<h2>2. 文本去噪机制的演进</h2>
+
+<p>将扩散（Diffusion）模型从连续空间（如图像像素）引入离散空间（如文本 Token）并非易事。在图像扩散中，我们可以向像素添加高斯噪声（使得红色像素稍微变蓝），但在文本中，无法将 Token <code>"The"</code> 稍微模糊成另一个 Token。为此，学术界与工业界探索了两种主要的离散文本去噪路径：</p>
+
+<h3>路径 A：掩码扩散（Masked Diffusion）</h3>
+<p>类似于 BERT 的 Masked Language Modeling (MLM)，该机制在训练时将文本序列中的部分 Token 替换为特殊的 <code>[MASK]</code> 标记：</p>
+<ul>
+  <li><strong>前向过程</strong>：根据时间步逐步增加 <code>[MASK]</code> 比例。</li>
+  <li><strong>逆向去噪</strong>：模型预测 <code>[MASK]</code> 位置的真实 Token。在每一步中，采样器根据模型预测的置信度，仅保留最确信的部分 Token，替换掉对应的 <code>[MASK]</code>，并在下一步继续预测剩余的 <code>[MASK]</code>。</li>
+  <li><strong>致命缺陷</strong>：掩码扩散在去噪时缺乏<strong>自纠错能力（Self-Correction）</strong>。一旦某个 <code>[MASK]</code> 在早期步骤中被模型错误地填充为某个具体 Token，这个 Token 就会被锁定，无法在后续步骤中被修改。这类似于自回归模型“一错再错”的幻觉效应。</li>
+</ul>
+
+<h3>路径 B：均匀状态扩散（Uniform State Diffusion — DiffusionGemma 的选择）</h3>
+<p>为了克服掩码扩散的缺陷，DiffusionGemma 采用了更先进的<strong>均匀状态扩散</strong>机制：</p>
+<ul>
+  <li><strong>噪声定义</strong>：此处的“噪声”不再是唯一的 <code>[MASK]</code> 标记，而是<strong>从词表中随机、均匀抽样的任意破坏性 Token</strong>。</li>
+  <li><strong>前向过程</strong>：在训练时，输入文本中的部分 Token 会被随机替换成词表中的乱码 Token，比例随着扩散时间步变化。</li>
+  <li><strong>逆向去噪与自纠错</strong>：
+    <ul>
+      <li>在每个去噪步，模型会对画布（Canvas）中<strong>所有位置</strong>的 Token 进行重新预测并输出概率分布。</li>
+      <li>如果模型对当前位置的预测置信度较高，且满足采样器阈值，则将该位置替换为新预测的 Token。</li>
+      <li>如果模型对某些位置的预测概率极低（认为这是噪声），采样器会主动对其进行<strong>再噪声化（Re-noising）</strong>——即再次用词表中的随机 Token 覆盖它们。</li>
+      <li><strong>优势</strong>：由于没有锁定机制，早期步骤填充的错误 Token，如果随着周围上下文明朗化后导致置信度下降，可以在后续步骤中被重新判定为“噪声”并进行修改和自我纠正。</li>
+    </ul>
+  </li>
+</ul>
+
+<table>
+  <thead>
+    <tr>
+      <th>特性维度</th>
+      <th>掩码扩散 (Masked Diffusion)</th>
+      <th>均匀状态扩散 (Uniform State Diffusion)</th>
+      <th>自回归生成 (Autoregressive)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>噪声表现</strong></td>
+      <td>显式 <code>[MASK]</code> 标记</td>
+      <td>隐式均匀随机 Token 替换</td>
+      <td>无扩散噪声</td>
+    </tr>
+    <tr>
+      <td><strong>去噪动作</strong></td>
+      <td>逐级填充 <code>[MASK]</code> 空间</td>
+      <td>预测全画布，不满足阈值处重填随机噪声</td>
+      <td>逐个 Token 尾部追加</td>
+    </tr>
+    <tr>
+      <td><strong>自纠错能力</strong></td>
+      <td>❌ 无法修改已填充的 <code>[MASK]</code></td>
+      <td><strong>允许持续修改和纠正错误预测</strong></td>
+      <td>❌ 无法回溯和修改历史 Token</td>
+    </tr>
+    <tr>
+      <td><strong>生成步数</strong></td>
+      <td>取决于采样策略（通常 20-50 步）</td>
+      <td>固定或自适应步数（如 48 步）</td>
+      <td>与生成文本长度 $N$ 严格一致</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>3. 网络架构：Encoder-Denoiser 动态模式切换</h2>
+
+<p>DiffusionGemma 并未重新设计一套复杂的网络，而是巧妙地在底层重用了 <strong>Gemma 4 26B A4B</strong> 开源模型 checkpoint（混合专家架构 MoE，拥有 30 层，词表大小 262K，单 Token 激活 3.8B 参数/8 个专家），并通过一个<strong>Encoder-Denoiser 动态模式切换补丁</strong>实现了双重功能的融合：</p>
+
+<pre><code>                    ┌────────────────────────┐
+                    │  Prompt: "Write a..."  │
+                    └───────────┬────────────┘
+                                │
+                         (Encoder Mode)
+                       Causal Attention
+                                │
+                                ▼
+                       ┌────────────────┐
+                       │  Static KV     │ (Stored in Memory)
+                       │  Cache         │
+                       └────────│───────┘
+                                │
+                     (Cross-Attention Guidance)
+                                │
+    ┌───────────────────────────┼───────────────────────────┐
+    │ Denoiser Loop (48 steps)  ▼                           │
+    │                                                       │
+    │  [Random Canvas]  ──►  (Denoiser Mode)  ──► [Denoised │
+    │    (256 tokens)      Bidirectional Attention  Canvas] │
+    │                                                       │
+    │         ▲                                             │
+    │         └─────────── Self-Conditioning ───────────────┘
+    └───────────────────────────────────────────────────────┘</code></pre>
+
+<h3>A. 编码器模式（Encoder Mode）</h3>
+<ul>
+  <li><strong>职责</strong>：处理用户的输入 Prompt，提取语义特征，为后续去噪过程提供上下文指导。</li>
+  <li><strong>机制</strong>：在此模式下，Gemma 架构采用标准的**因果自注意力（Causal Self-Attention）**，即每个 Token 只能看到其前驱 Token。</li>
+  <li><strong>输出</strong>：输入 Prompt 经过前向传播后，生成对应的键值缓存（<strong>KV Cache</strong>）并写入内存。这个 KV Cache 在后续的去噪循环中保持<strong>静态只读</strong>，不参与迭代更新。</li>
+</ul>
+
+<h3>B. 去噪器模式（Denoiser Mode）</h3>
+<ul>
+  <li><strong>职责</strong>：接收一个包含 256 个 Token 的随机噪声画布（Canvas），结合 Encoder 提供的 KV Cache，逐步去噪还原出真实的响应文本。</li>
+  <li><strong>机制</strong>：去噪器将因果自注意力机制替换为<strong>双向自注意力机制（Bidirectional Self-Attention）</strong>。由于不再使用因果 Mask，画布上的 256 个 Token 在前向传播时可以实现 **All-to-All** 的互相可见。</li>
+  <li><strong>跨注意力</strong>：画布 Token 作为 Query (Q)，去噪器通过 Cross-Attention 机制去访问并读取由 Encoder 模式生成的 Prompt KV Cache (K/V)。</li>
+</ul>
+
+<h3>C. 自我调节与历史记忆（Self-Conditioning）</h3>
+<p>去噪器如何感知它在上一步做出的预测？</p>
+<ol>
+  <li>在第 $t$ 步，去噪器输出全画布每个位置的 Logits。</li>
+  <li>这些 Logits 经过 Softmax 转化为概率分布。</li>
+  <li>概率分布与模型的<strong>词嵌入表（Embedding Matrix）</strong>相乘，为画布每个位置生成一个加权的融合特征向量（融合特征包含了上一步预测的概率分布信息）。</li>
+  <li>该融合特征向量通过一个轻量级的前馈网络（FFNN）进行映射，并直接<strong>加到第 $t+1$ 步的输入 Token Embedding 中</strong>。</li>
+  <li>这为模型提供了清晰的“预测历史记忆”，稳定了画布在不同去噪步之间的收敛轨迹。</li>
+</ol>
+
+<h2>4. 分块自回归扩散（Block Autoregressive Diffusion）</h2>
+
+<p>由于去噪器单次只能处理 256 Token 长度的画布，如何生成长文本？
+DiffusionGemma 将<strong>局部并行扩散</strong>与**全局自回归**相结合，实现了**多画布采样（Multi-Canvas Sampling）**：</p>
+
+<pre><code class="language-python"># 核心数据流概念伪代码
+prompt = "Please write a long sci-fi story..."
+kv_cache = encoder.prefill(prompt)  # 首次 Prefill 生成初始 KV Cache
+
+while not generate_finished:
+    # 1. 初始化 256 长度的随机画布
+    canvas = initialize_random_tokens(length=256)
+    
+    # 2. 逆向迭代去噪循环 (例如 48 步)
+    for step in range(num_denoising_steps):
+        # 融合上一步的概率分布特征
+        conditioned_embeddings = embed(canvas) + self_conditioning(prev_probs)
+        
+        # 去噪器进行双向 All-to-All 注意力计算，并 cross-attend 到只读的 kv_cache
+        logits = denoiser.forward(conditioned_embeddings, kv_cache)
+        
+        # 采样器决定保留哪些 token，重新对低置信度位置进行 noise 覆盖
+        canvas, prev_probs = sampler.step(logits, canvas)
+        
+        if adaptive_stopping.should_stop():
+            break
+            
+    # 3. 256 Canvas 去噪完成，识别到结束符或填满
+    finalized_block = canvas
+    
+    # 4. 自回归扩展：将 finalized_block 视为 prompt 的延续，送入 Encoder 
+    # 追加并更新静态 KV Cache 缓存。之后该 KV Cache 作为下一画布的上下文。
+    kv_cache = encoder.incremental_prefill(finalized_block, kv_cache)
+    
+    if eos_token in finalized_block:
+        generate_finished = True</code></pre>
+
+<p>这种机制结合了<strong>扩散模型在单块内部极高的并行吞吐量</strong>与**自回归模型处理长序列时的优异上下文连贯性**。</p>
+
+<h2>5. 采样器与调度器参数（Best Practices）</h2>
+
+<p>DiffusionGemma 的核心控制中心在于其采样器（Sampler）与调度器（Scheduler）的设计，官方推荐了以下标准超参数配置：</p>
+
+<h3>A. 温度调度器（Logits Temp Scheduler）</h3>
+<p>为了平衡去噪过程中的**探索（Exploration）**与**收敛（Exploitation）**，Logits 会被除以一个动态温度 $T$。</p>
+<ul>
+  <li>在 48 步去噪过程中，温度 $T$ 采用**线性衰减（Linear Decay）**，由 **0.8 逐渐降低至 0.4**。</li>
+  <li><strong>直觉</strong>：在去噪早期，画布充斥大量噪声，较高的温度有利于模型多样化地尝试不同的 Token 组合；在去噪后期，画布逐渐清晰，较低的温度可以“锁紧”预测分布，消除模糊性，实现精确的 Token 沉淀。</li>
+</ul>
+
+<h3>B. 熵界采样器（Entropy-Bounded Sampler）</h3>
+<p>用于精确控制去噪每一步中保留哪些 Token、丢弃哪些 Token。</p>
+<ol>
+  <li><strong>熵值计算</strong>：计算画布上每个位置的预测概率分布的香农熵（Entropy）。熵越低，代表模型对该位置的预测越自信（如 99% 的概率是 <code>"LLM"</code>，熵接近 0）。</li>
+  <li><strong>排序过滤</strong>：将画布的 256 个位置按熵值<strong>从低到高（从最自信到最不自信）进行排序</strong>。</li>
+  <li><strong>阈值累加</strong>：从最自信的 Token 开始累加。当累加的互信息上限（Mutual Information Bound）超过设定的**熵界（Entropy Bound = 0.1）**时，停止接纳。</li>
+  <li><strong>再噪声化</strong>：所有被接纳的 Token 保持预测值，未被接纳的 Token 一律判定为噪声，**使用全新的随机 Token 重新覆盖（Re-noising）**。</li>
+</ol>
+
+<h3>C. 自适应早停机制（Adaptive Stopping）</h3>
+<p>不需要强行跑满 48 步。如果画布提前收敛，系统会触发自适应早停，以节省宝贵的算力：
+同时满足以下两点时停止：</p>
+<ul>
+  <li><strong>置信度达标</strong>：全画布所有 Token 的平均熵低于 <strong>0.005</strong>（代表模型对全画布内容已极度确信）。</li>
+  <li><strong>预测稳定</strong>：最高概率的 Token 预测结果在连续 <strong>2</strong> 步中完全一致（代表画布状态已不再发生任何漂移和修改）。</li>
+</ul>
+
+<h2>6. 案例分析：Sudoku Solver（数独求解器）</h2>
+
+<p>为什么 Diffusion 架构适合解决强约束的多变量协同任务（如数独）？</p>
+
+<pre><code>  自回归模型 (AR) 顺序预测：                   DiffusionGemma 并行协同去噪：
+  ┌───┬───┬───┐                               ┌───┬───┬───┐
+  │ 5 │ 3 │ ? ├──► 必须立刻决定第三格         │ 5 │ 3 │ 4 │  所有格点在 All-to-All 
+  └───┴───┴───┘    无法考虑未来冲突           ├───┼───┼───┤  注意力下同时互相制约，
+  ┌───┬───┬───┐                               │ 6 │ ? │ 8 │  若后期发现冲突，可通过 
+  │ 6 │ ? │ 8 │    一旦写错，无法修改         ├───┼───┼───┤  Re-noising 机制在后续去噪 
+  └───┴───┴───┘                               │ ? │ 9 │ ? │  步中将错误擦除并重写。
+                                              └───┴───┴───┘</code></pre>
+
+<ul>
+  <li><strong>自回归的痛点</strong>：数独需要满足横、竖、九宫格的三重 intersecting 约束。自回归模型必须从左到右硬性预测。当它预测到第 80 格时，如果发现和第 1 格冲突，它<strong>无法进行回溯（Backtracking）或自我擦除</strong>，导致最终求解失败率极高。</li>
+  <li><strong>DiffusionGemma 的解法</strong>：
+    <ul>
+      <li><strong>全局上下文感知</strong>：Denoiser 采用双向注意力，首尾 Token 互相可见，信息对称流动，在一前向传播中同时考量所有格点的冲突约束。</li>
+      <li><strong>容错与自我修正</strong>：如果第 10 步填入的数字在第 20 步被判定大概率冲突，它的置信度（熵）会变差，并在下一步中被重置为噪声数字重新求解。</li>
+    </ul>
+  </li>
+  <li><strong>微调效果</strong>：DiffusionGemma 26B 基础模型在数独任务上的正确率为 ~0%。但通过 Google DeepMind 开源的 <strong>Hackable Diffusion</strong> 基于 JAX 的监督微调（SFT）配方训练后，数独**求解成功率飙升至 80%**，且步数大幅缩短。</li>
+</ul>
+
+<h2>7. 推理与部署管线</h2>
+
+<h3>vLLM 部署标准命令</h3>
+<p>vLLM 官方已原生集成 DiffusionGemma。可通过以下 OpenAI 兼容的 Server 命令行一键启动：</p>
+
+<pre><code class="language-bash">vllm serve google/diffusiongemma-26B-A4B-it \
+  --max-model-len 262144 \
+  --max-num-seqs 4 \
+  --gpu-memory-utilization 0.85 \
+  --attention-backend TRITON_ATTN \
+  --generation-config vllm \
+  --hf-overrides '{"diffusion_sampler": "entropy_bound", "diffusion_entropy_bound": 0.1}' \
+  --diffusion-config '{"canvas_length": 256}' \
+  --enable-chunked-prefill</code></pre>
+
+<h3>Hugging Face Transformers 推理代码</h3>
+<p>开发者可以使用标准 <code>transformers</code> 库中的 <code>DiffusionGemmaForBlockDiffusion</code> 进行推理：</p>
+
+<pre><code class="language-python">from transformers import DiffusionGemmaForBlockDiffusion, AutoProcessor
+import torch
+
+MODEL_ID = "google/diffusiongemma-26B-A4B-it"
+
+# 1. 初始化处理器与离散扩散专用模型类
+processor = AutoProcessor.from_pretrained(MODEL_ID)
+model = DiffusionGemmaForBlockDiffusion.from_pretrained(
+    MODEL_ID,
+    torch_dtype=torch.bfloat16,
+    device_map="auto",
+)
+
+# 2. 准备对话模版
+messages = [
+    {"role": "user", "content": "Explain the core difference between AR and Diffusion LLMs."}
+]
+
+input_ids = processor.apply_chat_template(
+    messages,
+    tokenize=True,
+    add_generation_prompt=True,
+    return_dict=True,
+    return_tensors="pt"
+).to(model.device)
+
+# 3. 运行多画布扩散采样推理
+output = model.generate(**input_ids, max_new_tokens=512)
+
+# 4. 打印解码文本
+text = processor.decode(output[0], skip_special_tokens=False)
+print(text)</code></pre>
+
+<div class="conclusion-box">
+  <h3>本页结论</h3>
+  <p>DiffusionGemma 离开了传统的自回归生成模式，引入了离散状态的 Uniform State Diffusion 去噪机制。在 256 长度画布的基础上，模型通过 All-to-All 双向自注意力和 Self-Conditioning 自我反馈，实现了一个高度并行的文本生成引擎。这种从显存带宽约束向计算约束的转化，极大地提高了硬件利用率并带来高达 1000+ Tokens/秒 的极限并行解码速度，在需要全局多变量约束协同计算的任务（如数独求解）中表现出独特的自纠错和全局规划能力。</p>
+</div>
+
+<div class="conclusion-box relation">
+  <h3>和我的 diffusion_engine 的关系</h3>
+  <p>本项目自写引擎 <code>diffusion_engine</code> 中的诸多模块与 DiffusionGemma 在设计理念上高度契合。Causal Mask 的开关机制对应于它的 Dynamic Encoder/Denoiser Attention 切换；<code>core/text_conditioning.py</code> 模块中的 Prompt Embedding Cache 实现对应于它的静态只读 KV Cache 缓存控制；<code>core/scheduler.py</code> 中的步长迭代对应于它的温度 Logits 线性衰减调度器。在完成本课程前述章节后，读者可以在 <code>diffusion_engine/</code> 的工程基础上更轻松地实现一个针对离散文本扩散模型的自定义扩展采样组件。</p>
+</div>
+
+<h2>9. 参考资源与链接</h2>
+<div class="conclusion-box relation" style="border-left-color: var(--accent); background: rgba(88,166,255,0.05);">
+  <p>本章内容主要整理并参考自以下 DiffusionGemma 官方发布的技术资料与社区指引：</p>
+  <ul>
+    <li><strong>Google 官方开发者指南</strong>：<a href="https://developers.google.com/en/diffusiongemma-the-developer-guide" target="_blank">DiffusionGemma: The Developer Guide</a></li>
+    <li><strong>可视化原理解析</strong>：<a href="https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-diffusiongemma" target="_blank">A Visual Guide to DiffusionGemma</a></li>
+    <li><strong>Hugging Face 模型卡片</strong>：<a href="https://huggingface.co/google/diffusiongemma-26B-A4B-it" target="_blank">google/diffusiongemma-26B-A4B-it</a></li>
+  </ul>
+</div>
+
+</body>
+</html>

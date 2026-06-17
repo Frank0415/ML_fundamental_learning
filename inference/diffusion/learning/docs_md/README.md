@@ -6,7 +6,7 @@
 > - 搜索特定章节（grep + heading）
 > - 版本管理（git diff 友好）
 
-## 12 个页面 + 1 篇 README 索引
+## 13 个页面 + 1 篇 README 索引
 
 | 编号 | 文件 | 主题 |
 |------|------|------|
@@ -22,7 +22,8 @@
 | 09 | [09_sora_style视频生成架构.md](09_sora_style视频生成架构.md) | Sora 视频架构 |
 | 10 | [10_wan_hunyuan_cogvideox_ltx视频模型.md](10_wan_hunyuan_cogvideox_ltx视频模型.md) | 视频模型对比 |
 | 11 | [11_diffusion推理系统优化.md](11_diffusion推理系统优化.md) | 系统优化 + LLM KV 差异 |
-| 12 | [12_最终成果说明.md](12_最终成果说明.md) | 成果汇总、运行命令 |
+| 12 | [12_diffusion_gemma.md](12_diffusion_gemma.md) | DiffusionGemma 架构与推理 |
+| 13 | [13_最终成果说明.md](13_最终成果说明.md) | 成果汇总、运行命令 |
 
 ## 论文阅读卡片（位于 `../learning/papers/`）
 
@@ -57,7 +58,8 @@
 
 1. `01_任务总览.md` — 项目目标
 2. `03_现代diffusion推理最小背景.md` — 数据流
-3. `12_最终成果说明.md` — 成果汇总
+3. `13_最终成果说明.md` — 成果汇总
+4. `12_diffusion_gemma.md` — DiffusionGemma
 
 ### 深入技术（2-3 小时）
 

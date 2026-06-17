@@ -43,7 +43,8 @@ diffusion/
 │   ├── 09_sora_style视频生成架构.html        # Spacetime patch 与 3D VAE
 │   ├── 10_wan_hunyuan_cogvideox_ltx视频模型.html  # 视频模型横向对比
 │   ├── 11_diffusion推理系统优化.html        # 6 项优化 + 与 LLM KV cache 差异
-│   └── 12_最终成果说明.html                 # 成果汇总、运行命令、限制、下一步
+│   ├── 12_diffusion_gemma.html            # DiffusionGemma 架构与推理
+│   └── 13_最终成果说明.html                 # 成果汇总、运行命令、限制、下一步
 ├── learning/                         # 中文学习资料
 │   ├── notes/                        # 10 篇学习笔记
 │   │   ├── 01_老引擎结构审计.md
@@ -284,7 +285,7 @@ python3 experiments/diffusion_inference_optimization/run_all_benchmarks.py
 | T15 - 视频脚手架 + Docs | 3 个模型脚本 + 3 个 blocker + `docs/09-10` | ✅ 脚手架就绪，等待 GPU |
 | T16 - Prompt Cache / Buffer / Scheduler | 3 个实验 + 量化结果 (JSON) | ✅ Prompt cache 52% hit, buffer 91.8% alloc save |
 | T17 - CFG / Attn / VAE Tiling | 3 个实验 + 量化结果 (MD+JSON) | ✅ Attn O(N²) 验证，VAE tiling tradeoff |
-| T18 - 知识库收束 | `docs/index.html` + 01/11/12 + 4 周报 + final_report + README + TODO | ✅ 12 页知识库完整，6 周报 + 最终报告 |
+| T18 - 知识库收束 | `docs/index.html` + 01/11/12/13 + 4 周报 + final_report + README + TODO | ✅ 13 页知识库完整，6 周报 + 最终报告 |
 
 ---
 
@@ -338,7 +339,7 @@ python3 experiments/diffusion_inference_optimization/run_all_benchmarks.py
 
 ---
 
-> **相关文档**：`docs/index.html`（12 页中文静态知识库）、`reports/final_report.md`（最终报告，回答 5 个核心问题）、`TODO.md`（17/18 任务完成）、`.omo/plans/modern-diffusion-inference-roadmap.md`（完整 6 周路线图）。
+> **相关文档**：`docs/index.html`（13 页中文静态知识库）、`reports/final_report.md`（最终报告，回答 5 个核心问题）、`TODO.md`（17/18 任务完成）、`.omo/plans/modern-diffusion-inference-roadmap.md`（完整 6 周路线图）。
 
 ---
 

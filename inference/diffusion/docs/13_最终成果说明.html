@@ -127,16 +127,17 @@
   <a href="09_sora_style视频生成架构.html">09 视频架构</a>
   <a href="10_wan_hunyuan_cogvideox_ltx视频模型.html">10 视频模型</a>
   <a href="11_diffusion推理系统优化.html">11 系统优化</a>
-  <a href="12_最终成果说明.html">12 成果说明</a>
+  <a href="12_diffusion_gemma.html">12 DiffusionGemma</a>
+  <a href="13_最终成果说明.html">13 成果说明</a>
 </nav>
 
-<h1>12 — 最终成果说明</h1>
+<h1>13 — 最终成果说明</h1>
 
 <h2>已完成内容汇总</h2>
 
 <p>本项目在 6 周（2026-06-06 至 2026-06-07）内完成了计划中的 17/18 个任务。以下按分类列出所有产出。</p>
 
-<h3>知识库 (docs/) — 12 页 + 首页</h3>
+<h3>知识库 (docs/) — 13 页 + 首页</h3>
 <table>
   <tr><th>编号</th><th>页面</th><th>内容</th><th>状态</th></tr>
   <tr><td>—</td><td><code>index.html</code></td><td>知识库首页导航</td><td><span class="tag tag-ok">已完成</span></td></tr>
@@ -151,7 +152,8 @@
   <tr><td>09</td><td><code>09_sora_style视频生成架构.html</code></td><td>Sora-style 视频架构（T15）</td><td><span class="tag tag-ok">已完成</span></td></tr>
   <tr><td>10</td><td><code>10_wan_hunyuan_cogvideox_ltx视频模型.html</code></td><td>视频模型对比（T15）</td><td><span class="tag tag-ok">已完成</span></td></tr>
   <tr><td>11</td><td><code>11_diffusion推理系统优化.html</code></td><td>系统优化技术 + 与 LLM 差异（T18）</td><td><span class="tag tag-ok">已完成</span></td></tr>
-  <tr><td>12</td><td><code>12_最终成果说明.html</code></td><td>本页，成果汇总（T18）</td><td><span class="tag tag-ok">已完成</span></td></tr>
+  <tr><td>12</td><td><code>12_diffusion_gemma.html</code></td><td>DiffusionGemma 架构与推理</td><td><span class="tag tag-ok">已完成</span></td></tr>
+  <tr><td>13</td><td><code>13_最终成果说明.html</code></td><td>本页，成果汇总（T18）</td><td><span class="tag tag-ok">已完成</span></td></tr>
 </table>
 
 <h3>学习资料 — 20 篇</h3>
@@ -271,7 +273,7 @@ python experiments/reference_video_inference/run_ltx_video_if_possible.py \
 
 <div class="conclusion-box">
   <h3>本页结论</h3>
-  <p>本项目在 6 周内完成了 17/18 个任务，产出了 12 页静态知识库、20 篇学习资料、10 个核心模块（36 个测试）、5 组实验目录、8 份报告。真实 reference inference 因远程 GPU 环境未就绪而阻塞，但脚手架已完整就绪——环境就绪后单条命令即可运行。系统优化实验数据表明：prompt embedding cache（52% hit）、latent buffer（91.8% allocation 节省）、CFG batching（1.01-1.02× 加速）是有效的扩散推理优化；attention memory O(N²) 是真实瓶颈，12GB VRAM 下高分辨率必须 memory-efficient attention。</p>
+  <p>本项目在 6 周内完成了 17/18 个任务，产出了 13 页静态知识库、20 篇学习资料、10 个核心模块（36 个测试）、5 组实验目录、8 份报告。真实 reference inference 因远程 GPU 环境未就绪而阻塞，但脚手架已完整就绪——环境就绪后单条命令即可运行。系统优化实验数据表明：prompt embedding cache（52% hit）、latent buffer（91.8% allocation 节省）、CFG batching（1.01-1.02× 加速）是有效的扩散推理优化；attention memory O(N²) 是真实瓶颈，12GB VRAM 下高分辨率必须 memory-efficient attention。</p>
 </div>
 
 <div class="conclusion-box relation">

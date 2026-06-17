@@ -47,6 +47,7 @@ try:
     )
     from .vae_stub import ToyVAE
     from .pipeline import DiffusionPipeline
+    from .diffusion_gemma_pipeline import EntropyBoundedSampler, DiffusionGemmaPipeline
     _HAS_T12_MODULES = True
 except ImportError:
     _HAS_T12_MODULES = False
@@ -78,4 +79,6 @@ __all__ = [
     "estimate_latent_buffer_bytes",
     "ToyVAE",
     "DiffusionPipeline",
+    "EntropyBoundedSampler",
+    "DiffusionGemmaPipeline",
 ]

@@ -91,7 +91,7 @@
 
 - [x] **T18 — 后半知识库、顶层 README、周报与最终报告收束**
   - blocker：无（全部文档已产出）
-  - 产出：`docs/index.html`、`docs/01_任务总览.html`、`docs/11_diffusion推理系统优化.html`、`docs/12_最终成果说明.html`、`reports/week_2.md`~`week_6.md`、`reports/final_report.md`、顶层 `README.md` 更新（13 小节齐全）、`TODO.md` 更新（本文件）
+  - 产出：`docs/index.html`、`docs/01_任务总览.html`、`docs/11_diffusion推理系统优化.html`、`docs/12_diffusion_gemma.html`、`docs/13_最终成果说明.html`、`reports/week_2.md`~`week_6.md`、`reports/final_report.md`、顶层 `README.md` 更新（13 小节齐全）、`TODO.md` 更新（本文件）
 
 ---
 
