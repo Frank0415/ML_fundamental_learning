@@ -208,3 +208,19 @@ __marimo__/
 
 # Nested repos
 deep_learning_hands_on/
+
+# macOS
+.DS_Store
+
+# ML training outputs & checkpoints
+RL/2/output/
+RL/2/Qwen2.5-0.5B-Instruct/
+output/
+checkpoints/
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# IDE
+.idea/
