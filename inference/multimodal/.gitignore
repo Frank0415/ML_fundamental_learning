@@ -1,0 +1,17 @@
+# multimodal/ 局部 gitignore
+# 仅作用于 inference/multimodal/ 目录，不会影响 monorepo 其他子项目
+
+# 论文 PDF 原件（避免大文件入库；笔记 PDF 链接仍保留在 markdown 中）
+paper/
+
+# 外部/嵌套文本引擎仓库（含权重与虚拟环境，不纳入本 monorepo）
+minivLLM/
+
+# 一些临时备份与运行产物（如有）
+*.bak
+*.bak2
+*.bak3
+*.bak4
+__pycache__/
+*.pyc
+.ipynb_checkpoints/

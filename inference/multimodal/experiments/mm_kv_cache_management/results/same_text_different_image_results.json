@@ -1,0 +1,57 @@
+{
+  "case": "same_text_different_image",
+  "description": "same text, different image — KEY: A must false_hit>0, B/C must false_hit=0",
+  "acceptance_pass": true,
+  "acceptance_detail": {
+    "A_false_hits": 1,
+    "A_required": ">0",
+    "B_false_hits": 0,
+    "B_required": "==0",
+    "C_false_hits": 0,
+    "C_required": "==0"
+  },
+  "per_strategy": {
+    "A": {
+      "verdict": "false_hit",
+      "strategy": "A",
+      "cache_size": 1,
+      "total_queries": 1,
+      "true_hits": 0,
+      "false_hits": 1,
+      "safe_misses": 0,
+      "cache_hit_rate": 0.0,
+      "false_hit_rate": 1.0,
+      "prefill_tokens_saved": 0,
+      "kv_blocks_reused": 0,
+      "memory_saved_bytes": 0
+    },
+    "B": {
+      "verdict": "safe_miss",
+      "strategy": "B",
+      "cache_size": 1,
+      "total_queries": 1,
+      "true_hits": 0,
+      "false_hits": 0,
+      "safe_misses": 1,
+      "cache_hit_rate": 0.0,
+      "false_hit_rate": 0.0,
+      "prefill_tokens_saved": 0,
+      "kv_blocks_reused": 0,
+      "memory_saved_bytes": 0
+    },
+    "C": {
+      "verdict": "safe_miss",
+      "strategy": "C",
+      "cache_size": 1,
+      "total_queries": 1,
+      "true_hits": 0,
+      "false_hits": 0,
+      "safe_misses": 1,
+      "cache_hit_rate": 0.0,
+      "false_hit_rate": 0.0,
+      "prefill_tokens_saved": 0,
+      "kv_blocks_reused": 0,
+      "memory_saved_bytes": 0
+    }
+  }
+}

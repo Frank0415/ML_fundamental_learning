@@ -1,0 +1,15 @@
+{
+  "layout": "bos_image_text",
+  "num_visual_tokens": 258,
+  "num_text_tokens": 16,
+  "total_len": 275,
+  "sequence_structure": "BOS | IMG_START | v_1...v_N | IMG_END | t_1...t_M",
+  "visual_span": [
+    2,
+    258
+  ],
+  "text_span": [
+    259,
+    275
+  ]
+}

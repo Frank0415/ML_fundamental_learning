@@ -1,0 +1,25 @@
+{
+  "model_key": "qwen3_vl_4b",
+  "model_id": "Qwen/Qwen3-VL-4B-Instruct",
+  "status": "fail",
+  "timestamp_utc": "2026-06-06T23:33:58.202762+00:00",
+  "gpu_info": {
+    "cuda_available": false,
+    "device_count": 0,
+    "mps_available": true
+  },
+  "image_info": {
+    "path": "/Users/franksair/Documents/learning_ML/inference/multimodal/experiments/vlm_minimal_demo/sample_images/demo.jpg",
+    "size": [
+      224,
+      224
+    ],
+    "mode": "RGB",
+    "format": "JPEG"
+  },
+  "max_new_tokens": 64,
+  "error_type": "ValueError",
+  "error_message": "Using a `device_map`, `tp_plan`, `torch.device` context manager or setting `torch.set_default_device(device)` requires `accelerate`. You can install it with `pip install accelerate`",
+  "traceback": "Traceback (most recent call last):\n  File \"/Users/franksair/Documents/learning_ML/inference/multimodal/experiments/vlm_minimal_demo/run_qwen_vl_reference.py\", line 166, in run_reference\n    model = AutoModelForImageTextToText.from_pretrained(\n        model_id,\n    ...<2 lines>...\n        trust_remote_code=True,\n    )\n  File \"/Users/franksair/Documents/learning_ML/inference/multimodal/minivLLM/.venv/lib/python3.13/site-packages/transformers/models/auto/auto_factory.py\", line 405, in from_pretrained\n    return model_class.from_pretrained(\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^\n        pretrained_model_name_or_path, *model_args, config=config, **hub_kwargs, **kwargs\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/franksair/Documents/learning_ML/inference/multimodal/minivLLM/.venv/lib/python3.13/site-packages/transformers/modeling_utils.py\", line 4089, in from_pretrained\n    device_map = check_and_set_device_map(device_map)  # warn, error and fix the device map\n  File \"/Users/franksair/Documents/learning_ML/inference/multimodal/minivLLM/.venv/lib/python3.13/site-packages/transformers/integrations/accelerate.py\", line 134, in check_and_set_device_map\n    raise ValueError(\n    ...<2 lines>...\n    )\nValueError: Using a `device_map`, `tp_plan`, `torch.device` context manager or setting `torch.set_default_device(device)` requires `accelerate`. You can install it with `pip install accelerate`\n",
+  "total_sec": 0.8
+}

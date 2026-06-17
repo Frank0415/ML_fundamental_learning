@@ -1,0 +1,27 @@
+{
+  "mode": "prefill_only",
+  "prompt": "请描述这张图片。",
+  "image_path": "experiments/vlm_minimal_demo/sample_images/demo.jpg",
+  "num_visual_tokens": 197,
+  "num_text_tokens": 5,
+  "total_sequence_length": 204,
+  "sequence_layout": "VIS_START | v_1..v_N | VIS_END | t_1..t_M",
+  "inputs_embeds_shape": [
+    204,
+    1024
+  ],
+  "hidden_shape": [
+    204,
+    1024
+  ],
+  "last_logits_argmax_token_id": 100092,
+  "top5_token_ids": [
+    100092,
+    13845,
+    11038,
+    140580,
+    115530
+  ],
+  "visual_embedding_source": "tiny-vit-random + random-projector(192→1024)",
+  "semantic_warning": "本 demo 的目标是工程路径跑通；不保证语义质量。随机 projector 输出可能没有语义。"
+}

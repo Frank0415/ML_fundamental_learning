@@ -1,0 +1,19 @@
+{
+  "model_id": "Qwen/Qwen3-0.6B",
+  "status": "ok",
+  "timestamp_utc": "2026-06-06T23:34:02.505634+00:00",
+  "gpu_info": {
+    "cuda_available": false,
+    "device_count": 0,
+    "mps_available": true
+  },
+  "description": "降级 smoke — tokenizer-only（不加载 VLM 权重）",
+  "tokenizer_class": "Qwen2Tokenizer",
+  "vocab_size": 151643,
+  "smoke_test": {
+    "input": "请描述这张图片。 What is in the image?",
+    "num_tokens": 11,
+    "decoded": "请描述这张图片。 What is in the image?"
+  },
+  "total_sec": 2.0
+}

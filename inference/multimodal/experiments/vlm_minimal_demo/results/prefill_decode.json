@@ -1,0 +1,34 @@
+{
+  "mode": "prefill_decode",
+  "prompt": "请描述这张图片。",
+  "image_path": "experiments/vlm_minimal_demo/sample_images/demo.jpg",
+  "max_new_tokens": 8,
+  "num_visual_tokens": 197,
+  "num_text_tokens": 5,
+  "total_sequence_length": 204,
+  "sequence_layout": "VIS_START | v_1..v_N | VIS_END | t_1..t_M",
+  "inputs_embeds_shape": [
+    204,
+    1024
+  ],
+  "generated_token_ids": [
+    146387,
+    146387,
+    146387,
+    146387,
+    146387,
+    146387,
+    146387,
+    146387
+  ],
+  "num_generated_tokens": 8,
+  "kv_cache_config": {
+    "num_layers": 28,
+    "max_seq_len": 512,
+    "num_kv_heads": 8,
+    "head_dim": 128
+  },
+  "layer_idx_behavior": "Qwen3Model.forward internally enumerates self.layers, passing layer_idx=i to each Qwen3DecoderLayer, which passes it to Qwen3Attn. No external layer_idx needed.",
+  "visual_embedding_source": "tiny-vit-random + random-projector(192→1024)",
+  "semantic_warning": "本 demo 的目标是工程路径跑通；不保证语义质量。随机 projector 输出可能没有语义。"
+}

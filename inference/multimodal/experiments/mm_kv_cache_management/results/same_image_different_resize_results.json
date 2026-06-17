@@ -1,0 +1,49 @@
+{
+  "case": "same_image_different_resize",
+  "description": "same image bytes, different resize params. A/B hit (unsafe - resize mismatch), C correctly misses.",
+  "note": "策略 A/B 的 hit 是因为 image_bytes 相同 → key 匹配。但语义上 resize 不同导致 visual token 布局不同 (num_visual_tokens: 256→576), KV cache 无法安全复用。只有策略 C 通过纳入 resized_sizes 等参数能正确识别此差异。",
+  "per_strategy": {
+    "A": {
+      "verdict": "true_hit",
+      "strategy": "A",
+      "cache_size": 1,
+      "total_queries": 1,
+      "true_hits": 1,
+      "false_hits": 0,
+      "safe_misses": 0,
+      "cache_hit_rate": 1.0,
+      "false_hit_rate": 0.0,
+      "prefill_tokens_saved": 261,
+      "kv_blocks_reused": 22,
+      "memory_saved_bytes": 66816
+    },
+    "B": {
+      "verdict": "true_hit",
+      "strategy": "B",
+      "cache_size": 1,
+      "total_queries": 1,
+      "true_hits": 1,
+      "false_hits": 0,
+      "safe_misses": 0,
+      "cache_hit_rate": 1.0,
+      "false_hit_rate": 0.0,
+      "prefill_tokens_saved": 261,
+      "kv_blocks_reused": 22,
+      "memory_saved_bytes": 66816
+    },
+    "C": {
+      "verdict": "safe_miss",
+      "strategy": "C",
+      "cache_size": 1,
+      "total_queries": 1,
+      "true_hits": 0,
+      "false_hits": 0,
+      "safe_misses": 1,
+      "cache_hit_rate": 0.0,
+      "false_hit_rate": 0.0,
+      "prefill_tokens_saved": 0,
+      "kv_blocks_reused": 0,
+      "memory_saved_bytes": 0
+    }
+  }
+}

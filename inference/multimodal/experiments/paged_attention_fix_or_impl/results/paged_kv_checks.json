@@ -1,0 +1,158 @@
+[
+  {
+    "test": "single_request_short_prompt",
+    "block_size": 16,
+    "passed": true,
+    "stats": {
+      "allocated_blocks": 1,
+      "free_blocks": 7,
+      "total_blocks": 8,
+      "used_tokens": 8,
+      "wasted_slots": 8,
+      "fragmentation_ratio": 0.5
+    }
+  },
+  {
+    "test": "single_request_cross_block",
+    "block_size": 16,
+    "passed": true,
+    "stats": {
+      "allocated_blocks": 2,
+      "free_blocks": 6,
+      "total_blocks": 8,
+      "used_tokens": 32,
+      "wasted_slots": 0,
+      "fragmentation_ratio": 0.0
+    }
+  },
+  {
+    "test": "multi_request_different_lengths",
+    "block_size": 16,
+    "passed": true,
+    "stats": {
+      "allocated_blocks": 3,
+      "free_blocks": 13,
+      "total_blocks": 16,
+      "used_tokens": 48,
+      "wasted_slots": 0,
+      "fragmentation_ratio": 0.0
+    }
+  },
+  {
+    "test": "decode_append_token",
+    "block_size": 16,
+    "passed": true,
+    "stats": {
+      "allocated_blocks": 2,
+      "free_blocks": 6,
+      "total_blocks": 8,
+      "used_tokens": 17,
+      "wasted_slots": 15,
+      "fragmentation_ratio": 0.46875
+    }
+  },
+  {
+    "test": "free_request_releases_blocks",
+    "block_size": 16,
+    "passed": true,
+    "stats": {
+      "allocated_blocks": 0,
+      "free_blocks": 8,
+      "total_blocks": 8,
+      "used_tokens": 0,
+      "wasted_slots": 0,
+      "fragmentation_ratio": 0.0
+    }
+  },
+  {
+    "test": "block_reuse_and_gather",
+    "block_size": 16,
+    "passed": true,
+    "stats": {
+      "allocated_blocks": 1,
+      "free_blocks": 3,
+      "total_blocks": 4,
+      "used_tokens": 16,
+      "wasted_slots": 0,
+      "fragmentation_ratio": 0.0
+    }
+  },
+  {
+    "test": "single_request_short_prompt",
+    "block_size": 32,
+    "passed": true,
+    "stats": {
+      "allocated_blocks": 1,
+      "free_blocks": 7,
+      "total_blocks": 8,
+      "used_tokens": 16,
+      "wasted_slots": 16,
+      "fragmentation_ratio": 0.5
+    }
+  },
+  {
+    "test": "single_request_cross_block",
+    "block_size": 32,
+    "passed": true,
+    "stats": {
+      "allocated_blocks": 2,
+      "free_blocks": 6,
+      "total_blocks": 8,
+      "used_tokens": 64,
+      "wasted_slots": 0,
+      "fragmentation_ratio": 0.0
+    }
+  },
+  {
+    "test": "multi_request_different_lengths",
+    "block_size": 32,
+    "passed": true,
+    "stats": {
+      "allocated_blocks": 3,
+      "free_blocks": 13,
+      "total_blocks": 16,
+      "used_tokens": 96,
+      "wasted_slots": 0,
+      "fragmentation_ratio": 0.0
+    }
+  },
+  {
+    "test": "decode_append_token",
+    "block_size": 32,
+    "passed": true,
+    "stats": {
+      "allocated_blocks": 2,
+      "free_blocks": 6,
+      "total_blocks": 8,
+      "used_tokens": 33,
+      "wasted_slots": 31,
+      "fragmentation_ratio": 0.484375
+    }
+  },
+  {
+    "test": "free_request_releases_blocks",
+    "block_size": 32,
+    "passed": true,
+    "stats": {
+      "allocated_blocks": 0,
+      "free_blocks": 8,
+      "total_blocks": 8,
+      "used_tokens": 0,
+      "wasted_slots": 0,
+      "fragmentation_ratio": 0.0
+    }
+  },
+  {
+    "test": "block_reuse_and_gather",
+    "block_size": 32,
+    "passed": true,
+    "stats": {
+      "allocated_blocks": 1,
+      "free_blocks": 3,
+      "total_blocks": 4,
+      "used_tokens": 32,
+      "wasted_slots": 0,
+      "fragmentation_ratio": 0.0
+    }
+  }
+]

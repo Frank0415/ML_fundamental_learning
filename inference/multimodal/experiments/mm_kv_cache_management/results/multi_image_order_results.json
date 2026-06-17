@@ -1,0 +1,121 @@
+{
+  "case": "multi_image_order",
+  "description": "Multi-image order sensitivity + video frame sampling (placeholder)",
+  "sub_cases": [
+    {
+      "label": "Case 5: multi_image_same_order",
+      "expected": "所有策略应命中 (完全相同的多图请求)",
+      "per_strategy": {
+        "A": {
+          "verdict": "true_hit",
+          "strategy": "A",
+          "cache_size": 1,
+          "total_queries": 1,
+          "true_hits": 1,
+          "false_hits": 0,
+          "safe_misses": 0,
+          "cache_hit_rate": 1.0,
+          "false_hit_rate": 0.0,
+          "prefill_tokens_saved": 517,
+          "kv_blocks_reused": 44,
+          "memory_saved_bytes": 132352
+        },
+        "B": {
+          "verdict": "true_hit",
+          "strategy": "B",
+          "cache_size": 1,
+          "total_queries": 1,
+          "true_hits": 1,
+          "false_hits": 0,
+          "safe_misses": 0,
+          "cache_hit_rate": 1.0,
+          "false_hit_rate": 0.0,
+          "prefill_tokens_saved": 517,
+          "kv_blocks_reused": 44,
+          "memory_saved_bytes": 132352
+        },
+        "C": {
+          "verdict": "true_hit",
+          "strategy": "C",
+          "cache_size": 1,
+          "total_queries": 1,
+          "true_hits": 1,
+          "false_hits": 0,
+          "safe_misses": 0,
+          "cache_hit_rate": 1.0,
+          "false_hit_rate": 0.0,
+          "prefill_tokens_saved": 517,
+          "kv_blocks_reused": 44,
+          "memory_saved_bytes": 132352
+        }
+      }
+    },
+    {
+      "label": "Case 6: multi_image_different_order",
+      "expected": "A: false_hit > 0; B/C: safe_miss",
+      "per_strategy": {
+        "A": {
+          "verdict": "false_hit",
+          "strategy": "A",
+          "cache_size": 1,
+          "total_queries": 1,
+          "true_hits": 0,
+          "false_hits": 1,
+          "safe_misses": 0,
+          "cache_hit_rate": 0.0,
+          "false_hit_rate": 1.0,
+          "prefill_tokens_saved": 0,
+          "kv_blocks_reused": 0,
+          "memory_saved_bytes": 0
+        },
+        "B": {
+          "verdict": "safe_miss",
+          "strategy": "B",
+          "cache_size": 1,
+          "total_queries": 1,
+          "true_hits": 0,
+          "false_hits": 0,
+          "safe_misses": 1,
+          "cache_hit_rate": 0.0,
+          "false_hit_rate": 0.0,
+          "prefill_tokens_saved": 0,
+          "kv_blocks_reused": 0,
+          "memory_saved_bytes": 0
+        },
+        "C": {
+          "verdict": "safe_miss",
+          "strategy": "C",
+          "cache_size": 1,
+          "total_queries": 1,
+          "true_hits": 0,
+          "false_hits": 0,
+          "safe_misses": 1,
+          "cache_hit_rate": 0.0,
+          "false_hit_rate": 0.0,
+          "prefill_tokens_saved": 0,
+          "kv_blocks_reused": 0,
+          "memory_saved_bytes": 0
+        }
+      }
+    },
+    {
+      "label": "Case 7: same_video_different_frame_sampling",
+      "expected": "未实现视频 — 说明: 不同帧采样参数会导致 A false_hit, B/C safe_miss",
+      "status": "placeholder",
+      "per_strategy": {
+        "A": {
+          "verdict": "would_be_false_hit",
+          "note": "text 相同, 帧不同 → key 相同但语义错配"
+        },
+        "B": {
+          "verdict": "would_be_safe_miss",
+          "note": "帧 hash 纳入 key → 帧不同则 key 不同"
+        },
+        "C": {
+          "verdict": "would_be_safe_miss",
+          "note": "frame_sampling_meta 纳入 key → 严格区分"
+        }
+      }
+    }
+  ]
+}

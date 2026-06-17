@@ -1,0 +1,17 @@
+Task 6 paged KV checks
+======================
+
+block_size=16 single_request_short_prompt: PASS stats={'allocated_blocks': 1, 'free_blocks': 7, 'total_blocks': 8, 'used_tokens': 8, 'wasted_slots': 8, 'fragmentation_ratio': 0.5}
+block_size=16 single_request_cross_block: PASS stats={'allocated_blocks': 2, 'free_blocks': 6, 'total_blocks': 8, 'used_tokens': 32, 'wasted_slots': 0, 'fragmentation_ratio': 0.0}
+block_size=16 multi_request_different_lengths: PASS stats={'allocated_blocks': 3, 'free_blocks': 13, 'total_blocks': 16, 'used_tokens': 48, 'wasted_slots': 0, 'fragmentation_ratio': 0.0}
+block_size=16 decode_append_token: PASS stats={'allocated_blocks': 2, 'free_blocks': 6, 'total_blocks': 8, 'used_tokens': 17, 'wasted_slots': 15, 'fragmentation_ratio': 0.46875}
+block_size=16 free_request_releases_blocks: PASS stats={'allocated_blocks': 0, 'free_blocks': 8, 'total_blocks': 8, 'used_tokens': 0, 'wasted_slots': 0, 'fragmentation_ratio': 0.0}
+block_size=16 block_reuse_and_gather: PASS stats={'allocated_blocks': 1, 'free_blocks': 3, 'total_blocks': 4, 'used_tokens': 16, 'wasted_slots': 0, 'fragmentation_ratio': 0.0}
+block_size=32 single_request_short_prompt: PASS stats={'allocated_blocks': 1, 'free_blocks': 7, 'total_blocks': 8, 'used_tokens': 16, 'wasted_slots': 16, 'fragmentation_ratio': 0.5}
+block_size=32 single_request_cross_block: PASS stats={'allocated_blocks': 2, 'free_blocks': 6, 'total_blocks': 8, 'used_tokens': 64, 'wasted_slots': 0, 'fragmentation_ratio': 0.0}
+block_size=32 multi_request_different_lengths: PASS stats={'allocated_blocks': 3, 'free_blocks': 13, 'total_blocks': 16, 'used_tokens': 96, 'wasted_slots': 0, 'fragmentation_ratio': 0.0}
+block_size=32 decode_append_token: PASS stats={'allocated_blocks': 2, 'free_blocks': 6, 'total_blocks': 8, 'used_tokens': 33, 'wasted_slots': 31, 'fragmentation_ratio': 0.484375}
+block_size=32 free_request_releases_blocks: PASS stats={'allocated_blocks': 0, 'free_blocks': 8, 'total_blocks': 8, 'used_tokens': 0, 'wasted_slots': 0, 'fragmentation_ratio': 0.0}
+block_size=32 block_reuse_and_gather: PASS stats={'allocated_blocks': 1, 'free_blocks': 3, 'total_blocks': 4, 'used_tokens': 32, 'wasted_slots': 0, 'fragmentation_ratio': 0.0}
+
+All passed: True

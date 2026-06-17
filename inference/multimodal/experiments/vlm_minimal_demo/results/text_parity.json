@@ -1,0 +1,10 @@
+{
+  "mode": "text_parity",
+  "seq_len": 8,
+  "max_abs_diff": 0.0,
+  "passed": true,
+  "threshold": {
+    "atol": 1e-05,
+    "rtol": 0.0001
+  }
+}

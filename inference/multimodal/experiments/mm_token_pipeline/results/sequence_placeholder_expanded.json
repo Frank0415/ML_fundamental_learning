@@ -1,0 +1,23 @@
+{
+  "layout": "placeholder_expanded",
+  "num_visual_tokens": 256,
+  "num_text_tokens": 16,
+  "text_prefix_len": 8,
+  "text_suffix_len": 8,
+  "total_len": 272,
+  "sequence_structure": "t_1...t_8 | v_1...v_256 | t_9...t_16",
+  "visual_span": [
+    8,
+    264
+  ],
+  "text_spans": [
+    [
+      0,
+      8
+    ],
+    [
+      264,
+      272
+    ]
+  ]
+}

@@ -1,0 +1,11 @@
+Task 6 contiguous vs paged compare
+===================================
+
+block_size=16 seq_len=   8: max|diff|=0.00e+00 cos=1.0000029802 PASS stats={'allocated_blocks': 1, 'free_blocks': 3, 'total_blocks': 4, 'used_tokens': 8, 'wasted_slots': 8, 'fragmentation_ratio': 0.5}
+block_size=16 seq_len=  64: max|diff|=0.00e+00 cos=1.0000032187 PASS stats={'allocated_blocks': 4, 'free_blocks': 2, 'total_blocks': 6, 'used_tokens': 64, 'wasted_slots': 0, 'fragmentation_ratio': 0.0}
+block_size=16 seq_len= 512: max|diff|=0.00e+00 cos=1.0000020266 PASS stats={'allocated_blocks': 32, 'free_blocks': 2, 'total_blocks': 34, 'used_tokens': 512, 'wasted_slots': 0, 'fragmentation_ratio': 0.0}
+block_size=32 seq_len=   8: max|diff|=0.00e+00 cos=1.0000029802 PASS stats={'allocated_blocks': 1, 'free_blocks': 3, 'total_blocks': 4, 'used_tokens': 8, 'wasted_slots': 24, 'fragmentation_ratio': 0.75}
+block_size=32 seq_len=  64: max|diff|=0.00e+00 cos=1.0000032187 PASS stats={'allocated_blocks': 2, 'free_blocks': 2, 'total_blocks': 4, 'used_tokens': 64, 'wasted_slots': 0, 'fragmentation_ratio': 0.0}
+block_size=32 seq_len= 512: max|diff|=0.00e+00 cos=1.0000020266 PASS stats={'allocated_blocks': 16, 'free_blocks': 2, 'total_blocks': 18, 'used_tokens': 512, 'wasted_slots': 0, 'fragmentation_ratio': 0.0}
+
+All passed: True

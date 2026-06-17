@@ -1,0 +1,48 @@
+{
+  "case": "same_text_same_image",
+  "description": "same text, same image — expected: all strategies should hit",
+  "per_strategy": {
+    "A": {
+      "verdict": "true_hit",
+      "strategy": "A",
+      "cache_size": 1,
+      "total_queries": 1,
+      "true_hits": 1,
+      "false_hits": 0,
+      "safe_misses": 0,
+      "cache_hit_rate": 1.0,
+      "false_hit_rate": 0.0,
+      "prefill_tokens_saved": 261,
+      "kv_blocks_reused": 22,
+      "memory_saved_bytes": 66816
+    },
+    "B": {
+      "verdict": "true_hit",
+      "strategy": "B",
+      "cache_size": 1,
+      "total_queries": 1,
+      "true_hits": 1,
+      "false_hits": 0,
+      "safe_misses": 0,
+      "cache_hit_rate": 1.0,
+      "false_hit_rate": 0.0,
+      "prefill_tokens_saved": 261,
+      "kv_blocks_reused": 22,
+      "memory_saved_bytes": 66816
+    },
+    "C": {
+      "verdict": "true_hit",
+      "strategy": "C",
+      "cache_size": 1,
+      "total_queries": 1,
+      "true_hits": 1,
+      "false_hits": 0,
+      "safe_misses": 0,
+      "cache_hit_rate": 1.0,
+      "false_hit_rate": 0.0,
+      "prefill_tokens_saved": 261,
+      "kv_blocks_reused": 22,
+      "memory_saved_bytes": 66816
+    }
+  }
+}

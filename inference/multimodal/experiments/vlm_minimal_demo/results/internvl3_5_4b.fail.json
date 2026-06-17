@@ -1,0 +1,25 @@
+{
+  "model_key": "internvl3_5_4b",
+  "model_id": "OpenGVLab/InternVL3_5-4B",
+  "status": "fail",
+  "timestamp_utc": "2026-06-06T23:33:59.791746+00:00",
+  "gpu_info": {
+    "cuda_available": false,
+    "device_count": 0,
+    "mps_available": true
+  },
+  "image_info": {
+    "path": "/Users/franksair/Documents/learning_ML/inference/multimodal/experiments/vlm_minimal_demo/sample_images/demo.jpg",
+    "size": [
+      224,
+      224
+    ],
+    "mode": "RGB",
+    "format": "JPEG"
+  },
+  "max_new_tokens": 64,
+  "error_type": "ValueError",
+  "error_message": "Unrecognized configuration class <class 'transformers_modules.OpenGVLab.InternVL3_5_hyphen_4B.481f6e32467eab4e922ccd7fd6cf420441a62331.configuration_internvl_chat.InternVLChatConfig'> for this kind of AutoModel: AutoModelForImageTextToText.\nModel type should be one of AriaConfig, AyaVisionConfig, BlipConfig, Blip2Config, ChameleonConfig, Cohere2VisionConfig, DeepseekVLConfig, DeepseekVLHybridConfig, Emu3Config, Ernie4_5_VLMoeConfig, EvollaConfig, Exaone4_5_Config, FastVlmConfig, Florence2Config, FuyuConfig, Gemma3Config, Gemma3nConfig, Gemma4Config, GitConfig, Glm46VConfig, Glm4vConfig, Glm4vMoeConfig, GlmOcrConfig, GotOcr2Config, Granite4VisionConfig, IdeficsConfig, Idefics2Config, Idefics3Config, InstructBlipConfig, InstructBlipVideoConfig, InternVLConfig, JanusConfig, Kosmos2Config, Kosmos2_5Config, Lfm2VlConfig, LightOnOcrConfig, Llama4Config, LlavaConfig, LlavaNextConfig, LlavaNextVideoConfig, LlavaOnevisionConfig, MiniCPMV4_6Config, Mistral3Config, Mistral4Config, MllamaConfig, Ovis2Config, PaddleOCRVLConfig, PaliGemmaConfig, PerceptionLMConfig, PI0Config, Pix2StructConfig, PPChart2TableConfig, PPFormulaNetConfig, QianfanOCRConfig, Qwen2_5OmniThinkerConfig, Qwen2_5_VLConfig, Qwen2VLConfig, Qwen3_5Config, Qwen3_5MoeConfig, Qwen3OmniMoeThinkerConfig, Qwen3VLConfig, Qwen3VLMoeConfig, ShieldGemma2Config, SmolVLMConfig, T5Gemma2Config, UdopConfig, VideoLlama3Config, VideoLlavaConfig, VipLlavaConfig, VisionEncoderDecoderConfig.",
+  "traceback": "Traceback (most recent call last):\n  File \"/Users/franksair/Documents/learning_ML/inference/multimodal/experiments/vlm_minimal_demo/run_qwen_vl_reference.py\", line 166, in run_reference\n    model = AutoModelForImageTextToText.from_pretrained(\n        model_id,\n    ...<2 lines>...\n        trust_remote_code=True,\n    )\n  File \"/Users/franksair/Documents/learning_ML/inference/multimodal/minivLLM/.venv/lib/python3.13/site-packages/transformers/models/auto/auto_factory.py\", line 408, in from_pretrained\n    raise ValueError(\n    ...<2 lines>...\n    )\nValueError: Unrecognized configuration class <class 'transformers_modules.OpenGVLab.InternVL3_5_hyphen_4B.481f6e32467eab4e922ccd7fd6cf420441a62331.configuration_internvl_chat.InternVLChatConfig'> for this kind of AutoModel: AutoModelForImageTextToText.\nModel type should be one of AriaConfig, AyaVisionConfig, BlipConfig, Blip2Config, ChameleonConfig, Cohere2VisionConfig, DeepseekVLConfig, DeepseekVLHybridConfig, Emu3Config, Ernie4_5_VLMoeConfig, EvollaConfig, Exaone4_5_Config, FastVlmConfig, Florence2Config, FuyuConfig, Gemma3Config, Gemma3nConfig, Gemma4Config, GitConfig, Glm46VConfig, Glm4vConfig, Glm4vMoeConfig, GlmOcrConfig, GotOcr2Config, Granite4VisionConfig, IdeficsConfig, Idefics2Config, Idefics3Config, InstructBlipConfig, InstructBlipVideoConfig, InternVLConfig, JanusConfig, Kosmos2Config, Kosmos2_5Config, Lfm2VlConfig, LightOnOcrConfig, Llama4Config, LlavaConfig, LlavaNextConfig, LlavaNextVideoConfig, LlavaOnevisionConfig, MiniCPMV4_6Config, Mistral3Config, Mistral4Config, MllamaConfig, Ovis2Config, PaddleOCRVLConfig, PaliGemmaConfig, PerceptionLMConfig, PI0Config, Pix2StructConfig, PPChart2TableConfig, PPFormulaNetConfig, QianfanOCRConfig, Qwen2_5OmniThinkerConfig, Qwen2_5_VLConfig, Qwen2VLConfig, Qwen3_5Config, Qwen3_5MoeConfig, Qwen3OmniMoeThinkerConfig, Qwen3VLConfig, Qwen3VLMoeConfig, ShieldGemma2Config, SmolVLMConfig, T5Gemma2Config, UdopConfig, VideoLlama3Config, VideoLlavaConfig, VipLlavaConfig, VisionEncoderDecoderConfig.\n",
+  "total_sec": 2.0
+}
