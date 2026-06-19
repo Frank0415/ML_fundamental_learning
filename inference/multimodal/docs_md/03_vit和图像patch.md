@@ -10,6 +10,13 @@ ViT 的核心操作是将一幅图像切为固定大小的小方块（patch）�
 
 对于一幅 448×448 的图像，patch 大小仍为 16×16：总共 28×28 = 784 个 patch，visual token 数增加到 784 个。token 数量随分辨率平方增长，这也是为什么 12GB 显存设备必须严格控制 `max_pixels`。
 
+<figure style="margin: 1rem 0 1.5rem;">
+  <img src="../docs/assets/architecture/vit_model_overview.png" alt="ViT 模型总览图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
+    来源：ViT 论文 Figure 1。原图把 patchify、线性投影、位置编码和 Transformer Encoder 主干一次性串起来，正好对应本节的输入管线说明。
+  </figcaption>
+</figure>
+
 ## 2. Patch 切分的直观表示
 
 下面是一个 224×224 图像被 16×16 patch 切分的 ASCII 表示。每个编号代表一个 patch：

@@ -12,6 +12,13 @@ SGLang 社区目前对多模态 prefix caching 的讨论集中在以下方向：
 - **图像哈希作为节点标签**：每个视觉 token 节点附带一个 image_embedding 哈希值。只有哈希值匹配时，才复用该视觉节点及其后代的 KV cache。
 - **截断匹配**：当一个请求的 sequence 到达视觉 token 边界时，自动截断 prefix 匹配，之后的部分视为全新 prefix 单独计算。
 
+<figure style="margin: 1rem 0 1.5rem;">
+  <img src="../docs/assets/architecture/sglang_radixattention_lru.png" alt="SGLang RadixAttention 与 LRU 淘汰示意图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
+    来源：SGLang 论文 Figure 3。它展示了 RadixAttention 如何在多轮请求中复用、分叉和淘汰前缀节点，比抽象描述更容易看懂 prefix reuse 的动态过程。
+  </figcaption>
+</figure>
+
 ## 2. SGLang 多模态 Serving 的实践经验
 
 尽管 Radix Tree 在多模态场景下尚未完美适配，SGLang 在实际 VLM serving 中仍有以下优势：

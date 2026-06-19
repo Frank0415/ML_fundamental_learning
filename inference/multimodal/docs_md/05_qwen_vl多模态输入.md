@@ -26,6 +26,13 @@ VL Adapter / Projector ── 将 visual token 投影到 LLM embedding 空间
 LLM (Qwen)             ── 生成回答
 ```
 
+<figure style="margin: 1rem 0 1.5rem;">
+  <img src="../docs/assets/architecture/qwen_vl_training_pipeline.png" alt="Qwen-VL 系列训练与架构流水线图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
+    来源：Qwen-VL 论文 Figure 3。图中把 ViT、Cross-Attention Adapter 与 QwenLM 的三阶段训练关系画了出来，能直接对应本页的“三段式架构概览”。
+  </figcaption>
+</figure>
+
 ## 2. 特殊 Token 定义
 
 Qwen-VL 系列使用以下特殊 token 来标记图像在文本序列中的位置：

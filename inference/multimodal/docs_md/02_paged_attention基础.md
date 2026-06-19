@@ -20,6 +20,13 @@ Paged attention 借鉴了操作系统虚拟内存的页表（page table）思想
 
 ## 2. Paged Attention 的工作原理
 
+<figure style="margin: 1rem 0 1.5rem;">
+  <img src="../docs/assets/architecture/vllm_block_table_translation.png" alt="vLLM 的 block table translation 架构图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
+    来源：vLLM PagedAttention 论文 Figure 6。图中把逻辑 KV blocks、block table 和物理 KV blocks 的映射关系画得比简化 ASCII 更接近真实实现。
+  </figcaption>
+</figure>
+
 ```
 逻辑序列 (token 0..23)
 ├─ token  0..15 → block₀  (物理 block 7)

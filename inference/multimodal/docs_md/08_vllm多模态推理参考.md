@@ -10,6 +10,13 @@ vLLM 的多模态支持基于以下核心设计原则：
 - **Automatic Prefix Caching（APC）**：vLLM v0.6.0 引入的自动前缀缓存，对多模态场景提供了开箱即用的 prefix 共享。当两个请求共享相同的 system prompt（且视觉 token 之前的部分完全相同），APC 自动复用 prefix KV。
 - **多模态输入处理器**：vLLM 为每种 VLM 提供独立的 `MultiModalProcessor`，负责将图像/视频预处理后转换为 visual token，并嵌入到文本 token 序列中。这个过程对 KV cache 层是透明的。
 
+<figure style="margin: 1rem 0 1.5rem;">
+  <img src="../docs/assets/architecture/vllm_system_overview.png" alt="vLLM 系统总览图" style="width: 100%; max-width: 720px; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
+    来源：vLLM PagedAttention 论文 Figure 4。Scheduler、KV Cache Manager 与多个 worker 的职责分工，正好对应多模态 serving 的整体运行时结构。
+  </figcaption>
+</figure>
+
 ## 2. vLLM 多模态推理流水线
 
 ```
