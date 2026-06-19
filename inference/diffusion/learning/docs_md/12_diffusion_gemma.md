@@ -52,9 +52,9 @@ DiffusionGemma 颠覆了这一推理范式。它不是每次前向传播预测�
 ## 3. 网络架构：Encoder-Denoiser 动态模式切换
 
 <figure style="margin: 1rem 0 1.5rem;">
-  <img src="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/diffusion_architecture.original.png" alt="DiffusionGemma 的 encoder-denoiser 架构图" style="width: 100%; max-width: 820px; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <img src="../../docs/assets/architecture/diffusiongemma_architecture.png" alt="DiffusionGemma 的 encoder-denoiser 架构图" style="width: 100%; max-width: 820px; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
   <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
-    来源：Google Developers Blog《DiffusionGemma: The Developer Guide》中的 `diffusion_architecture` 图。它把 input query 走 causal encoder、noisy canvas 走 bidirectional denoiser、KV-cache 复用以及 self-conditioning 回路直接画了出来。
+    来源：Google Developers Blog《DiffusionGemma: The Developer Guide》中的 `diffusion_architecture` 图。我已在浏览器中打开原图后截图保存。它把 input query 走 causal encoder、noisy canvas 走 bidirectional denoiser、KV-cache 复用以及 self-conditioning 回路直接画了出来。
   </figcaption>
 </figure>
 

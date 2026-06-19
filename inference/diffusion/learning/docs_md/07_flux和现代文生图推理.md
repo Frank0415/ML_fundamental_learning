@@ -11,9 +11,9 @@
 ## 2. FLUX vs SD3：架构层面对比
 
 <figure style="margin: 1rem 0 1.5rem;">
-  <img src="https://cdn.sanity.io/images/2gpum2i6/production/b0c62a869cbd57d5ae52ac310977d746c027ceef-1601x699.png" alt="Black Forest Labs 官方文章中的 FLUX 架构配图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <img src="../../docs/assets/architecture/flux_architecture.png" alt="FLUX.1 高层架构总览图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
   <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
-    来源：Black Forest Labs《Announcing Black Forest Labs》“Transformer-powered Flow Models at Scale” 段前的官方配图。该段正文明确说明 FLUX.1 建立在 multimodal 与 parallel diffusion transformer blocks 之上，并结合 flow matching、RoPE 与 parallel attention layers。
+    来源：技术报告《Demystifying Flux Architecture》Figure 4。我已在浏览器中打开原图后截图保存。图里把 text encoder、噪声 latent、double-stream / single-stream attention blocks、以及 VAE decoder 的主干串成了一条完整推理链。
   </figcaption>
 </figure>
 
