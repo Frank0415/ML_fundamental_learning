@@ -15,6 +15,27 @@
 
 ## 2. 架构对比
 
+<figure style="margin: 1rem 0 1.5rem;">
+  <img src="../../docs/assets/architecture/wan_architecture.png" alt="Wan 视频模型架构图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
+    来源：Wan 论文 Figure 9。图中明确给出 Wan-Encoder、DiT blocks、cross-attention 与 Wan-Decoder 的主干关系。
+  </figcaption>
+</figure>
+
+<figure style="margin: 1rem 0 1.5rem;">
+  <img src="../../docs/assets/architecture/hunyuanvideo_architecture.png" alt="HunyuanVideo 总体架构图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
+    来源：HunyuanVideo 论文 Figure 5。它强调了 causal 3D VAE、文本条件输入和视频 backbone 的整体闭环，是双流视频扩散系统的代表图。
+  </figcaption>
+</figure>
+
+<figure style="margin: 1rem 0 1.5rem;">
+  <img src="../../docs/assets/architecture/cogvideox_architecture.png" alt="CogVideoX Expert Transformer 架构图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
+    来源：CogVideoX 论文 Figure 3。图里同时展示了 3D causal VAE、text encoder 和 expert transformer blocks 的拼接方式，适合和 Wan / HunyuanVideo 做结构对照。
+  </figcaption>
+</figure>
+
 ### 2.1 Latent Shape 与 VAE
 
 | 模型 | VAE 类型 | 空间压缩 | 时间压缩 | Latent 通道 | Latent Shape (16f×256² 例) |

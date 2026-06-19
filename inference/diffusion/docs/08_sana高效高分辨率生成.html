@@ -78,6 +78,13 @@
 
 <h2>2. Sana 的三个激进设计</h2>
 
+<figure style="margin: 1rem 0 1.5rem;">
+  <img src="assets/architecture/sana_overview.png" alt="Sana 总体架构与 Linear DiT 模块图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
+    来源：Sana 论文 Figure 5。图中同时把 Gemma 小 LLM、32× deep compression autoencoder、Linear DiT 和 Mix-FFN 的组合关系画清楚了。
+  </figcaption>
+</figure>
+
 <h3>设计 1：LLM as Text Encoder（用 Gemma-2B 替代 CLIP+T5）</h3>
 
 <table>

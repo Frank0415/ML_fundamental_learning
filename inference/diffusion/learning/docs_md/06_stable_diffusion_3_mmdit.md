@@ -30,6 +30,13 @@ dx_t/dt = v_θ(x_t, t, c)     (c = 文本条件)
 
 MMDiT 的核心思想：**文本和图像分别走独立的 Transformer stream**，在 attention 层进行交叉信息交换。
 
+<figure style="margin: 1rem 0 1.5rem;">
+  <img src="../../docs/assets/architecture/sd3_mmdit_architecture.png" alt="SD3 MMDiT 双流架构图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
+    来源：SD3 论文 Figure 2。右半部分给出了单个 MM-DiT block 的真实结构，和下方的教学版 ASCII 图可以一一对照。
+  </figcaption>
+</figure>
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      MMDiT Block                            │

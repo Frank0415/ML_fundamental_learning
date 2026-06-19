@@ -26,6 +26,13 @@ DiT 提出的答案：**把 latent 切成 patches，用标准 Transformer（ViT 
                                 └──────────────────────┘
 ```
 
+<figure style="margin: 1rem 0 1.5rem;">
+  <img src="../../docs/assets/architecture/sd3_mmdit_architecture.png" alt="以 SD3 为代表的 DiT / MMDiT 组件总览图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
+    来源：SD3 论文 Figure 2。虽然它对应的是 MMDiT 而不是最原始的 DiT，但左侧组件图完整覆盖了 patchify、position embedding、timestep conditioning 和 transformer 主干这条标准推理路径。
+  </figcaption>
+</figure>
+
 ### Step 1: Patchify
 
 将 (B, C, H, W) 切割为 N = (H/p) × (W/p) 个 patch，每个 patch 展平为 p×p×C 维。

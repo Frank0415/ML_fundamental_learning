@@ -20,6 +20,13 @@
 
 视频 DiT 的 spacetime patchify 处理 3D 体积：把 (C, T, H, W) 的 latent 切成 **时间维也参与的 3D patch**：
 
+<figure style="margin: 1rem 0 1.5rem;">
+  <img src="https://images.ctfassets.net/kftzwdyauwt9/1d2955dd-9d05-4f33-13073dc9301d/8dc0bae8cb98054d083ab3cc3ade6859/figure-patches.png?fm=webp&amp;q=90&amp;w=3840" alt="OpenAI Sora technical report 的 visual patches 图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
+    来源：OpenAI《Video generation models as world simulators》“Turning visual data into patches”。图里把原始视觉输入、压缩后的 latent 体和最终 patch token 序列的关系直接画了出来。
+  </figcaption>
+</figure>
+
 ```python
 # 图像 DiT patchify
 image_latent: (B, C, H, W) = (1, 4, 64, 64)
