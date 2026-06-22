@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tianwei Zhang 2025-2026 非安全推理/调度/GPU 系统论文导读</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #101216;
+    --panel: #171b22;
+    --panel2: #1f2530;
+    --text: #eef2f6;
+    --muted: #aab4c0;
+    --line: #303846;
+    --accent: #78d5b4;
+    --accent2: #77a8ff;
+    --warn: #ffd37a;
+    --bad: #ff8c8c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.72 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    padding: 12px 28px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(16,18,22,.94);
+    backdrop-filter: blur(10px);
+  }
+  nav a { color: var(--muted); text-decoration: none; font-size: 14px; }
+  nav a:hover { color: var(--accent); }
+  .brand { color: var(--accent); font-weight: 700; margin-right: 12px; }
+  main { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
+  h1 { font-size: 36px; line-height: 1.18; margin: 18px 0 12px; }
+  h2 { margin: 46px 0 14px; padding-top: 10px; font-size: 26px; border-top: 1px solid var(--line); }
+  h3 { margin: 28px 0 8px; font-size: 21px; color: #ffffff; }
+  h4 { margin: 18px 0 7px; font-size: 16px; color: var(--accent); }
+  p { margin: 9px 0; }
+  a { color: var(--accent2); }
+  code { background: #242b36; border: 1px solid #394252; border-radius: 5px; padding: 1px 5px; }
+  table { width: 100%; border-collapse: collapse; margin: 14px 0 24px; }
+  th, td { border: 1px solid var(--line); padding: 10px 11px; vertical-align: top; }
+  th { background: var(--panel2); text-align: left; color: #f7fafc; }
+  tr:nth-child(even) td { background: rgba(255,255,255,.018); }
+  ul, ol { padding-left: 22px; }
+  article {
+    margin: 26px 0;
+    padding: 22px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+  }
+  .intro { max-width: 930px; color: var(--muted); font-size: 17px; }
+  .cards { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin: 24px 0; }
+  .card { padding: 18px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+  .num { font-size: 27px; font-weight: 800; color: var(--accent); }
+  .label { color: var(--muted); font-size: 14px; }
+  .toc { margin: 22px 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+  .callout { margin: 14px 0; padding: 13px 15px; border-left: 4px solid var(--accent); background: #13251f; }
+  .warn { border-left-color: var(--warn); background: #282312; }
+  .bad { border-left-color: var(--bad); background: #2a1719; }
+  .meta { color: var(--muted); font-size: 14px; margin: 6px 0 12px; }
+  .tag { display: inline-block; margin: 2px 5px 2px 0; padding: 2px 7px; border: 1px solid #435064; border-radius: 999px; color: var(--muted); font-size: 12px; }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+  .box { padding: 12px 14px; border: 1px solid var(--line); border-radius: 7px; background: #151922; }
+  .score { color: var(--accent); font-weight: 700; }
+  footer { margin-top: 46px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 18px; }
+  @media (max-width: 820px) {
+    nav { overflow-x: auto; padding: 10px 16px; }
+    main { padding: 24px 16px 60px; }
+    .cards, .grid { grid-template-columns: 1fr; }
+    h1 { font-size: 29px; }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <span class="brand">Non-Security Systems</span>
+  <a href="#scope">口径</a>
+  <a href="#map">地图</a>
+  <a href="#papers">逐篇导读</a>
+  <a href="#excluded">剔除项</a>
+  <a href="#downloads">PDF</a>
+  <a href="#audit">自查</a>
+</nav>
+<main>
+
+<h1>Tianwei Zhang 2025-2026 非安全推理、调度与 GPU 系统论文导读</h1>
+<p class="intro">这版按用户最新口径重筛：不要安全、隐私、攻击、防御、水印、泄漏、red-teaming。保留的核心只覆盖非安全方向的 inference / serving / decoding / scheduling / GPU cluster / LLM training system / edge-cloud execution。筛选证据来自用户提供的 publication page pasted text、官网 HTML、已下载 PDF 和本地抽取文本。</p>
+
+<div class="cards">
+  <div class="card"><div class="num">11</div><div class="label">非安全核心论文</div></div>
+  <div class="card"><div class="num">7</div><div class="label">推理/serving/decoding/input 系统</div></div>
+  <div class="card"><div class="num">4</div><div class="label">训练调度/GPU 集群/边云协同系统</div></div>
+  <div class="card"><div class="num">0</div><div class="label">安全/隐私/攻击/水印核心条目</div></div>
+</div>
+
+<details class="toc" open>
+  <summary>页内目录</summary>
+  <ol>
+    <li><a href="#scope">筛选口径：这次什么算，什么不算</a></li>
+    <li><a href="#map">技术地图</a></li>
+    <li><a href="#papers">11 篇逐篇详细导读</a></li>
+    <li><a href="#excluded">明确剔除的旧 security/attack/watermark 条目</a></li>
+    <li><a href="#downloads">本地 PDF 与抽取文本索引</a></li>
+    <li><a href="#audit">完成度自查</a></li>
+  </ol>
+</details>
+
+<h2 id="scope">1. 筛选口径：这次什么算，什么不算</h2>
+<p>这次不按会议名筛，也不只看标题里是否出现 inference。判断标准是论文的实际对象是否属于<strong>模型执行系统</strong>：推理服务、解码、KV/cache、batching、调度、GPU/集群、跨集群训练、边云协同执行、上下文过滤、长序列训练执行。只要是安全、隐私、攻击、防御、水印、泄漏、red-teaming、ownership verification，即使发生在模型使用阶段，也不放入核心。</p>
+
+<table>
+  <thead><tr><th>类别</th><th>纳入</th><th>排除</th></tr></thead>
+  <tbody>
+    <tr><td>LLM inference / serving</td><td>KV cache compression, agentic batch admission, speculative decoding, RL rollout speculative decoding</td><td>推理成本攻击、越狱、泄漏、prompt injection</td></tr>
+    <tr><td>非自回归 / video inference</td><td>dLLM block scheduling, video DiT distributed sparse attention</td><td>text-to-image/video red teaming、unlearning attack</td></tr>
+    <tr><td>输入侧执行优化</td><td>repo-level code completion 的 context filtering</td><td>RAG leakage、search-agent red teaming</td></tr>
+    <tr><td>GPU / cluster / training systems</td><td>long-sequence LLM training offload, cross-cluster LLM training, layer-elastic GPU scheduler</td><td>密码协议、side-channel protection、bit-flip protection</td></tr>
+    <tr><td>边云协同</td><td>edge SLM + cloud LLM collaborative inference/training survey</td><td>privacy-preserving inference、secure inference</td></tr>
+  </tbody>
+</table>
+
+<div class="callout warn"><strong>关键修正：</strong>旧版把 secure/private/verifiable inference、水印、攻击类都纳入了。按“不要 security”的新要求，这些全部从核心导读中移除，新增的是 SPPO、Di-PS、ICEFROG 和 Edge SLM-Cloud LLM collaborative inference survey。</div>
+
+<h2 id="map">2. 技术地图</h2>
+<table>
+  <thead><tr><th>主线</th><th>论文</th><th>核心瓶颈</th></tr></thead>
+  <tbody>
+    <tr><td>LLM serving 现实性</td><td>Rethinking KV Cache Compression, PACE/CONCUR</td><td>KV cache 占用、agent 生命周期、batch 中段 thrashing、真实 serving throughput</td></tr>
+    <tr><td>Speculative decoding 系统化</td><td>SpecForge, ReSpec</td><td>draft model 训练、target/draft 解耦、RL rollout 中 actor 漂移和 batch 负收益</td></tr>
+    <tr><td>Diffusion / video / dLLM inference</td><td>DSB, DSA</td><td>非自回归 block 解码顺序、video DiT 长序列 attention、分布式通信</td></tr>
+    <tr><td>输入侧推理效率</td><td>CodeFilter</td><td>RAG context 不只是长短问题，负上下文会改变生成分布</td></tr>
+    <tr><td>长序列和集群训练系统</td><td>SPPO, Di-PS, ICEFROG</td><td>百万 token activation memory、跨集群异步训练、GPU 集群 layer-elastic scheduling</td></tr>
+    <tr><td>边云协同执行</td><td>Collaborative Inference and Learning between Edge SLMs and Cloud LLMs</td><td>任务分配、任务切分、offloading、routing、speculative collaboration、边缘延迟/云端能力折中</td></tr>
+  </tbody>
+</table>
+
+<h2 id="papers">3. 11 篇逐篇详细导读</h2>
+
+<article id="kv">
+  <h3>01. Rethinking Key-Value Cache Compression Techniques for Large Language Model Serving</h3>
+  <div class="meta">MLSys 2025 · <a href="papers/2025_mlsys_rethinking_kv_cache_compression.pdf">PDF</a> · <a href="extracted_text/2025_mlsys_rethinking_kv_cache_compression.txt">TXT</a> <span class="tag">LLM serving</span><span class="tag">KV cache</span></div>
+  <p><strong>一句话：</strong>这篇不是提出新压缩算法，而是质问 KV cache compression 放进真实 serving stack 后到底快不快。</p>
+  <h4>论文架构</h4>
+  <p>论文按系统审计方式组织：先解释 KV cache 在 LLM serving 中为什么成为显存瓶颈，再回顾量化和稀疏/驱逐类压缩方法，随后从 throughput、response length distribution、negative samples 三个维度重评代表算法，最后提出 predictor/router，把评测结论变成 serving policy。</p>
+  <h4>核心创新点</h4>
+  <div class="grid">
+    <div class="box"><strong>评测口径变化：</strong>不只看显存节省和平均准确率，而是放进 FlashAttention、PagedAttention、LMDeploy、tensor parallelism、不同 batch/sequence length 组合里测。</div>
+    <div class="box"><strong>端到端视角：</strong>压缩可能让每 token decode 变快，但 response length 变长，最终 E2E latency 未必下降。</div>
+    <div class="box"><strong>样本级风险：</strong>平均分掩盖 long-context negative samples，尤其 QA、summarization、code 任务会出现严重退化。</div>
+    <div class="box"><strong>系统策略：</strong>throughput predictor、length predictor、request router 让压缩不是默认全开，而是请求级选择。</div>
+  </div>
+  <h4>实验过程</h4>
+  <p>实验覆盖 KIVI、GEAR、StreamingLLM、H2O。KIVI 使用 G=32、R=128；GEAR 使用 2% sparsity、rank 2；StreamingLLM/H2O 使用 64 initial/heavy + 448 recent，总 cache size 512。模型包括 LLaMA-2/3、Mistral 等；ShareGPT 用于 throughput/length，LongBench 用于 negative sample。脚本分别固定 batch 改 sequence、固定 sequence 改 batch，且区分 prefill/decode。</p>
+  <h4>关键结果</h4>
+  <p>LLaMA3-70B 在 batch 512、prompt 2048、FP16 权重约 130GB 时，KV cache 可达约 512GB。Table 3 显示 tensor parallelism 会削弱 compression speedup：prefill TP=1 时 KIVI-4 约 1.06x、GEAR-4 0.86x、H2O 0.58x；decode TP=1 时 H2O/StreamingLLM 约 1.34x，但 TP=2/4 后收益下降。Length analysis 中 KIVI、GEAR、H2O、StreamingLLM 输出长度分别约 1.69x、1.70x、1.55x、1.76x；router 能把多种压缩策略平均 E2E latency 从 9-13 秒区间降到 6-7 秒区间。</p>
+  <h4>读法</h4>
+  <p>这篇是读后续 PACE/CONCUR 的前置。结论不是“KV compression 没用”，而是“只能在 heavy KV 场景、正确 batch/TP 组合、且不拉长输出时有用”。</p>
+</article>
+
+<article id="pace">
+  <h3>02. PACE / CONCUR: Proactive Agent-Level Admission Control for Efficient Agentic Batch Inference</h3>
+  <div class="meta">ICML 2026 / arXiv CONCUR 版本 · <a href="papers/2026_icml_pace_concur_agentic_batch_inference.pdf">PDF</a> · <a href="extracted_text/2026_icml_pace_concur_agentic_batch_inference.txt">TXT</a> <span class="tag">agentic batch</span><span class="tag">admission control</span></div>
+  <p><strong>一句话：</strong>agent 不是一次请求，而是一串 reason/tool/generate 的生命周期；把普通 request-level batching 套上去会导致 KV cache 中段 thrashing。</p>
+  <h4>论文架构</h4>
+  <p>论文先定义 agentic batch inference 的三阶段行为：warmup、middle-phase thrashing、cooldown；再分析 SGLang/LRU/HiCache 这类 cache-centric 方案为何不足；方法部分提出 agent-level controller；实验对比原生 SGLang、request-level admission、HiCache 和 CONCUR。</p>
+  <h4>核心创新点</h4>
+  <ul>
+    <li>提出 <strong>middle-phase thrashing</strong>：GPU KV cache usage 接近饱和、hit rate 崩溃，recomputation 占据大量 E2E latency。</li>
+    <li>把控制粒度从 request 转为 agent：<code>admit</code>、<code>pause</code>、<code>resume</code> 控制 active agents。</li>
+    <li>把 KV cache 当作 congestion resource，用 cache usage 和 hit rate 反馈调 AIMD window。</li>
+  </ul>
+  <h4>实验过程</h4>
+  <p>实验基于 SGLang，模型包括 Qwen3-32B 和 DeepSeek-V3，硬件为 H100 80GB、NVLink 900GB/s、跨节点 RoCE。baseline 包括 SGLang、request-level admission control、HiCache。控制参数示例：alpha=2、beta=0.5、Ulow=0.2、Uhigh=0.5、Hthresh=0.2。</p>
+  <h4>关键结果</h4>
+  <p>Qwen3-32B batch 256、TP=8、8 GPU 时，SGLang 约 1480s，CONCUR 约 362s，达到 4.09x；DeepSeek-V3 batch 40、TP=16 时从 3877s 降到 2043s，约 1.90x。DeepSeek-V3 batch 40 的 cache hit rate 中，SGLang 约 35.41%，CONCUR 约 73.36%；HiCache 可到 96.08%，但 CPU offloading/PCIe 传输让端到端不占优。</p>
+  <h4>读法</h4>
+  <p>它不是换 eviction policy，而是在 agent 生命周期层面限流。读这篇要把 LLM serving 从“请求队列”升级成“长寿命状态机调度”。</p>
+</article>
+
+<article id="specforge">
+  <h3>03. SpecForge: A Flexible and Efficient Open-Source Training Framework for Speculative Decoding</h3>
+  <div class="meta">ICML 2026 · <a href="papers/2026_icml_specforge_speculative_decoding.pdf">PDF</a> · <a href="extracted_text/2026_icml_specforge_speculative_decoding.txt">TXT</a> <span class="tag">speculative decoding</span><span class="tag">draft model training</span></div>
+  <p><strong>一句话：</strong>speculative decoding 的实际瓶颈常常不是验证算法，而是没有高质量、可复现、可扩展训练的 draft model。</p>
+  <h4>论文架构</h4>
+  <p>前半解释 EAGLE-3 和 Training-Time Test 的训练复杂度，指出 target model 与 draft model 用同一套 training stack 会浪费；中间提出 SpecForge 的 target-draft decoupling、hybrid parallelism、sparse tree attention；后半发布 SpecBundle 并评估训练吞吐和推理加速。</p>
+  <h4>核心创新点</h4>
+  <ul>
+    <li>target model 冻结且巨大，走 SGLang/vLLM 类 inference backend；draft model 小且训练，走 FSDP/ZeRO Stage 2。</li>
+    <li>TTT attention 的 dense logits 占 activation memory 极高，SpecForge 用 sparse tree attention/FlexAttention 降低显存和时间。</li>
+    <li>发布面向 Llama/Qwen/Kimi 等模型族的 SpecBundle draft models，使 speculative decoding 更容易落地。</li>
+  </ul>
+  <h4>实验过程</h4>
+  <p>训练框架评估在 8 张 H200 上，sequence length 4096。模型覆盖 LLaMA3.1-8B、LLaMA3.3-70B、Qwen3-30B-A3B、Qwen3-235B-A22B。评估 step time、tokens/s、backend 对比、attention kernel peak memory，并在 MTBench、Math500、GSM8K、HumanEval、LCB、GPQA 等任务上看推理效果。</p>
+  <h4>关键结果</h4>
+  <p>Qwen3-235B-A22B 的训练吞吐从 ZeRO-3 baseline 约 2025.7 tokens/s 到 SpecForge 约 20227.2 tokens/s，约 9.99x；Qwen3-30B-A3B 约 4.31x；LLaMA3.1-8B 约 2.01x。target backend 对比中 SGLang 最高快 6.8x；attention kernel 在 sequence length 4096 时减少约 62.1% execution time 和 93.5% peak memory。SpecBundle 在 SGLang 上最高约 4.48x E2E inference speedup。</p>
+  <h4>读法</h4>
+  <p>这篇讲的是 speculative decoding 的基础设施：draft 训练数据、target-regenerated responses、TTT length、draft architecture，比单纯看 acceptance rate 更接近部署问题。</p>
+</article>
+
+<article id="respec">
+  <h3>04. ReSpec: Towards Optimizing Speculative Decoding in Reinforcement Learning Systems</h3>
+  <div class="meta">MLSys 2026 · <a href="papers/2026_mlsys_respec_speculative_decoding_rl.pdf">PDF</a> · <a href="extracted_text/2026_mlsys_respec_speculative_decoding_rl.txt">TXT</a> <span class="tag">RL rollout</span><span class="tag">speculative decoding</span></div>
+  <p><strong>一句话：</strong>serving 里的 target model 通常静止，RL 里的 actor 每轮都在更新；drafter 很快 stale，普通 SD 不能直接搬进 RL rollout。</p>
+  <h4>论文架构</h4>
+  <p>论文先拆 RL iteration：generation、reward/critic inference、actor update，并量化 generation 占比；再诊断 large batch 下 speedup 递减、actor 漂移、policy degradation；方法分为 Adaptive Server 和 Online Learner；实验围绕稳定性、速度、组件消融和异步更新频率。</p>
+  <h4>核心创新点</h4>
+  <ul>
+    <li>Adaptive Server 运行时根据 active batch size 选择 speculative 参数或切回普通 decoding。</li>
+    <li>Reward-weighted KD 用高 reward trajectory 更强地更新 drafter，避免低质量 rollout 拉偏。</li>
+    <li>Async Update Overlap 用 replay buffer 和更新间隔把 drafter training 藏进 RL pipeline idle slots。</li>
+  </ul>
+  <h4>实验过程</h4>
+  <p>系统基于 VeRL 和 SGLang，约 2K LOC。硬件是两台各 8 张 H100 80GB 的节点。模型为 Qwen2.5-3B/7B/14B，训练算法 GRPO，任务是真实数学数据集。3B 使用 1 generation GPU + 1 training GPU，7B/14B 使用 8+8 GPU，seq len 到 8192。</p>
+  <h4>关键结果</h4>
+  <p>7B、max response length 8K 时，math generation 占 83%-86%，code generation 占 70.9%-75.5%。Qwen-3B 平均 1.84x、最高 4.53x；Qwen-7B 平均 1.69x、最高 2.41x；Qwen-14B 平均 1.50x 左右。直接 EAGLE-3 在中后期会 validation 崩溃，ReSpec 基本跟随 no-acceleration baseline。</p>
+  <h4>读法</h4>
+  <p>ReSpec 说明 speculative decoding 不是“永远打开就快”。在 RL rollout 里，batch size、actor drift、reward 分布、drafter 更新频率共同决定是否加速。</p>
+</article>
+
+<article id="dsb">
+  <h3>05. DSB: Dynamic Sliding Block Scheduling for Diffusion LLMs</h3>
+  <div class="meta">ICML 2026 · <a href="papers/2026_icml_dsb_dynamic_sliding_block_scheduling.pdf">PDF</a> · <a href="extracted_text/2026_icml_dsb_dynamic_sliding_block_scheduling.txt">TXT</a> <span class="tag">diffusion LLM</span><span class="tag">block schedule</span></div>
+  <p><strong>一句话：</strong>dLLM 不是左到右自回归；全局并行 unmask 会破坏语言顺序，固定 block 又太僵硬，DSB 用动态滑动 block 兼顾质量和效率。</p>
+  <h4>论文架构</h4>
+  <p>论文先解释 masked diffusion inference 和 naive block schedule，再指出 late/premature decoding 问题；方法部分提出 Dynamic Sliding Block 与 DSB Cache；实验覆盖 LLaDA/Dream 多模型和 GSM8K、MATH、HumanEval、MBPP、BBH 等 benchmark。</p>
+  <h4>核心创新点</h4>
+  <ul>
+    <li>active block 左右边界动态滑动，不要求当前固定块全部填满才进入下一块。</li>
+    <li>高置信 token 可以提前解码，低置信 token 可以等更多上下文。</li>
+    <li>DSB Cache 用 prefix window update 和周期性 global refresh 应对动态边界引起的 KV instability。</li>
+  </ul>
+  <h4>实验过程</h4>
+  <p>模型包括 LLaDA-8B-Instruct、LLaDA-1.5、Dream-v0-Base-7B、Dream-v0-Instruct-7B。baseline 包括 vanilla Top-1、Fast-dLLM、Naive Block、AdaBlock-dLLM、Dual Cache、dKV-Cache-Decode。硬件为单张 H200 140G，generation length 256，block length/Sinit=32。</p>
+  <h4>关键结果</h4>
+  <p>LLaDA-8B-Instruct 上，DSB greedy 在 GSM8K 达约 78.54 accuracy / 51.03 TPS；加入 DSB Cache 后 GSM8K 可到约 80.29 accuracy / 99.61 TPS。HumanEval 上 DSB const. 达约 42.07 accuracy / 124.6 TPS，优于 AdaBlock。附录动机实验显示 late decoding 在 LLaDA/Dream 上超过 80%，premature decoding 约 44.3%-59.0%。</p>
+  <h4>读法</h4>
+  <p>它不是普通 AR LLM 的 KV cache 策略，而是 dLLM 的解码顺序系统。核心问题是并行 unmask 与自然语言因果顺序之间的冲突。</p>
+</article>
+
+<article id="dsa">
+  <h3>06. DSA: Efficient Inference for Video Generation Models via Distributed Sparse Attention</h3>
+  <div class="meta">ICLR 2026 · <a href="papers/2026_iclr_dsa_video_generation_inference.pdf">PDF</a> · <a href="extracted_text/2026_iclr_dsa_video_generation_inference.txt">TXT</a> <span class="tag">video DiT</span><span class="tag">distributed attention</span></div>
+  <p><strong>一句话：</strong>视频 DiT 的 attention 太长，单纯 sparse attention 不够，多 GPU sequence parallel 又会通信拖累；DSA 把 sparse pattern 和 distributed inference 一起设计。</p>
+  <h4>论文架构</h4>
+  <p>论文先量化 Wan/Hunyuan 类视频生成模型的 attention 时间占比，再指出 sparse attention 与分布式 sequence parallelism 的不匹配；方法部分提出 local pattern matching、mixed parallelism、dynamic attention scheduling；实验比较 dense、SVG、USP 和 DSA。</p>
+  <h4>核心创新点</h4>
+  <ul>
+    <li>local pattern matching + majority voting：不集中全局 Q/K 判断 pattern，而是在各 GPU 本地判断后汇总。</li>
+    <li>mixed parallelism：spatial sparse heads 用 partial-ring，temporal sparse heads 用 Ulysses-style all-to-all。</li>
+    <li>dynamic scheduling 根据 spatial/temporal head 比例重排执行，尽量重叠通信和计算。</li>
+  </ul>
+  <h4>实验过程</h4>
+  <p>模型包括 Wan2.1-1.3B、Wan2.1-14B、Hunyuan-Video-13B；任务为 720p、5 秒视频生成。质量用 VBench、PSNR、SSIM、LPIPS；系统 baseline 包括单 GPU dense/SVG 和 8 GPU USP。</p>
+  <h4>关键结果</h4>
+  <p>Wan2.1-14B 从单 GPU dense 约 1889.25s 降到 8 GPU DSA 约 175s，约 10.79x；对比 USP 251.26s 仍有约 43% 提升。Hunyuan-video-13B 从 1790.34s 到 189.38s，约 9.45x。质量上，Wan2.1-14B 的 DSA PSNR/SSIM/LPIPS 为 33.19/0.775/0.103，接近 dense/SVG。</p>
+  <h4>读法</h4>
+  <p>不要只看 FLOPs。视频生成的关键是：稀疏掉的 token 是否也少通信，计算和通信能否被重新排布。</p>
+</article>
+
+<article id="codefilter">
+  <h3>07. Impact-driven Context Filtering for Cross-file Code Completion</h3>
+  <div class="meta">COLM 2025 · <a href="papers/2025_colm_codefilter_context_filtering.pdf">PDF</a> · <a href="extracted_text/2025_colm_codefilter_context_filtering.txt">TXT</a> <span class="tag">RAG</span><span class="tag">context filtering</span></div>
+  <p><strong>一句话：</strong>repo-level code completion 中，检索到的上下文不是越多越好；很多 chunk 对 ground-truth completion 无贡献，甚至降低生成概率。</p>
+  <h4>论文架构</h4>
+  <p>论文先定义 cross-file retrieval-augmented code completion，再提出 likelihood-based contribution score 给 chunk 标 positive/neutral/negative；方法部分训练 CodeFilter 做 on-demand retrieval 与 polarity filtering；实验评估 infilling、left-to-right、negative context subset、prompt length 和 plug-and-play policy。</p>
+  <h4>核心创新点</h4>
+  <ul>
+    <li>影响分数 <code>S(ci|Cin,Y)=(L(Y|Cin,ci)-L(Y|Cin))/L(Y|Cin)</code>，直接衡量 chunk 对目标 completion likelihood 的贡献。</li>
+    <li>模型先输出 <code>&lt;EC&gt;</code>/<code>&lt;MC&gt;</code> 判断是否需要跨文件上下文，再输出 <code>&lt;pos&gt;</code>/<code>&lt;neg&gt;</code>/<code>&lt;neu&gt;</code> 过滤 chunk。</li>
+    <li>小模型的过滤策略可服务更大 generator，属于输入侧推理系统优化。</li>
+  </ul>
+  <h4>实验过程</h4>
+  <p>训练数据来自近 6k Python repositories，约 43k instances、超过 400k labeled chunks。模型包括 StarCoderBase-3B/7B 和 CodeLlama-7B/13B，2 epochs，batch size 512，max sequence 4096，4 张 A100 80GB。评估 RepoEval 和 CrossCodeLongEval。</p>
+  <h4>关键结果</h4>
+  <p>top-10 chunks 中只有约 15% 真正正向支持 completion，5.6% 有负影响，并影响约 19.81% instances。CodeFilter 平均 EM 提升约 3%，cross-file prompt tokens 减少超过 80%；含 negative chunks 子集提升更大，例如 StarCoderBase-7B left-to-right RepoEval-Line 从 7.23 EM 到 28.92。</p>
+  <h4>读法</h4>
+  <p>这篇不是安全 RAG，而是执行系统层面的上下文裁剪：减少 token 同时提升质量，因为负上下文会把生成分布拉错。</p>
+</article>
+
+<article id="sppo">
+  <h3>08. SPPO: Efficient Long-sequence LLM Training via Adaptive Sequence Pipeline Parallel Offloading</h3>
+  <div class="meta">官网列 ICS 2026，下载 arXiv 2503.10377 版本 · <a href="papers/2026_ics_sppo_million_token_llm_training.pdf">PDF</a> · <a href="extracted_text/2026_ics_sppo_million_token_llm_training.txt">TXT</a> <span class="tag">long-sequence training</span><span class="tag">GPU memory</span></div>
+  <p><strong>一句话：</strong>这是旧版漏掉的 GPU/训练系统论文：它不是推理优化，但属于用户要求的 GPU cluster / execution systems 范围。</p>
+  <h4>论文架构</h4>
+  <p>论文从百万 token 长序列训练的 activation memory 爆炸入手，指出 recomputation 与 CPU offloading 会牺牲训练效率，传统并行会消耗过多 GPU；方法部分提出 Adaptive Sequence Pipeline Parallel Offloading，核心是 subsequence-level offloading、two-level activation management、adaptive pipeline scheduling；实验与 Megatron-LM/DeepSpeed 对比。</p>
+  <h4>核心创新点</h4>
+  <ul>
+    <li>把 offloading 粒度从整条 sequence 降到 subsequence，缓解 CPU-GPU 带宽线性增长带来的 stall。</li>
+    <li>sequence-aware offloading 和 two-level activation management 保留高频访问激活在 GPU，其他激活分层管理。</li>
+    <li>adaptive pipeline scheduling 用 heuristic solver 和 multiplexed sequence partitioning 降低 pipeline bubbles。</li>
+  </ul>
+  <h4>实验过程</h4>
+  <p>论文比较 Megatron-LM、DeepSpeed 与 SPPO，在 32/64/128 张 NVIDIA Ampere GPUs 上训练长序列 LLM。关注吞吐、可支持 sequence length、GPU memory、CPU offloading overhead、pipeline bubble 和训练 1B tokens 的 wall-clock time。</p>
+  <h4>关键结果</h4>
+  <p>摘要报告 SPPO 相比 Megatron-LM 和 DeepSpeed 最高 3.38x throughput improvement；可在 128 张 A100 上训练 7B LLM、sequence length 到 4M tokens。论文还举例：7B、4M token sequence 需要约 16,384GB activation memory；65B、4M token 的 activation footprint 可达 80TB，传统资源需求超过 1024 H100。</p>
+  <h4>读法</h4>
+  <p>它应该和 KV cache serving 论文一起读：一个处理 inference 时 KV memory，一个处理 training 时 activation memory。两者都说明长上下文不是单纯模型算法问题，而是内存层级和并行调度问题。</p>
+</article>
+
+<article id="dips">
+  <h3>09. Di-PS: System-Algorithm Co-Design for Asynchronous and Heterogeneous Cross-cluster LLM Training at Scale</h3>
+  <div class="meta">NSDI 2026 · <a href="papers/2026_nsdi_dips_cross_cluster_llm_training.pdf">PDF</a> · <a href="extracted_text/2026_nsdi_dips_cross_cluster_llm_training.txt">TXT</a> <span class="tag">cross-cluster</span><span class="tag">LLM training</span></div>
+  <p><strong>一句话：</strong>这是明确应该补进来的 GPU/集群系统论文：单个巨型同构集群很贵也难拿，Di-PS 让多个异构集群异步协同训练 LLM。</p>
+  <h4>论文架构</h4>
+  <p>论文先回答为什么需要 cross-cluster training：成本、供电散热、资源稀缺、工作负载规模不匹配；随后分析 inter-cluster bandwidth 低且波动、异构 NPU/网络导致异步训练不稳定、集群频繁故障；方法部分提出 centralized parameter server、pseudo-gradient penalty、resilience mechanism；实验包括 controlled setting 和生产部署。</p>
+  <h4>核心创新点</h4>
+  <ul>
+    <li>中心化 PS 设计，比 decentralized outer optimizer 更能适配跨集群异构带宽。</li>
+    <li>pseudo-gradient penalty 稳定 asynchronous two-stage optimization，避免 fast/slow cluster staleness 导致发散。</li>
+    <li>弹性 fault tolerance 机制支持 cluster participation/leave 和自恢复。</li>
+  </ul>
+  <h4>实验过程</h4>
+  <p>论文用多种异构训练集群做 controlled experiments，并报告生产环境部署：最多 9 个集群、超过 10,000 NPUs，训练 100B 参数 LLM。评估维度包括 training efficiency、scalability、model quality、failure handling、每个 cluster 的 overhead。</p>
+  <h4>关键结果</h4>
+  <p>摘要报告 Di-PS 相比 synchronous cross-cluster approaches 最高 4.67x training efficiency improvement，并在异构资源上接近线性扩展。生产环境中，Di-PS 在最多 9 个集群、超过 10,000 NPUs 上训练 100B LLM，相比 single-cluster training 只有约 6% overhead，同时能处理频繁 failure 和 resource changes。</p>
+  <h4>读法</h4>
+  <p>这篇不属于 inference，但非常符合“GPU 集群也算”的新口径。它补齐的是大模型系统的训练端横向扩展问题，与 SPPO 的单训练任务内存/流水线优化互补。</p>
+</article>
+
+<article id="icefrog">
+  <h3>10. ICEFROG: A Layer-Elastic Scheduling System for Deep Learning Training in GPU Clusters</h3>
+  <div class="meta">TPDS 2025 · <a href="papers/2025_tpds_icefrog_gpu_cluster_scheduling.pdf">PDF</a> · <a href="extracted_text/2025_tpds_icefrog_gpu_cluster_scheduling.txt">TXT</a> <span class="tag">GPU scheduling</span><span class="tag">layer elasticity</span></div>
+  <p><strong>一句话：</strong>这是旧版漏掉的调度论文：GPU cluster scheduler 不应只看 GPU sharing 和 resource elasticity，还要理解 layer freezing 改变了 job throughput、memory 和 accuracy trade-off。</p>
+  <h4>论文架构</h4>
+  <p>论文先介绍深度学习训练 workload 对 GPU cluster 的长期占用，再说明 GPU sharing、elastic training 的不足；方法部分提出 effective progress、frozen penalty、layer-aware throughput 和联合资源分配目标；实现为 Kubernetes 上的 customized scheduler；实验包括 48 GPU 实体集群和 960 GPU 大规模仿真。</p>
+  <h4>核心创新点</h4>
+  <ul>
+    <li>首次把 layer elasticity 纳入 GPU cluster scheduler，而不是只在单 job optimizer 内部使用。</li>
+    <li>effective progress 同时衡量 throughput improvement 和 accuracy loss，使 scheduler 可以自动决定冻结层数。</li>
+    <li>layer-aware scheduler 能利用冻结层导致的 GPU utilization/memory 下降，做更好的 colocation 和 elastic allocation。</li>
+  </ul>
+  <h4>实验过程</h4>
+  <p>ICEFROG 部署在 12 台 GPU servers、48 GPUs 的物理集群上，并做 960-GPU cluster simulation。任务覆盖多种 DL workloads，baseline 包括 state-of-the-art GPU sharing enabled 和 elastic schedulers，如 Lucid、Optimus 等。</p>
+  <h4>关键结果</h4>
+  <p>摘要报告 ICEFROG 相对 SOTA DL schedulers 减少 average job completion time 36%-48%。正文开头还给出相对 Lucid 最高 48%、相对 Optimus 约 46% 的 JCT 改善。它的贡献不是某个模型更准，而是 cluster-wide efficiency 更高。</p>
+  <h4>读法</h4>
+  <p>读这篇要从 scheduler 视角看 layer freezing：冻结层不仅改变单 job 速度，还改变 GPU utilization、memory footprint 和可共置性。</p>
+</article>
+
+<article id="collab">
+  <h3>11. Collaborative Inference and Learning between Edge SLMs and Cloud LLMs: A Survey of Algorithms, Execution, and Open Challenges</h3>
+  <div class="meta">ACM Computing Surveys accepted / arXiv 2025 · <a href="papers/2025_csur_edge_slm_cloud_llm_collaborative_inference_survey.pdf">PDF</a> · <a href="extracted_text/2025_csur_edge_slm_cloud_llm_collaborative_inference_survey.txt">TXT</a> <span class="tag">edge-cloud</span><span class="tag">collaborative inference</span></div>
+  <p><strong>一句话：</strong>这篇不是原创系统实现，但标题和内容都直接属于 collaborative inference；按新口径必须纳入，作为边云协同主线的综述入口。</p>
+  <h4>论文架构</h4>
+  <p>论文先解释为什么“只云端 LLM”或“只端侧压缩模型”都不够：延迟、成本、个性化、资源限制；随后提出 edge SLM + cloud LLM 协同框架。推理部分按 task assignment、task division、mixture-based collaboration 分类；训练部分总结 parameter alignment、pruning、bidirectional distillation、small-model-guided optimization；最后整理 benchmark、部署案例和 open challenges。</p>
+  <h4>核心创新点</h4>
+  <ul>
+    <li>把 LLM-SLM collaboration 同时放进 inference-time collaboration 和 training-time coordination，而不是只讲模型压缩。</li>
+    <li>推理 taxonomy 覆盖 task-level/token-level 的 assignment、division、mixture，以及 adaptive scheduling、resource-aware offloading、speculative decoding、modular routing。</li>
+    <li>把系统约束和算法角色放在一张设计空间里：edge 负责低延迟/本地个性化，cloud 负责复杂推理和全局能力。</li>
+  </ul>
+  <h4>实验/材料组织</h4>
+  <p>作为 survey，它没有单一系统实验，而是比较已有工作与工业部署案例。论文提到 Walle 这类端云协同系统覆盖 300+ tasks、每天 10B+ invocations；还讨论 EdgeLLM、System 1/System 2 fallback、module-level offloading、branch-point partitioning、MoE routing 等范式。</p>
+  <h4>关键结论</h4>
+  <p>推理协同的核心不是简单“端侧先跑，不行再上云”，而是根据 confidence、latency、resource budget、network condition 和任务粒度做动态调度。训练协同则围绕 distillation、LoRA/PEFT、pruning、quantization、bidirectional knowledge transfer 等机制，让 SLM 在特定场景逼近 LLM。</p>
+  <h4>读法</h4>
+  <p>这篇适合作为“边云推理系统”的索引论文。读完 DSA/PACE 这类专门系统后，再读它能把 serving、offloading、routing、speculative collaboration 放进边缘设备和云端 LLM 的大框架。</p>
+</article>
+
+<h2 id="excluded">4. 明确剔除的旧 security/attack/watermark 条目</h2>
+<p>这些论文以前可能被放进了旧版 16 篇，或者在用户 pasted text 中容易被关键词误判为 inference 相关；但按“不要 security”的新口径，不再作为核心导读。</p>
+<table>
+  <thead><tr><th>论文/类型</th><th>为什么剔除</th></tr></thead>
+  <tbody>
+    <tr><td>Antelope, PrivTF, MIZAR, Conan, InferDPT</td><td>虽然标题含 inference，但核心是 secure/private/verifiable inference，属于安全/隐私协议线。</td></tr>
+    <tr><td>PRIVMARK, Semantic Combination Watermarks, VideoShield, Mask Image Watermarking</td><td>水印/ownership/内容追踪方向，按新要求剔除。</td></tr>
+    <tr><td>Engorgio, One Bad Token, Hijacking Audio-Language Models</td><td>推理阶段攻击或滥用，属于安全/攻击线。</td></tr>
+    <tr><td>LeakDojo, SafeSearch, When Search Goes Wrong</td><td>RAG/search-agent 泄漏或 red-teaming，虽然发生在模型使用阶段，但核心是安全评测。</td></tr>
+    <tr><td>Visual Token Compression Robustness</td><td>研究推理压缩下 adversarial robustness，内容主线是对抗安全；因此从非安全系统核心移除。</td></tr>
+    <tr><td>Alkaid, Streaming FSS, PSI/ORAM/secret sharing 系列</td><td>密码/安全计算系统，不属于非安全模型执行系统。</td></tr>
+    <tr><td>An LLM-empowered Adaptive Evolutionary Algorithm for Multi-Component Deep Learning Systems</td><td>属于多组件 DL system 测试/搜索边界项；不是 serving、decoding、GPU scheduling 或 cluster training 主线，暂不放入核心。</td></tr>
+  </tbody>
+</table>
+
+<h2 id="downloads">5. 本地 PDF 与抽取文本索引</h2>
+<p>当前目录只保留非安全核心 11 篇 PDF/TXT。</p>
+<table>
+  <thead><tr><th>#</th><th>论文</th><th>PDF</th><th>TXT</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Rethinking KV Cache Compression</td><td><a href="papers/2025_mlsys_rethinking_kv_cache_compression.pdf">PDF</a></td><td><a href="extracted_text/2025_mlsys_rethinking_kv_cache_compression.txt">TXT</a></td></tr>
+    <tr><td>2</td><td>PACE / CONCUR</td><td><a href="papers/2026_icml_pace_concur_agentic_batch_inference.pdf">PDF</a></td><td><a href="extracted_text/2026_icml_pace_concur_agentic_batch_inference.txt">TXT</a></td></tr>
+    <tr><td>3</td><td>SpecForge</td><td><a href="papers/2026_icml_specforge_speculative_decoding.pdf">PDF</a></td><td><a href="extracted_text/2026_icml_specforge_speculative_decoding.txt">TXT</a></td></tr>
+    <tr><td>4</td><td>ReSpec</td><td><a href="papers/2026_mlsys_respec_speculative_decoding_rl.pdf">PDF</a></td><td><a href="extracted_text/2026_mlsys_respec_speculative_decoding_rl.txt">TXT</a></td></tr>
+    <tr><td>5</td><td>DSB</td><td><a href="papers/2026_icml_dsb_dynamic_sliding_block_scheduling.pdf">PDF</a></td><td><a href="extracted_text/2026_icml_dsb_dynamic_sliding_block_scheduling.txt">TXT</a></td></tr>
+    <tr><td>6</td><td>DSA</td><td><a href="papers/2026_iclr_dsa_video_generation_inference.pdf">PDF</a></td><td><a href="extracted_text/2026_iclr_dsa_video_generation_inference.txt">TXT</a></td></tr>
+    <tr><td>7</td><td>CodeFilter</td><td><a href="papers/2025_colm_codefilter_context_filtering.pdf">PDF</a></td><td><a href="extracted_text/2025_colm_codefilter_context_filtering.txt">TXT</a></td></tr>
+    <tr><td>8</td><td>SPPO</td><td><a href="papers/2026_ics_sppo_million_token_llm_training.pdf">PDF</a></td><td><a href="extracted_text/2026_ics_sppo_million_token_llm_training.txt">TXT</a></td></tr>
+    <tr><td>9</td><td>Di-PS</td><td><a href="papers/2026_nsdi_dips_cross_cluster_llm_training.pdf">PDF</a></td><td><a href="extracted_text/2026_nsdi_dips_cross_cluster_llm_training.txt">TXT</a></td></tr>
+    <tr><td>10</td><td>ICEFROG</td><td><a href="papers/2025_tpds_icefrog_gpu_cluster_scheduling.pdf">PDF</a></td><td><a href="extracted_text/2025_tpds_icefrog_gpu_cluster_scheduling.txt">TXT</a></td></tr>
+    <tr><td>11</td><td>Edge SLM-Cloud LLM Collaborative Inference Survey</td><td><a href="papers/2025_csur_edge_slm_cloud_llm_collaborative_inference_survey.pdf">PDF</a></td><td><a href="extracted_text/2025_csur_edge_slm_cloud_llm_collaborative_inference_survey.txt">TXT</a></td></tr>
+  </tbody>
+</table>
+
+<h2 id="audit">6. 完成度自查</h2>
+<table>
+  <thead><tr><th>要求</th><th>当前证据</th><th>状态</th></tr></thead>
+  <tbody>
+    <tr><td>不要 security</td><td>核心 11 篇不含安全/隐私/攻击/水印/泄漏/red-teaming；旧 security PDF/TXT 已从目录移除。</td><td><span class="score">已完成</span></td></tr>
+    <tr><td>不能靠会议名筛</td><td>按 publication pasted text 和官网全量标题逐项筛，新增了 ICS/NSDI/TPDS/CSUR 等非推理会议/期刊中的系统论文。</td><td><span class="score">已完成</span></td></tr>
+    <tr><td>推理、调度、GPU 集群都算</td><td>核心覆盖 serving、decoding、batch admission、dLLM/video inference、context filtering、long-sequence training、cross-cluster training、GPU scheduling、edge-cloud collaborative inference。</td><td><span class="score">已完成</span></td></tr>
+    <tr><td>所有核心论文下载</td><td><code>papers/</code> 下 11 个 PDF，<code>extracted_text/</code> 下 11 个 TXT。</td><td><span class="score">已完成</span></td></tr>
+    <tr><td>逐篇导读</td><td>第 3 节包含 11 篇导读，每篇含架构、创新点、实验过程、关键结果和读法。</td><td><span class="score">已完成</span></td></tr>
+  </tbody>
+</table>
+
+<footer>
+  <p>生成日期：2026-06-22。资料来源：Tianwei Zhang publication page、用户提供的 publication pasted text、已下载 PDF、由 <code>mutool draw -F txt</code> 抽取的本地文本。</p>
+</footer>
+
+</main>
+</body>
+</html>

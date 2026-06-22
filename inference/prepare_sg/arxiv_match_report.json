@@ -1,0 +1,833 @@
+{
+  "actual_matches": 118,
+  "search_links": 157,
+  "candidate_count": 274,
+  "matches": [
+    [
+      4,
+      "When Memory Becomes a Vulnerability: Towards Multi-turn Jailbreak Attacks against Text-to-Image Generation Systems",
+      "When Memory Becomes a Vulnerability: Towards Multi-turn Jailbreak Attacks against Text-to-Image Generation Systems",
+      "2504.20376v3",
+      1.0
+    ],
+    [
+      8,
+      "When Search Goes Wrong: Red-Teaming Web-Augmented Large Language Models",
+      "When Search Goes Wrong: Red-Teaming Web-Augmented Large Language Models",
+      "2510.09689v3",
+      1.0
+    ],
+    [
+      9,
+      "SpecForge: A Flexible and Efficient Open-Source Training Framework for Speculative Decoding",
+      "SpecForge: A Flexible and Efficient Open-Source Training Framework for Speculative Decoding",
+      "2603.18567v1",
+      1.0
+    ],
+    [
+      11,
+      "DSB: Dynamic Sliding Block Scheduling for Diffusion LLMs",
+      "DSB: Dynamic Sliding Block Scheduling for Diffusion LLMs",
+      "2602.05992v3",
+      1.0
+    ],
+    [
+      12,
+      "On the Adversarial Robustness of Large Vision-Language Models under Visual Token Compression",
+      "On the Adversarial Robustness of Large Vision-Language Models under Visual Token Compression",
+      "2601.21531v2",
+      1.0
+    ],
+    [
+      13,
+      "Turning Bias into Bugs: Bandit-Guided Style Manipulation Attacks on LLM Judges",
+      "Turning Bias into Bugs: Bandit-Guided Style Manipulation Attacks on LLM Judges",
+      "2605.26156v2",
+      1.0
+    ],
+    [
+      14,
+      "SafeSearch: Automated Red-Teaming of LLM-Based Search Agents",
+      "SafeSearch: Automated Red-Teaming of LLM-Based Search Agents",
+      "2509.23694v6",
+      1.0
+    ],
+    [
+      15,
+      "State-Dependent Safety Failures in Multi-Turn Language Model Interaction",
+      "State-Dependent Safety Failures in Multi-Turn Language Model Interaction",
+      "2603.15684v1",
+      1.0
+    ],
+    [
+      17,
+      "LeakDojo: Decoding the Leakage Threats of RAG Systems",
+      "LeakDojo: Decoding the Leakage Threats of RAG Systems",
+      "2605.05818v1",
+      1.0
+    ],
+    [
+      18,
+      "TEAR: Temporal-aware Automated Red-teaming for Text-to-Video Models",
+      "TEAR: Temporal-aware Automated Red-teaming for Text-to-Video Models",
+      "2511.21145v2",
+      1.0
+    ],
+    [
+      21,
+      "DREAM: Scalable Red Teaming for Text-to-Image Generative Systems via Distribution Modeling",
+      "DREAM: Scalable Red Teaming for Text-to-Image Generative Systems via Distribution Modeling",
+      "2507.16329v2",
+      1.0
+    ],
+    [
+      22,
+      "Efficient Fuzzy Private Set Intersection from Secret-shared OPRF",
+      "Efficient Fuzzy Private Set Intersection from Secret-shared OPRF",
+      "2604.14909v1",
+      1.0
+    ],
+    [
+      24,
+      "Hijacking Large Audio-Language Models via Context-Agnostic and Imperceptible Auditory Prompt Injection",
+      "Hijacking Large Audio-Language Models via Context-Agnostic and Imperceptible Auditory Prompt Injection",
+      "2604.14604v1",
+      1.0
+    ],
+    [
+      27,
+      "ReSpec: Towards Optimizing Speculative Decoding in Reinforcement Learning Systems",
+      "ReSpec: Towards Optimizing Speculative Decoding in Reinforcement Learning Systems",
+      "2510.26475v1",
+      1.0
+    ],
+    [
+      29,
+      "ObfusBFA: A Holistic Approach to Safeguarding DNNs from Different Types of Bit-Flip Attacks",
+      "ObfusBFA: A Holistic Approach to Safeguarding DNNs from Different Types of Bit-Flip Attacks",
+      "2506.10744v1",
+      1.0
+    ],
+    [
+      30,
+      "PRIVMARK: Private Large Language Models Watermarking with MPC",
+      "PRIVMARK: Private Large Language Models Watermarking with MPC",
+      "2509.24624v1",
+      1.0
+    ],
+    [
+      31,
+      "Image Can Bring Your Memory Back: A Novel Multi-Modal Guided Attack against Image Generation Model Unlearning",
+      "Image Can Bring Your Memory Back: A Novel Multi-Modal Guided Attack against Image Generation Model Unlearning",
+      "2507.07139v2",
+      1.0
+    ],
+    [
+      34,
+      "AudioTrust: Benchmarking The Multifaceted Trustworthiness of Audio Large Language Models",
+      "AudioTrust: Benchmarking the Multifaceted Trustworthiness of Audio Large Language Models",
+      "2505.16211v4",
+      1.0
+    ],
+    [
+      35,
+      "Towards Effective Prompt Stealing Attack against Text-to-Image Diffusion Models",
+      "Towards Effective Prompt Stealing Attack against Text-to-Image Diffusion Models",
+      "2508.06837v2",
+      1.0
+    ],
+    [
+      38,
+      "Mask Image Watermarking",
+      "Mask Image Watermarking",
+      "2504.12739v3",
+      1.0
+    ],
+    [
+      39,
+      "Towards Resilient Safety-driven Unlearning for Diffusion Models against Downstream Fine-tuning",
+      "Towards Resilient Safety-driven Unlearning for Diffusion Models against Downstream Fine-tuning",
+      "2507.16302v2",
+      1.0
+    ],
+    [
+      40,
+      "Safe + Safe = Unsafe? Exploring How Safe Images Can Be Exploited to Jailbreak Large Vision-Language Models",
+      "Safe + Safe = Unsafe? Exploring How Safe Images Can Be Exploited to Jailbreak Large Vision-Language Models",
+      "2411.11496v3",
+      1.0
+    ],
+    [
+      41,
+      "Taught Well Learned Ill: Towards Distillation-conditional Backdoor Attack",
+      "Taught Well Learned Ill: Towards Distillation-conditional Backdoor Attack",
+      "2509.23871v1",
+      1.0
+    ],
+    [
+      44,
+      "When Audio and Text Disagree: Revealing Text Bias in Large Audio-Language Models",
+      "When Audio and Text Disagree: Revealing Text Bias in Large Audio-Language Models",
+      "2508.15407v1",
+      1.0
+    ],
+    [
+      45,
+      "Speculating LLMs' Chinese Training Data Pollution from Their Tokens",
+      "Speculating LLMs' Chinese Training Data Pollution from Their Tokens",
+      "2508.17771v2",
+      1.0
+    ],
+    [
+      46,
+      "Oedipus: LLM-enchanced Reasoning CAPTCHA Solver",
+      "Oedipus: LLM-enchanced Reasoning CAPTCHA Solver",
+      "2405.07496v1",
+      1.0
+    ],
+    [
+      47,
+      "SafeGuider: Robust and Practical Content Safety Control for Text-to-Image Models",
+      "SafeGuider: Robust and Practical Content Safety Control for Text-to-Image Models",
+      "2510.05173v3",
+      1.0
+    ],
+    [
+      48,
+      "Rethinking Machine Unlearning in Image Generation Models",
+      "Rethinking Machine Unlearning in Image Generation Models",
+      "2506.02761v2",
+      1.0
+    ],
+    [
+      50,
+      "Mind the Cost of Scaffold! Benign Clients May Even Become Accomplices of Backdoor Attack",
+      "Mind the Cost of Scaffold! Benign Clients May Even Become Accomplices of Backdoor Attack",
+      "2411.16167v3",
+      1.0
+    ],
+    [
+      51,
+      "Unified Locomotion Transformer with Simultaneous Sim-to-Real Transfer for Quadrupeds",
+      "Unified Locomotion Transformer with Simultaneous Sim-to-Real Transfer for Quadrupeds",
+      "2503.08997v2",
+      1.0
+    ],
+    [
+      52,
+      "Impact-driven Context Filtering For Cross-file Code Completion",
+      "Impact-driven Context Filtering For Cross-file Code Completion",
+      "2508.05970v1",
+      1.0
+    ],
+    [
+      56,
+      "Understanding the Dark Side of LLMs' Intrinsic Self-Correction",
+      "Understanding the Dark Side of LLMs' Intrinsic Self-Correction",
+      "2412.14959v2",
+      1.0
+    ],
+    [
+      57,
+      "Exploring Multimodal Challenges in Toxic Chinese Detection: Taxonomy, Benchmark, and Findings",
+      "Exploring Multimodal Challenges in Toxic Chinese Detection: Taxonomy, Benchmark, and Findings",
+      "2505.24341v1",
+      1.0
+    ],
+    [
+      58,
+      "Cowpox: Towards the Immunity of VLM-based Multi-Agent Systems",
+      "Cowpox: Towards the Immunity of VLM-based Multi-Agent Systems",
+      "2508.09230v1",
+      1.0
+    ],
+    [
+      62,
+      "Testing the Fault-Tolerance of Multi-Sensor Fusion Perception in Autonomous Driving Systems",
+      "Testing the Fault-Tolerance of Multi-Sensor Fusion Perception in Autonomous Driving Systems",
+      "2504.13420v1",
+      1.0
+    ],
+    [
+      63,
+      "Disco4D: Disentangled 4D Human Generation and Animation from a Single Image",
+      "Disco4D: Disentangled 4D Human Generation and Animation from a Single Image",
+      "2409.17280v1",
+      1.0
+    ],
+    [
+      64,
+      "SceneTAP: Scene-Coherent Typographic Adversarial Planner against Vision-Language Models in Real-World Environments",
+      "SceneTAP: Scene-Coherent Typographic Adversarial Planner against Vision-Language Models in Real-World Environments",
+      "2412.00114v2",
+      1.0
+    ],
+    [
+      67,
+      "Towards Reliable Verification of Unauthorized Data Usage in Personalized Text-to-Image Diffusion Models",
+      "Towards Reliable Verification of Unauthorized Data Usage in Personalized Text-to-Image Diffusion Models",
+      "2410.10437v1",
+      1.0
+    ],
+    [
+      68,
+      "CamLoPA: A Hidden Wireless Camera Localization Framework via Signal Propagation Path Analysis",
+      "CamLoPA: A Hidden Wireless Camera Localization Framework via Signal Propagation Path Analysis",
+      "2409.15169v1",
+      1.0
+    ],
+    [
+      69,
+      "Rethinking Key-Value Cache Compression Techniques for Large Language Model Serving",
+      "Rethinking Key-Value Cache Compression Techniques for Large Language Model Serving",
+      "2503.24000v1",
+      1.0
+    ],
+    [
+      71,
+      "Masked Sensory-Temporal Attention for Sensor Generalization in Quadruped Locomotion",
+      "Masked Sensory-Temporal Attention for Sensor Generalization in Quadruped Locomotion",
+      "2409.03332v2",
+      1.0
+    ],
+    [
+      72,
+      "Latent Embedding Adaptation for Human Preference Alignment in Diffusion Planners",
+      "Latent Embedding Adaptation for Human Preference Alignment in Diffusion Planners",
+      "2503.18347v1",
+      1.0
+    ],
+    [
+      73,
+      "VideoShield: Regulating Diffusion-based Video Generation Models via Watermarking",
+      "VideoShield: Regulating Diffusion-based Video Generation Models via Watermarking",
+      "2501.14195v2",
+      1.0
+    ],
+    [
+      75,
+      "An Engorgio Prompt Makes Large Language Model Babble on",
+      "An Engorgio Prompt Makes Large Language Model Babble on",
+      "2412.19394v2",
+      1.0
+    ],
+    [
+      76,
+      "Model Supply Chain Poisoning: Backdooring Pre-trained Models via Embedding Indistinguishability",
+      "Model Supply Chain Poisoning: Backdooring Pre-trained Models via Embedding Indistinguishability",
+      "2401.15883v3",
+      1.0
+    ],
+    [
+      77,
+      "GPT-NER: Named Entity Recognition via Large Language Models",
+      "GPT-NER: Named Entity Recognition via Large Language Models",
+      "2304.10428v4",
+      1.0
+    ],
+    [
+      79,
+      "An LLM-empowered Adaptive Evolutionary Algorithm For Multi-Component Deep Learning Systems",
+      "An LLM-Empowered Adaptive Evolutionary Algorithm For Multi-Component Deep Learning Systems",
+      "2501.00829v2",
+      1.0
+    ],
+    [
+      80,
+      "ART: Automatic Red-teaming for Text-to-Image Models to Protect Benign Users",
+      "ART: Automatic Red-teaming for Text-to-Image Models to Protect Benign Users",
+      "2405.19360v3",
+      1.0
+    ],
+    [
+      82,
+      "State Chrono Representation for Enhancing Generalization in Reinforcement Learning",
+      "State Chrono Representation for Enhancing Generalization in Reinforcement Learning",
+      "2411.06174v1",
+      1.0
+    ],
+    [
+      83,
+      "COSMIC: Compress Satellite Image Efficiently via Diffusion Compensation",
+      "COSMIC: Compress Satellite Images Efficiently via Diffusion Compensation",
+      "2410.01698v2",
+      0.993
+    ],
+    [
+      84,
+      "TorchGT: A Holistic System for Large-scale Graph Transformer Training",
+      "TorchGT: A Holistic System for Large-scale Graph Transformer Training",
+      "2407.14106v1",
+      1.0
+    ],
+    [
+      85,
+      "Walking in Others' Shoes: How Perspective-Taking Guides Large Language Models in Reducing Toxicity and Bias",
+      "Walking in Others' Shoes: How Perspective-Taking Guides Large Language Models in Reducing Toxicity and Bias",
+      "2407.15366v1",
+      1.0
+    ],
+    [
+      86,
+      "Course-Correction: Safety Alignment Using Synthetic Preferences",
+      "Course-Correction: Safety Alignment Using Synthetic Preferences",
+      "2407.16637v2",
+      1.0
+    ],
+    [
+      89,
+      "GenderCARE: A Comprehensive Framework for Assessing and Reducing Gender Bias in Large Language Models",
+      "GenderCARE: A Comprehensive Framework for Assessing and Reducing Gender Bias in Large Language Models",
+      "2408.12494v2",
+      1.0
+    ],
+    [
+      91,
+      "Model X-ray: Detecting Backdoored Models via Decision Boundary",
+      "Model X-ray:Detecting Backdoored Models via Decision Boundary",
+      "2402.17465v2",
+      1.0
+    ],
+    [
+      92,
+      "Off-dynamics Conditional Diffusion Planners",
+      "Off-dynamics Conditional Diffusion Planners",
+      "2410.12238v1",
+      1.0
+    ],
+    [
+      93,
+      "Robust-Wide: Robust Watermarking against Instruction-driven Image Editing",
+      "Robust-Wide: Robust Watermarking against Instruction-driven Image Editing",
+      "2402.12688v3",
+      1.0
+    ],
+    [
+      94,
+      "Backdoor Attacks with Input-unique Triggers in NLP",
+      "Backdoor Attacks with Input-unique Triggers in NLP",
+      "2303.14325v1",
+      1.0
+    ],
+    [
+      95,
+      "UniGuard: A Unified Hardware-based Threat Detector for AI Accelerators",
+      "A Unified Hardware-based Threat Detector for AI Accelerators",
+      "2311.16684v1",
+      1.0
+    ],
+    [
+      100,
+      "The Earth is Flat because...: Investigating LLMs's Belief towards Misinformation via Persuasive Conversation",
+      "The Earth is Flat because...: Investigating LLMs' Belief towards Misinformation via Persuasive Conversation",
+      "2312.09085v5",
+      0.993
+    ],
+    [
+      101,
+      "AquaLoRA: Toward White-box Protection for Customized Stable Diffusion Models via Watermark LoRA",
+      "AquaLoRA: Toward White-box Protection for Customized Stable Diffusion Models via Watermark LoRA",
+      "2405.11135v1",
+      1.0
+    ],
+    [
+      103,
+      "Fingerprinting Image-to-Image Generative Adversarial Networks",
+      "Fingerprinting Image-to-Image Generative Adversarial Networks",
+      "2106.11760v5",
+      1.0
+    ],
+    [
+      106,
+      "Lins: Reducing Communication Overhead of ZeRO for Efficient LLM Training",
+      "AMSP: Reducing Communication Overhead of ZeRO for Efficient LLM Training",
+      "2311.00257v2",
+      0.958
+    ],
+    [
+      116,
+      "BadEdit: Backdooring Large Language Models by Model Editing",
+      "BadEdit: Backdooring large language models by model editing",
+      "2403.13355v1",
+      1.0
+    ],
+    [
+      118,
+      "Improving the Generalization of Unseen Crowd Behaviors for Reinforcement Learning based Local Motion Planners",
+      "Improving the Generalization of Unseen Crowd Behaviors for Reinforcement Learning based Local Motion Planners",
+      "2410.12232v1",
+      1.0
+    ],
+    [
+      119,
+      "Characterization of Large Language Model Development in the Datacenter",
+      "Characterization of Large Language Model Development in the Datacenter",
+      "2403.07648v2",
+      1.0
+    ],
+    [
+      121,
+      "Detecting Voice Cloning Attacks via Timbre Watermarking",
+      "Detecting Voice Cloning Attacks via Timbre Watermarking",
+      "2312.03410v1",
+      1.0
+    ],
+    [
+      122,
+      "SAME: Sample Reconstruction Against Model Extraction Attacks",
+      "SAME: Sample Reconstruction against Model Extraction Attacks",
+      "2312.10578v2",
+      1.0
+    ],
+    [
+      123,
+      "Towards Robust and Expressive Whole-body Human Pose and Shape Estimation",
+      "Towards Robust and Expressive Whole-body Human Pose and Shape Estimation",
+      "2312.08730v1",
+      1.0
+    ],
+    [
+      124,
+      "Mercury: An Automated Remote Side-channel Attack to Nvidia Deep Learning Accelerator",
+      "Mercury: An Automated Remote Side-channel Attack to Nvidia Deep Learning Accelerator",
+      "2308.01193v1",
+      1.0
+    ],
+    [
+      125,
+      "Text Classification via Large Language Models",
+      "Text Classification via Large Language Models",
+      "2305.08377v3",
+      1.0
+    ],
+    [
+      128,
+      "One-bit Flip is All You Need: When Bit-flip Attack Meets Model Training",
+      "One-bit Flip is All You Need: When Bit-flip Attack Meets Model Training",
+      "2308.07934v1",
+      1.0
+    ],
+    [
+      131,
+      "Aegis: Mitigating Targeted Bit-flip Attacks against Deep Neural Networks",
+      "Aegis: Mitigating Targeted Bit-flip Attacks against Deep Neural Networks",
+      "2302.13520v1",
+      1.0
+    ],
+    [
+      134,
+      "Multi-target Backdoor Attacks for Code Pre-trained Models",
+      "Multi-target Backdoor Attacks for Code Pre-trained Models",
+      "2306.08350v1",
+      1.0
+    ],
+    [
+      135,
+      "GNN-SL: Sequence Labeling Based on Nearest Examples via GNN",
+      "GNN-SL: Sequence Labeling Based on Nearest Examples via GNN",
+      "2212.02017v2",
+      1.0
+    ],
+    [
+      136,
+      "SoK: Rethinking Sensor Spoofing Attacks against Robotic Vehicles from a Systematic View",
+      "SoK: Rethinking Sensor Spoofing Attacks against Robotic Vehicles from a Systematic View",
+      "2205.04662v2",
+      1.0
+    ],
+    [
+      138,
+      "Mind Your Heart: Stealthy Backdoor Attack on Dynamic Deep Neural Network in Edge Computing",
+      "Mind Your Heart: Stealthy Backdoor Attack on Dynamic Deep Neural Network in Edge Computing",
+      "2212.11751v1",
+      1.0
+    ],
+    [
+      143,
+      "Defending Against Backdoor Attacks in Natural Language Generation",
+      "Defending Against Backdoor Attacks in Natural Language Generation",
+      "2106.01810v3",
+      1.0
+    ],
+    [
+      145,
+      "Benchmarking and Analyzing 3D Human Pose and Shape Estimation Beyond Algorithms",
+      "Benchmarking and Analyzing 3D Human Pose and Shape Estimation Beyond Algorithms",
+      "2209.10529v1",
+      1.0
+    ],
+    [
+      146,
+      "Cache Refinement Type for Side-channel Detection of Cryptographic Software",
+      "Cache Refinement Type for Side-Channel Detection of Cryptographic Software",
+      "2209.04610v3",
+      1.0
+    ],
+    [
+      151,
+      "Physical Backdoor Attacks to Lane Detection Systems in Autonomous Driving",
+      "Physical Backdoor Attacks to Lane Detection Systems in Autonomous Driving",
+      "2203.00858v2",
+      1.0
+    ],
+    [
+      154,
+      "Watermarking Pre-trained Encoders in Contrastive Learning",
+      "Watermarking Pre-trained Encoders in Contrastive Learning",
+      "2201.08217v1",
+      1.0
+    ],
+    [
+      156,
+      "Triggerless Backdoor Attack for NLP Tasks with Clean Labels",
+      "Triggerless Backdoor Attack for NLP Tasks with Clean Labels",
+      "2111.07970v2",
+      1.0
+    ],
+    [
+      157,
+      "Fast Nearest Neighbor Machine Translation",
+      "Fast Nearest Neighbor Machine Translation",
+      "2105.14528v3",
+      1.0
+    ],
+    [
+      159,
+      "GNN-LM: Language Modeling based on Global Contexts via GNN",
+      "GNN-LM: Language Modeling based on Global Contexts via GNN",
+      "2110.08743v5",
+      1.0
+    ],
+    [
+      160,
+      "BadPre: Task-agnostic Backdoor Attacks to Pre-trained NLP Foundation Models",
+      "BadPre: Task-agnostic Backdoor Attacks to Pre-trained NLP Foundation Models",
+      "2110.02467v1",
+      1.0
+    ],
+    [
+      162,
+      "kFolden: k-Fold Ensemble for Out-Of-Distribution Detection",
+      "$k$Folden: $k$-Fold Ensemble for Out-Of-Distribution Detection",
+      "2108.12731v2",
+      0.991
+    ],
+    [
+      164,
+      "Characterization and Prediction of Deep Learning Workloads in Large-Scale GPU Datacenters",
+      "Characterization and Prediction of Deep Learning Workloads in Large-Scale GPU Datacenters",
+      "2109.01313v2",
+      1.0
+    ],
+    [
+      169,
+      "Fine-tuning Is Not Enough: A Simple yet Effective Watermark Removal Attack for DNN Models",
+      "Fine-tuning Is Not Enough: A Simple yet Effective Watermark Removal Attack for DNN Models",
+      "2009.08697v2",
+      1.0
+    ],
+    [
+      170,
+      "Privacy-preserving Collaborative Learning with Automatic Transformation Search",
+      "Privacy-preserving Collaborative Learning with Automatic Transformation Search",
+      "2011.12505v2",
+      1.0
+    ],
+    [
+      171,
+      "Stealing Deep Reinforcement Learning Models for Fun and Profit",
+      "Stealing Deep Reinforcement Learning Models for Fun and Profit",
+      "2006.05032v2",
+      1.0
+    ],
+    [
+      172,
+      "DeepSweep: An Evaluation Framework for Mitigating DNN Backdoor Attacks using Data Augmentation",
+      "DeepSweep: An Evaluation Framework for Mitigating DNN Backdoor Attacks using Data Augmentation",
+      "2012.07006v2",
+      1.0
+    ],
+    [
+      177,
+      "Stealthy and Efficient Adversarial Attacks against Deep Reinforcement Learning",
+      "Stealthy and Efficient Adversarial Attacks against Deep Reinforcement Learning",
+      "2005.07099v1",
+      1.0
+    ],
+    [
+      190,
+      "ShadowCode: Towards (Automatic) External Prompt Injection Attack against Code LLMs",
+      "ShadowCode: Towards (Automatic) External Prompt Injection Attack against Code LLMs",
+      "2407.09164v6",
+      1.0
+    ],
+    [
+      191,
+      "FIT-Print: Towards False-claim-resistant Model Ownership Verification via Targeted Fingerprint",
+      "FIT-Print: Towards False-claim-resistant Model Ownership Verification via Targeted Fingerprint",
+      "2501.15509v5",
+      1.0
+    ],
+    [
+      198,
+      "Collaborative Inference and Learning between Edge SLMs and Cloud LLMs: A Survey of Algorithms, Execution, and Open Challenges",
+      "Collaborative Inference and Learning between Edge SLMs and Cloud LLMs: A Survey of Algorithms, Execution, and Open Challenges",
+      "2507.16731v1",
+      1.0
+    ],
+    [
+      201,
+      "Instruction Tuning for Large Language Models: A Survey",
+      "Instruction Tuning for Large Language Models: A Survey",
+      "2308.10792v10",
+      1.0
+    ],
+    [
+      204,
+      "SSD: A State-based Stealthy Backdoor Attack For IMU/GNSS Navigation System in UAV Route Planning",
+      "SSD: A State-based Stealthy Backdoor Attack For Navigation System in UAV Route Planning",
+      "2502.20178v2",
+      0.95
+    ],
+    [
+      206,
+      "FACETRACER: Unveiling Source Identities from Swapped Face Images and Videos for Fraud Prevention",
+      "FaceTracer: Unveiling Source Identities from Swapped Face Images and Videos for Fraud Prevention",
+      "2412.08082v2",
+      1.0
+    ],
+    [
+      208,
+      "I2I Backdoor: Backdoor Attacks against Image-to-Image Networks",
+      "Backdoor Attacks against Image-to-Image Networks",
+      "2407.10445v1",
+      1.0
+    ],
+    [
+      212,
+      "The Gradient Puppeteer: Adversarial Domination in Gradient Leakage Attacks through Model Poisoning",
+      "The Gradient Puppeteer: Adversarial Domination in Gradient Leakage Attacks through Model Poisoning",
+      "2502.04106v2",
+      1.0
+    ],
+    [
+      213,
+      "InferDPT: Privacy-preserving Inference for Black-box Large Language Models",
+      "InferDPT: Privacy-Preserving Inference for Closed-box Large Language Model",
+      "2310.12214v8",
+      0.911
+    ],
+    [
+      214,
+      "Clean Image May be Dangerous: Data Poisoning Attacks Against Deep Hashing",
+      "Clean Image May be Dangerous: Data Poisoning Attacks Against Deep Hashing",
+      "2503.21236v1",
+      1.0
+    ],
+    [
+      220,
+      "Efficiency Boosting of Secure Cross-platform Recommender Systems over Sparse Data",
+      "Efficiency Boosting of Secure Cross-platform Recommender Systems over Sparse Data",
+      "2212.01537v1",
+      1.0
+    ],
+    [
+      227,
+      "VerifyML: Obliviously Checking Model Fairness Resilient to Malicious Model Holder",
+      "VerifyML: Obliviously Checking Model Fairness Resilient to Malicious Model Holder",
+      "2210.08418v1",
+      1.0
+    ],
+    [
+      228,
+      "SIMC 2.0: Improved Secure ML Inference Against Malicious Clients",
+      "SIMC 2.0: Improved Secure ML Inference Against Malicious Clients",
+      "2207.04637v2",
+      1.0
+    ],
+    [
+      231,
+      "Boosting Black-box Attack to Deep Neural Networks with Conditional Diffusion Models",
+      "Boosting Black-box Attack to Deep Neural Networks with Conditional Diffusion Models",
+      "2310.07492v1",
+      1.0
+    ],
+    [
+      238,
+      "Hercules: Boosting the Performance of Privacy-preserving Federated Learning",
+      "Hercules: Boosting the Performance of Privacy-preserving Federated Learning",
+      "2207.04620v1",
+      1.0
+    ],
+    [
+      240,
+      "Erase and Repair: An Efficient Box-Free Removal Attack on High-Capacity Deep Hiding",
+      "Erase and Repair: An Efficient Box-Free Removal Attack on High-Capacity Deep Hiding",
+      "2308.01512v1",
+      1.0
+    ],
+    [
+      241,
+      "Can We Mitigate Backdoor Attack Using Adversarial Detection Methods",
+      "Can We Mitigate Backdoor Attack Using Adversarial Detection Methods?",
+      "2006.14871v2",
+      1.0
+    ],
+    [
+      253,
+      "Ownership Verification of DNN Architectures via Hardware Cache Side Channels",
+      "Ownership Verification of DNN Architectures via Hardware Cache Side Channels",
+      "2102.03523v4",
+      1.0
+    ],
+    [
+      257,
+      "A Survey of Microarchitectural Side-channel Vulnerabilities, Attacks and Defenses in Cryptography",
+      "A Survey of Microarchitectural Side-channel Vulnerabilities, Attacks and Defenses in Cryptography",
+      "2103.14244v1",
+      1.0
+    ],
+    [
+      258,
+      "Byzantine-resilient Decentralized Stochastic Gradient Descent",
+      "Byzantine-resilient Decentralized Stochastic Gradient Descent",
+      "2002.08569v4",
+      1.0
+    ],
+    [
+      259,
+      "Topology-aware Differential Privacy for Decentralized Image Classification",
+      "Topology-aware Differential Privacy for Decentralized Image Classification",
+      "2006.07817v2",
+      1.0
+    ],
+    [
+      260,
+      "Sentence Similarity Based on Contexts",
+      "Sentence Similarity Based on Contexts",
+      "2105.07623v2",
+      1.0
+    ],
+    [
+      268,
+      "TPU as Cryptographic Accelerator",
+      "TPU as Cryptographic Accelerator",
+      "2307.06554v3",
+      1.0
+    ],
+    [
+      270,
+      "PANDORA: Jailbreak GPTs by Retrieval Augmented Generation Poisoning",
+      "Pandora: Jailbreak GPTs by Retrieval Augmented Generation Poisoning",
+      "2402.08416v1",
+      1.0
+    ],
+    [
+      271,
+      "Practical and Scalable Security Verification of Secure Architectures",
+      "Practical and Scalable Security Verification of Secure Architectures",
+      "1807.01854v1",
+      1.0
+    ]
+  ]
+}

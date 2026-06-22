@@ -1,0 +1,134 @@
+{
+  "featured_count": 14,
+  "oral_count": 8,
+  "high_cited_count": 6,
+  "high_cited_threshold": "Crossref 精确标题匹配，is-referenced-by-count >= 50",
+  "records": [
+    {
+      "pid": 18,
+      "title": "TEAR: Temporal-aware Automated Red-teaming for Text-to-Video Models",
+      "oral": true,
+      "high_cited": false,
+      "citation_count": null,
+      "source": null,
+      "note": "官网写了 Oral"
+    },
+    {
+      "pid": 71,
+      "title": "Masked Sensory-Temporal Attention for Sensor Generalization in Quadruped Locomotion",
+      "oral": true,
+      "high_cited": false,
+      "citation_count": null,
+      "source": null,
+      "note": "官网写了 Oral"
+    },
+    {
+      "pid": 76,
+      "title": "Model Supply Chain Poisoning: Backdooring Pre-trained Models via Embedding Indistinguishability",
+      "oral": true,
+      "high_cited": false,
+      "citation_count": null,
+      "source": null,
+      "note": "官网写了 Oral"
+    },
+    {
+      "pid": 79,
+      "title": "An LLM-empowered Adaptive Evolutionary Algorithm For Multi-Component Deep Learning Systems",
+      "oral": true,
+      "high_cited": false,
+      "citation_count": null,
+      "source": null,
+      "note": "官网写了 Oral"
+    },
+    {
+      "pid": 88,
+      "title": "PhyScout: Detecting Sensor Spoofing Attacks via Spatio-temporal Consistency",
+      "oral": true,
+      "high_cited": false,
+      "citation_count": null,
+      "source": null,
+      "note": "官网写了 Oral"
+    },
+    {
+      "pid": 120,
+      "title": "MASTERKEY: Automated Jailbreaking of Large Language Model Chatbots",
+      "oral": false,
+      "high_cited": true,
+      "citation_count": 99,
+      "source": "Crossref",
+      "note": "Crossref 引用数 99，标题精确匹配"
+    },
+    {
+      "pid": 129,
+      "title": "Deep Multitask Learning with Progressive Parameter Sharing",
+      "oral": true,
+      "high_cited": false,
+      "citation_count": null,
+      "source": null,
+      "note": "官网写了 Oral"
+    },
+    {
+      "pid": 164,
+      "title": "Characterization and Prediction of Deep Learning Workloads in Large-Scale GPU Datacenters",
+      "oral": false,
+      "high_cited": true,
+      "citation_count": 121,
+      "source": "Crossref",
+      "note": "Crossref 引用数 121，标题精确匹配"
+    },
+    {
+      "pid": 170,
+      "title": "Privacy-preserving Collaborative Learning with Automatic Transformation Search",
+      "oral": true,
+      "high_cited": false,
+      "citation_count": null,
+      "source": null,
+      "note": "官网写了 Oral"
+    },
+    {
+      "pid": 174,
+      "title": "Temporal Watermarks for Deep Reinforcement Learning Models",
+      "oral": true,
+      "high_cited": false,
+      "citation_count": null,
+      "source": null,
+      "note": "官网写了 Oral"
+    },
+    {
+      "pid": 178,
+      "title": "Model Inversion Attacks Against Collaborative Inference",
+      "oral": false,
+      "high_cited": true,
+      "citation_count": 249,
+      "source": "Crossref",
+      "note": "Crossref 引用数 249，标题精确匹配"
+    },
+    {
+      "pid": 201,
+      "title": "Instruction Tuning for Large Language Models: A Survey",
+      "oral": false,
+      "high_cited": true,
+      "citation_count": 58,
+      "source": "Crossref",
+      "note": "Crossref 引用数 58，标题精确匹配"
+    },
+    {
+      "pid": 236,
+      "title": "Deep Learning Workload Scheduling in GPU Datacenters: A Survey",
+      "oral": false,
+      "high_cited": true,
+      "citation_count": 86,
+      "source": "Crossref",
+      "note": "Crossref 引用数 86，标题精确匹配"
+    },
+    {
+      "pid": 269,
+      "title": "A Hitchhiker&#x27;s Guide to Jailbreaking ChatGPT via Prompt Engineering",
+      "oral": false,
+      "high_cited": true,
+      "citation_count": 95,
+      "source": "Crossref",
+      "note": "Crossref 引用数 95，标题精确匹配"
+    }
+  ]
+}
