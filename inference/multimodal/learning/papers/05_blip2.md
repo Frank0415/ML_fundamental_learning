@@ -29,7 +29,7 @@ Q-Former 的输入是一组可学习的 query token（例如 32 个），它们�
 
 ### 4. 为什么需要 Q-Former
 
-ViT 输出的 patch token 数量通常很大（如 256 或 576 个）。如果直接将这些 token 全部拼接到 LLM 的输入序列中，将急剧增加 KV cache 显存开销。Q-Former 将 256+ 个 token 压缩为 32 个，大幅降低了 LLM 的推理成本。这正是本项目在 12GB 显存约束下的核心优化思路。
+ViT 输出的 patch token 数量通常很大（如 256 或 576 个）。如果直接将这些 token 全部拼接到 LLM 的输入序列中，将急剧增加 KV cache 显存开销。Q-Former 将 256+ 个 token 压缩为 32 个，大幅降低了 LLM 的推理成本。这正是本项目在 此前按受限显存假设做规划时的核心优化思路。
 
 ## 与本项目的关联
 

@@ -212,7 +212,7 @@ for f in experiments/mm_kv_cache_management/benchmark_*.py; do python3 "$f"; don
 ### Wave 1 — 目录骨架与文档入口：✅ 完成
 - [x] 全目录创建
 - [x] engine_inventory.md（18 模块静态审计，标识 2 阻塞 Bug + 2 未接线）
-- [x] 12GB 显存预算矩阵（4 模型）
+- [x] 显存预算与模型选型矩阵（4 模型）
 - [x] README.md / TODO.md / reports/ 入口文件
 
 ### Wave 2 — 文本引擎审计 + Engine Patch：✅ 完成
@@ -252,7 +252,7 @@ for f in experiments/mm_kv_cache_management/benchmark_*.py; do python3 "$f"; don
 3. **无 CUDA / 仅 CPU + MPS**：所有实验在 Apple Silicon MPS 上运行，性能数字不代表 NVIDIA GPU 表现。CUDA paged_attention kernel 未实现。
 4. **Paged KV 使用 gather fallback**：decode 阶段通过 `torch.gather` 拼接 KV block，非 GPU-native kernel。正确性已验证，性能非优化。
 5. **单序列推理**：minivLLM 无 scheduler、无 request queue、无批量调度，所有实验 batch_size=1。
-6. **12GB 显存预算为理论估算**：权重 + KV + 激活按 Paper-based 公式估算，未通过 `torch.cuda.memory_stats()` 在真实 GPU 上校准。
+6. **显存预算与模型选型为理论估算**：权重 + KV + 激活按 Paper-based 公式估算，未通过 `torch.cuda.memory_stats()` 在真实 GPU 上校准。
 7. **mm cache 策略未接入真实推理循环**：3 策略设计在纯 Python 模拟器中验证，未接入 minivLLM 引擎的 KV cache 读/写。
 8. **minivLLM 引擎不修改原则**：所有实验代码独立于 `minivLLM/`，引擎仅作为只读基础存在。对引擎的修改仅限 Wave 2 的 5 个 Bug 修复，任何超出此范围的引擎改动均不在本工作区范围。
 9. **不引入外部框架**：全部文档为纯静态 HTML + CSS，无 npm / React / Vue / MkDocs / Sphinx 依赖。
@@ -272,7 +272,7 @@ for f in experiments/mm_kv_cache_management/benchmark_*.py; do python3 "$f"; don
 | **Week 1** | 引擎审计 + 静态文档（任务 1-3） | **6-8h** |
 | | - 读懂 minivLLM 代码 + 静态扫描 attention/KV/paged 状态 | |
 | | - 写 inventory.md + 4 篇学习笔记 + 2 个 HTML | |
-| | - 设计 paged KV 接口 + 12GB 显存预算 | |
+| | - 设计 paged KV 接口 + 显存预算与模型选型 | |
 | **Week 2** | 文本引擎基础修复 + paged 路径（任务 4-6, 13） | **10-14h** |
 | | - 修 4 个 BUG（Attn 构造、act_fn、head_dim、RoPE）直到 HF 对齐 | |
 | | - 接通 contiguous KV cache + prefill/decode | |
@@ -318,7 +318,7 @@ for f in experiments/mm_kv_cache_management/benchmark_*.py; do python3 "$f"; don
 
 ### 10.5 是否需要 GPU？
 
-按你本机是否 12GB NVIDIA GPU 决定：
+按你本机是否 NVIDIA GPU 决定：
 
 | 环境 | 预计人工时间 | 备注 |
 |------|--------------|------|

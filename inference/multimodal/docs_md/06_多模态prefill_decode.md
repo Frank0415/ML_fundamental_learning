@@ -46,7 +46,7 @@
 
 多模态 prefill 的显存峰值发生在 prefill 阶段。此时需要同时容纳：
 
-| 显存占用 | 说明 | 典型大小（12GB） |
+| 显存占用 | 说明 | 一个受限显存示例 |
 |----------|------|------------------|
 | 模型权重 | Qwen3-VL-4B bf16 | ~8GB |
 | Visual token K/V（prefill） | 视觉 token 的 K/V 写入 | ~50MB（1024 visual tokens） |

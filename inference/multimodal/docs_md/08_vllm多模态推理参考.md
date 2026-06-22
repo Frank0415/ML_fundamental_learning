@@ -56,12 +56,12 @@ vLLM 的 PagedAttention 在 VLM 场景下无需修改，因为：
 
 ## 4. vLLM 的显存管理优势
 
-vLLM 的 PagedAttention 对 12GB 显存环境非常有价值：
+vLLM 的 PagedAttention 对 受限显存环境非常有价值：
 
-| 机制 | 对 12GB 的价值 |
+| 机制 | 对受限显存配置的价值 |
 |------|----------------|
 | Block 级分配 | 不需要为 visual token 预留完整的 max_seq_len 连续空间。visual token 在 prefill 时写入若干个 block，decode 阶段使用新 block。 |
-| 碎片率 <4% | 12GB 中仅浪费约 480MB。在 contiguous 方案下碎片可能高达 5~6GB，直接阻塞推理。 |
+| 碎片率 <4% | 若以一张中档显存卡为例，仅浪费约 480MB。在 contiguous 方案下碎片可能高达 5~6GB，直接阻塞推理。 |
 | Automatic Prefix Caching | system prompt 的 KV 共享可以节省约 20~50MB 的重复 prefill 计算（取决于 prompt 长度），在 batch 服务场景下效果显著。 |
 | Swap Out / Recomputation | 当显存不足时，可将不活跃请求的 KV block swap 到 CPU 内存或直接释放（需要时重新 prefill 恢复）。 |
 

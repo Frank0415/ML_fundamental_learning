@@ -11,7 +11,7 @@ Week 1 完成了 minivLLM 推理框架的全面**审计**，聚焦三个维度�
 ### 1.1 文本引擎审计
 
 - minivLLM 的纯文本推理路径（Tokenizer → Embed → Transformer → LM Head → Sampler）结构完整，`config.py` 已提供 `kvcache_block_size=16` 的配置锚点。
-- **阻塞发现**：`paged_attention` 路径在整个框架中**未实现**。当前所有 KV 缓存操作 fallback 到 contiguous 实现，无 block 管理、无动态分配/释放。这导致 12GB GPU 上 `max_model_len` 受限于预分配连续内存的上限。
+- **阻塞发现**：`paged_attention` 路径在整个框架中**未实现**。当前所有 KV 缓存操作 fallback 到 contiguous 实现，无 block 管理、无动态分配/释放。这导致 中低显存 GPU 上 `max_model_len` 受限于预分配连续内存的上限。
 - 文本推理的 attention 路径在 contiguous 模式下已具备参考正确性，可作为 paged attention 对齐的基础。
 
 ### 1.2 多模态流水线审计
@@ -83,7 +83,7 @@ Week 2 只有一条关键路径，不允许 fork 到其他方向：
 |------|------|------|
 | `experiments/paged_attention_fix_or_impl/README.md` | 项目目的、MAC、运行命令 | ✅ 已交付 |
 | `experiments/paged_attention_fix_or_impl/design.md` | 接口设计、指标、对齐阈值、接口签名表 | ✅ 已交付 |
-| `learning/notes/08_12gb显存预算.md` | 4 模型显存预算矩阵 | ✅ 已交付 |
+| `learning/notes/08_显存预算与模型选型.md` | 4 模型显存预算矩阵 | ✅ 已交付 |
 | `reports/week_1.md` | 本周报 | ✅ 本文件 |
 
 ---
@@ -93,7 +93,7 @@ Week 2 只有一条关键路径，不允许 fork 到其他方向：
 | 风险 | 影响 | 对策 |
 |------|------|------|
 | paged KV 实现引入 offset bug | logits 不对齐，Week 2 卡住 | 步骤 2 contiguous KV 作为 solid baseline，diff 排查 |
-| 12GB 显存不够跑 VLM | 只能 text-only 验证 | 已有 4 模型 fallback 链 + text-only 降级路径 |
+| 中等显存配置不够跑 VLM | 只能 text-only 验证 | 已有 4 模型 fallback 链 + text-only 降级路径 |
 | Qwen3-VL-4B 的 ViT 过大 | prefill 时 activation OOM | 降 `max_pixels`；换 Qwen2.5-VL-3B |
 | 与并行 agent 的交付物冲突 | 重复工作 | 仅写设计文档，不实现代码，不触碰 `minivLLM/` 源码 |
 

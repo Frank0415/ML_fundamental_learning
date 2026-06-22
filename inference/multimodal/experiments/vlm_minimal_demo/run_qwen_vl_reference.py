@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""run_qwen_vl_reference.py — Task 10: 12GB 约束下的小型 VLM reference 矩阵。
+"""run_qwen_vl_reference.py — Task 10: 中等显存配置 约束下的小型 VLM reference 矩阵。
 
 4 候选模型，按主路径 → 稳定 fallback → 先进对照 → 轻量对照顺序尝试。
 任何单个模型失败不中断脚本；4 个全失败时执行降级 smoke（tokenizer-only）。

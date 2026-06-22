@@ -5,11 +5,11 @@
 
 ---
 
-## Task 10: VLM Reference 矩阵（12GB 约束下的小型 VLM reference）
+## Task 10: VLM Reference 矩阵（中等显存配置 约束下的小型 VLM reference）
 
 ### 目的
 
-在 12GB 显存约束下，对 4 个 VLM 候选模型进行 reference 对照推理，建立主路径 → 稳定 fallback → 先进对照 → 轻量对照的逐级降级链。
+在 此前按受限显存假设做规划时，对 4 个 VLM 候选模型进行 reference 对照推理，建立主路径 → 稳定 fallback → 先进对照 → 轻量对照的逐级降级链。
 
 ### 实现
 

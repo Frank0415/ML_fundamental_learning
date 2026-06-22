@@ -47,7 +47,7 @@
 
 1. **position_ids 规则**：视觉 token 和文本 token 使用连续递增的 position，这对 RoPE 是正确的。visual token 的二维空间位置（h, w）在 M-RoPE 中处理，不在 position_ids 中显式体现。
 2. **特殊 token ID 映射**：BOS=151643, IMG_START=151655, IMG_END=151656, IMG_PLACEHOLDER=151654。这些 ID 在 `Qwen3-VL-4B-Instruct` 的 tokenizer 中定义。
-3. **max_pixels 约束**：12GB 显存下，`max_pixels` 应限制在 512×512 以内（约 1024 visual tokens）。超过此值时 visual token 的 KV cache 占用会挤压文本 token 的生成空间。
+3. **max_pixels 约束**：在受限显存配置下，`max_pixels` 应限制在 512×512 以内（约 1024 visual tokens）。超过此值时 visual token 的 KV cache 占用会挤压文本 token 的生成空间。
 4. **clip-reference 模式无需下载权重**：通过 `CLIPVisionConfig.from_pretrained("openai/clip-vit-base-patch32")` 仅读取配置（不下载权重），用随机初始化的 Tensor 验证 shape，避免网络依赖。
 
 ### 与 Task 8 (inputs_embeds) 的衔接

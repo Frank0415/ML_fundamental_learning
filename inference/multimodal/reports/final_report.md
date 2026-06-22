@@ -8,7 +8,7 @@
 
 ## 执行总结
 
-本项目在约 12GB 显存约束下，从纯文本推理引擎 `minivLLM` 出发，经过 6 周（Wave 1-5）逐步构建了一个可运行的最小多模态（VLM）推理实验流水线。核心成果包括：文本引擎 HF-IDENTICAL 对齐、contiguous 与 paged KV cache 接入、inputs_embeds 路径打通、最小 VLM demo 工程跑通、4 个 VLM reference 模型的对照矩阵（含降级路径验证）、以及多模态 KV cache key 管理的完整实验（确认 text-only prefix cache 在多模态下的 false_hit 风险）。
+本项目在约 此前按受限显存假设做规划时，从纯文本推理引擎 `minivLLM` 出发，经过 6 周（Wave 1-5）逐步构建了一个可运行的最小多模态（VLM）推理实验流水线。核心成果包括：文本引擎 HF-IDENTICAL 对齐、contiguous 与 paged KV cache 接入、inputs_embeds 路径打通、最小 VLM demo 工程跑通、4 个 VLM reference 模型的对照矩阵（含降级路径验证）、以及多模态 KV cache key 管理的完整实验（确认 text-only prefix cache 在多模态下的 false_hit 风险）。
 
 **诚实声明**：4 个 VLM reference 模型（Qwen3-VL-4B / Qwen2.5-VL-3B / InternVL3.5-4B / SmolVLM2-2.2B）在本机 macOS (MPS, 无 CUDA, 缺 `accelerate`) 环境下全部加载失败。未假装成功。降级到 processor-only smoke，tokenizer 验证通过。Local VLM demo 使用随机 projector，不保证语义质量。
 
@@ -18,7 +18,7 @@
 
 | Wave | 主题 | 计划任务 | 实际状态 | 备注 |
 |------|------|----------|----------|------|
-| Wave 1 | 目录骨架 + 引擎盘点 | 创建全目录、engine_inventory.md、12GB 预算矩阵 | ✅ 完成 | 18 模块静态审计，标识 2 个阻塞 Bug + 2 项未接线 |
+| Wave 1 | 目录骨架 + 引擎盘点 | 创建全目录、engine_inventory.md、显存预算与模型选型矩阵 | ✅ 完成 | 18 模块静态审计，标识 2 个阻塞 Bug + 2 项未接线 |
 | Wave 2 | 文本引擎审计 + Engine Patch | 修复 B1/B2/B3、HF 对齐、KV cache 接入 | ✅ 完成 | 5 Bug 修复，HF IDENTICAL（max\|diff\|=8.2e-5），contiguous KV cache 接入 |
 | Wave 3 | Paged Attention + Token Pipeline | PagedKVCache 实现、教学型 token pipeline | ✅ 完成 | BlockManager+BlockTable+correctness-first gather；5 模块 pipeline（2 种 visual token 模式） |
 | Wave 4 | inputs_embeds + VLM Demo + VLM Reference | inputs_embeds 接入、最小 VLM demo、4 模型 reference | ✅ 完成（降级） | inputs_embeds text_parity 0.00 diff；local VLM demo 工程跑通；4 VLM reference 全部 fail → 降级 smoke |
@@ -103,7 +103,7 @@
 3. **Random projector**：`run_minimal_vlm.py` 的 visual-to-text projector 是随机初始化，不携带语义。
 4. **纯 Python mm cache 模拟器**：策略设计完整，但未接入真实推理引擎。
 5. **单序列推理**：无 batching，所有实验均为 batch_size=1。
-6. **12GB 预算为理论估算**：未通过真实 GPU memory_stats 校准。
+6. **显存预算为理论估算**：未通过真实 GPU memory_stats 校准。
 7. **InternVL3.5-4B 额外兼容性问题**：`InternVLChatConfig` 不被 `AutoModelForImageTextToText` 识别。
 
 ---
@@ -142,7 +142,7 @@ minivLLM/.venv/bin/pip install accelerate
 4. **将 mm cache 策略接入真实推理循环**：迁移 `mm_cache_simulator.py` 的 3 策略设计到 minivLLM 引擎 KV cache 读/写循环。
 5. **在 NVIDIA GPU 上验证 paged attention 性能**：运行 `compare_contiguous_vs_paged.py`，测量 real fragmentation ratio 和 throughput。
 6. **实现 scheduler 与 batch 推理**：参照 vLLM scheduler 架构，实现 ReqState / Lifecycle / 批量调度。
-7. **真实 GPU memory_stats 校准**：在有 CUDA 的 GPU 上用 `torch.cuda.memory_stats()` 校准 12GB 显存预算。
+7. **真实 GPU memory_stats 校准**：在有 CUDA 的 GPU 上用 `torch.cuda.memory_stats()` 校准 显存预算与模型选型。
 
 ---
 

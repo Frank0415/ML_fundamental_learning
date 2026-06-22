@@ -23,22 +23,22 @@ SGLang 社区目前对多模态 prefix caching 的讨论集中在以下方向：
 
 尽管 Radix Tree 在多模态场景下尚未完美适配，SGLang 在实际 VLM serving 中仍有以下优势：
 
-| 特性 | SGLang 的做法 | 对 12GB 的价值 |
+| 特性 | SGLang 的做法 | 对受限显存配置的价值 |
 |------|---------------|----------------|
 | Radix Tree 文本 prefix | 视觉 token 之前的纯文本部分依然可共享 | 节省系统提示的重复 prefill，约 20~50MB/请求 |
-| Continuous Batching | 支持 prefill 和 decode 混合 batch | 提升 12GB 下的吞吐效率 |
+| Continuous Batching | 支持 prefill 和 decode 混合 batch | 提升 受限显存下的吞吐效率 |
 | Token 级 Block 管理 | 与 vLLM 类似的 block 级分配 | 相同的碎片率优势 |
 | Structured Output | JSON / Regex 约束解码 | 对文档解析 VLM 任务特别有用（如 OCR 结构化提取） |
 | RadixAttention Skip | 对于已完全匹配的 prefix，跳过 attention 计算 | 显存和延迟双优化 |
 
-## 3. SGLang vs vLLM 在 12GB VLM 上的对比
+## 3. SGLang vs vLLM 在受限显存 VLM 场景下的对比
 
 | 维度 | vLLM | SGLang |
 |------|------|--------|
 | KV Cache 机制 | PagedAttention + hash-based APC | RadixAttention + Radix Tree |
 | 多模态支持 | 已较为成熟（v0.5+） | 快速演进中，部分 VLM 已支持 |
 | Prefix 共享粒度 | Block 级（16 token 对齐） | Token 级（精确到每个 token） |
-| 12GB 友好度 | 非常友好（block size 可定制） | 友好（相同的 block 管理） |
+| 显存友好度 | 非常友好（block size 可定制） | 友好（相同的 block 管理） |
 | 社区成熟度 | 更成熟，VLM 文档更完善 | 快速增长，部分 VLM 仍为实验性 |
 | 适用场景 | 通用 VLM serving | 多轮对话 + 渐进式 prefix（如 agent 场景） |
 
@@ -48,7 +48,7 @@ SGLang 的以下几个设计思想对 minivLLM 的多模态扩展具有参考价
 
 - **前缀树的自动性**：不需要显式配置哪些 prefix 共享。所有 prompt 自动参与共享。这个"零配置 prefix sharing"的思路很适合 minivLLM 这类教学型引擎——用户不需要关心 KV 共享的内部机制。
 - **引用计数释放**：Radix Tree 节点的引用计数机制让 KV 缓存的生命周期管理变得清晰。当最后一个引用该 prefix 的请求完成，KV block 自动释放。vLLM 的 hash-based 方案没有这个内置的引用追踪。
-- **Skip Attention**：对于完全命中的 prefix，SGLang 直接跳过 attention 计算，将结果复用。这在大 batch 场景下节约了大量计算，在 12GB 的小 batch 场景下效果虽有限，但思路值得借鉴。
+- **Skip Attention**：对于完全命中的 prefix，SGLang 直接跳过 attention 计算，将结果复用。这在大 batch 场景下节约了大量计算，在小 batch 场景下效果虽有限，但思路值得借鉴。
 
 ## 5. 我们这次实验中的参考状态
 

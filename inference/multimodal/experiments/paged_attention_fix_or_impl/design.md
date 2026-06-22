@@ -12,7 +12,7 @@ minivLLM 当前存在 KV 缓存的两种路径风险：
 1. **未实现**：`paged_attention` 是占位，实际 fallback 到 contiguous 实现，显存碎片化未计入。
 2. **阻塞**：如果 contiguous KV 预分配过大会直接 OOM，过小则 max_model_len 受限。
 
-本设计给出最小接口集，使得 minivLLM 能在 12GB GPU 上将 KV 缓存切分为 block_size=16 的固定块，按需分配、即时释放。不引入 scheduler 或 continuous batching——那是 Wave 2+ 的范畴。
+本设计给出最小接口集，使得 minivLLM 能在 中低显存 GPU 上将 KV 缓存切分为 block_size=16 的固定块，按需分配、即时释放。不引入 scheduler 或 continuous batching——那是 Wave 2+ 的范畴。
 
 ---
 

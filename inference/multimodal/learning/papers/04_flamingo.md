@@ -30,4 +30,4 @@ Flamingo 支持任意顺序的图文交错序列（如：图像1 → 文字1 →
 
 ## 与本项目的关联
 
-Flamingo 的 gated cross-attention 是"冻结 LLM 加视觉"路线的经典方案，对本项目在 12GB 显存受限条件下的架构选择有参考价值——如果我们需要避免全量训练，可以考虑类似的冻结 + 连接器策略。Perceiver Resampler 的固定 token 数量压缩思路也与 Q-Former（BLIP-2）和 Qwen-VL VL Adapter 一脉相承。
+Flamingo 的 gated cross-attention 是"冻结 LLM 加视觉"路线的经典方案，对本项目在 中等显存配置受限条件下的架构选择有参考价值——如果我们需要避免全量训练，可以考虑类似的冻结 + 连接器策略。Perceiver Resampler 的固定 token 数量压缩思路也与 Q-Former（BLIP-2）和 Qwen-VL VL Adapter 一脉相承。

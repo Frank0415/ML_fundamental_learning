@@ -63,7 +63,7 @@
 | Stage 2 | 视觉 token 区域 | ❌ 不可共享（除非同图） | hash(image_embedding) |
 | Stage 3 | 视觉 token 之后的文本 | ❌ 不可共享（被视觉 token 影响） | hash(image + text postfix) |
 
-在 Stage 1 中，纯文本 prefix 的安全共享可以节省大量重复计算。如果一个系统提示有 200 个 token，每天被 10000 个请求共享，这 200 个 token 的 prefill 只需要计算一次，之后所有请求复用。12GB 显存下，这个优化对吞吐量提升显著。
+在 Stage 1 中，纯文本 prefix 的安全共享可以节省大量重复计算。如果一个系统提示有 200 个 token，每天被 10000 个请求共享，这 200 个 token 的 prefill 只需要计算一次，之后所有请求复用。在受限显存配置下，这个优化对吞吐量提升显著。
 
 ## 6. 页面导航
 

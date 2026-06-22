@@ -5,6 +5,7 @@
 
 /* ---- CSS Custom Properties ---- */
 :root {
+  color-scheme: light dark;
   --bg: #fafafa;
   --fg: #1a1a1a;
   --border: #d0d0d0;
@@ -17,6 +18,23 @@
   --info: #0ea5e9;
   --subtle: #6b7280;
   --muted-bg: #f9f9f9;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1117;
+    --fg: #e5e7eb;
+    --border: #333b4d;
+    --code-bg: #1b2230;
+    --accent: #60a5fa;
+    --accent-hover: #93c5fd;
+    --danger: #f87171;
+    --warn: #fbbf24;
+    --ok: #4ade80;
+    --info: #38bdf8;
+    --subtle: #9ca3af;
+    --muted-bg: #151b26;
+  }
 }
 
 /* ---- Reset & Base ---- */
@@ -116,6 +134,7 @@ th, td {
 th {
   background: #f0f0f0;
   font-weight: 600;
+  color: var(--fg);
 }
 
 /* ---- Status Badges ---- */
@@ -154,6 +173,7 @@ th {
   padding: 1rem;
   text-align: center;
   background: #fff;
+  color: var(--fg);
 }
 
 .card .num {
@@ -225,4 +245,38 @@ footer {
   font-size: 1.05rem;
   color: var(--subtle);
   margin-bottom: 1.5rem;
+}
+
+figcaption {
+  color: var(--subtle) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  th {
+    background: #1f2937;
+  }
+
+  .badge-blocker {
+    background: #3a1717;
+  }
+
+  .badge-dormant {
+    background: #3a2a0d;
+  }
+
+  .badge-ok {
+    background: #14311d;
+  }
+
+  .badge-info {
+    background: #102b3a;
+  }
+
+  .card {
+    background: #141a24;
+  }
+
+  footer {
+    color: var(--subtle);
+  }
 }

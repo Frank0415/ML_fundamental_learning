@@ -11,7 +11,7 @@
 <h1>minivLLM 多模态推理实验工作区</h1>
 
 <p class="intro">
-  本项目目标：在约 12GB 显存内，从纯文本推理引擎出发，逐步构建一个可运行的最小多模态（VLM）推理流水线。最终在 minivLLM 上运行 Qwen3-VL-4B 或同类开源 VLM。本文档区记录引擎审计、模块实现、论文笔记与实验日志。
+  本项目目标：从纯文本推理引擎出发，逐步构建一个可运行的最小多模态（VLM）推理流水线。最终在 minivLLM 上运行 Qwen3-VL-4B 或同类开源 VLM。本文档区记录引擎审计、模块实现、论文笔记与实验日志。
 </p>
 
 <h2>文档目录</h2>
@@ -74,7 +74,7 @@
   <li>
     <a href="09_sglang多模态推理参考.html">09 · SGLang 多模态推理参考</a>
     <span class="tag tag-exists">已发布</span>
-    <span class="desc">SGLang RadixAttention 的多模态扩展、Radix Tree 与文本-视觉分离、12GB 场景下的对比分析。</span>
+    <span class="desc">SGLang RadixAttention 的多模态扩展、Radix Tree 与文本-视觉分离、受限显存场景下的对比分析。</span>
   </li>
 
   <li>
@@ -124,7 +124,7 @@
     <span class="desc">图像→visual token→LLM 的完整管线。</span>
   </li>
   <li>
-    <a href="../learning/notes/08_12gb显存预算.md">学习笔记 08 · 12GB 显存预算</a>
+    <a href="../learning/notes/08_显存预算与模型选型.md">学习笔记 08 · 显存预算与模型选型</a>
     <span class="desc">4 模型显存预算矩阵与降级策略。</span>
   </li>
   <li>

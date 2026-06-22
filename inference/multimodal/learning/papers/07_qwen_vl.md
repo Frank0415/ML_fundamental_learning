@@ -31,8 +31,8 @@ Qwen-VL 系列从视觉编码器（ViT-bigG）+ 视觉-语言适配器（VL Adap
 
 - 针对推理效率和部署场景优化，参数量更灵活（4B / 8B / 32B 等）。
 - 视觉编码器更加轻量，推理速度提升，但保持同级别最强的多模态能力。
-- 在 4B 参数级别做到了接近 Qwen2.5-VL-7B 的能力，是 12GB 显存设备上的理想选择。
+- 在 4B 参数级别做到了接近 Qwen2.5-VL-7B 的能力，是 受限显存设备上的理想选择。
 
 ## 与本项目的关联
 
-minivLLM 加载的权重就是 Qwen3-VL-4B-Instruct。理解 Qwen-VL 系列的三段式架构是正确实现本项目多模态 token pipeline 的前提。具体而言：视觉编码器如何产出 visual token、VL Adapter 如何投影到 LLM 空间、visual token 如何与文本 token 拼接到同一序列——这三个步骤直接决定了我们前向推理的实现细节。Qwen3-VL 的轻量化设计正好匹配我们的 12GB 显存约束。
+minivLLM 加载的权重就是 Qwen3-VL-4B-Instruct。理解 Qwen-VL 系列的三段式架构是正确实现本项目多模态 token pipeline 的前提。具体而言：视觉编码器如何产出 visual token、VL Adapter 如何投影到 LLM 空间、visual token 如何与文本 token 拼接到同一序列——这三个步骤直接决定了我们前向推理的实现细节。Qwen3-VL 的轻量化设计正好匹配我们的 中等显存配置约束。

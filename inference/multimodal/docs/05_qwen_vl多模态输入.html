@@ -5,24 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Qwen-VL 多模态输入格式 — minivLLM 多模态推理</title>
 <style>
-  :root { --bg: #fafafa; --fg: #1a1a1a; --border: #d0d0d0; --code-bg: #f4f4f4; --accent: #2563eb; --danger: #dc2626; --warn: #d97706; --ok: #16a34a; --info: #0ea5e9; }
+  :root { color-scheme: light dark; --bg: #fafafa; --fg: #1a1a1a; --border: #d0d0d0; --code-bg: #f4f4f4; --accent: #2563eb; --danger: #dc2626; --warn: #d97706; --ok: #16a34a; --info: #0ea5e9; --subtle: #888888; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1117; --fg: #e5e7eb; --border: #333b4d; --code-bg: #1b2230; --accent: #60a5fa; --danger: #f87171; --warn: #fbbf24; --ok: #4ade80; --info: #38bdf8; --subtle: #9ca3af; }
+  }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.7; max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem; background: var(--bg); color: var(--fg); }
   h1 { font-size: 1.8rem; border-bottom: 2px solid var(--border); padding-bottom: 0.4rem; }
   h2 { font-size: 1.35rem; margin-top: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.2rem; }
   h3 { font-size: 1.1rem; margin-top: 1.5rem; }
   code, pre { font-family: "SF Mono", Monaco, "Cascadia Code", Consolas, monospace; font-size: 0.88rem; }
-  code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; }
-  pre { background: var(--code-bg); padding: 0.9rem 1.1rem; overflow-x: auto; border-radius: 5px; line-height: 1.45; }
+  code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; color: var(--fg); }
+  pre { background: var(--code-bg); padding: 0.9rem 1.1rem; overflow-x: auto; border-radius: 5px; line-height: 1.45; color: var(--fg); }
   table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
   th, td { border: 1px solid var(--border); padding: 0.45rem 0.7rem; text-align: left; font-size: 0.92rem; }
-  th { background: #f0f0f0; font-weight: 600; }
-  .box { border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.2rem; margin: 1rem 0; }
+  th { background: #f0f0f0; font-weight: 600; color: var(--fg); }
+  .box { border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.2rem; margin: 1rem 0; color: var(--fg); }
   .box-info { border-color: var(--info); background: #f0f9ff; }
   .nav { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 1.5rem 0; }
   .nav li { margin: 0; }
   .nav a { color: var(--accent); text-decoration: none; padding: 0.3rem 0.6rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem; }
   .nav a:hover { background: #eff6ff; text-decoration: none; }
-  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.82rem; color: #888; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.82rem; color: var(--subtle); }
+  figcaption { color: var(--subtle) !important; }
+  @media (prefers-color-scheme: dark) {
+    th { background: #1f2937; }
+    .box-info { background: #102434; }
+    .nav a:hover { background: #1b2638; }
+  }
 </style>
 </head>
 <body>
@@ -118,7 +127,7 @@ embed([text_prefix]) + embed([vision_start]) + visual_embeds + embed([vision_end
 </ul>
 
 <p>
-  <strong>动态分辨率下的 token 计算</strong>：对于大图，Qwen2-VL 会将图像切为多个子图（tile），每个子图单独产生 visual token。总 token 数 = 子图数 × h × w。12GB 显存下，<code>max_pixels=512×512</code> 大约产生 4 个子图，每个 16×16=256 个 visual token，总计约 1024 个 visual token。
+  <strong>动态分辨率下的 token 计算</strong>：对于大图，Qwen2-VL 会将图像切为多个子图（tile），每个子图单独产生 visual token。总 token 数 = 子图数 × h × w。在受限显存配置下，<code>max_pixels=512×512</code> 大约产生 4 个子图，每个 16×16=256 个 visual token，总计约 1024 个 visual token。
 </p>
 
 <h2>5. 各版本输入格式的差异</h2>

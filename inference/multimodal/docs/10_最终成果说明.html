@@ -12,6 +12,7 @@
     border-left: 4px solid var(--ok);
     background: #f0fdf4;
     border-radius: 0 4px 4px 0;
+    color: var(--fg);
   }
   .verdict-block.warn {
     border-left-color: var(--warn);
@@ -37,6 +38,23 @@
     margin-bottom: 1rem;
     font-size: 0.9rem;
   }
+  @media (prefers-color-scheme: dark) {
+    .verdict-block {
+      background: #14311d;
+    }
+    .verdict-block.warn {
+      background: #2f2410;
+    }
+    .verdict-block.fail {
+      background: #301717;
+    }
+    .phase-done {
+      background: #14311d;
+    }
+    .phase-degraded {
+      background: #3a2a0d;
+    }
+  }
 </style>
 </head>
 <body>
@@ -53,7 +71,7 @@
 <h2>1. 项目背景</h2>
 
 <p>
-  本项目目标：在约 12GB 显存内，从纯文本推理引擎 <code>minivLLM</code> 出发，逐步构建一个可运行的最小多模态（VLM）推理流水线。最终目标是在 minivLLM 上运行 Qwen3-VL-4B 或同类开源 VLM。
+  本项目目标：从纯文本推理引擎 <code>minivLLM</code> 出发，逐步构建一个可运行的最小多模态（VLM）推理流水线。最终目标是在 minivLLM 上运行 Qwen3-VL-4B 或同类开源 VLM。
 </p>
 
 <p>
@@ -75,7 +93,7 @@
     <tr>
       <td>Wave 1</td>
       <td>目录骨架 + 引擎盘点</td>
-      <td>全目录创建、engine_inventory.md（18 模块审计）、12GB 显存预算矩阵</td>
+      <td>全目录创建、engine_inventory.md（18 模块审计）、显存预算与模型选型矩阵</td>
       <td><span class="phase-badge phase-done">完成</span></td>
     </tr>
     <tr>
@@ -188,7 +206,7 @@
   <li><strong>无 CUDA / 无 accelerate</strong>：当前环境为 macOS + MPS，无 NVIDIA GPU。所有实验在 CPU 或 MPS 上运行。CUDA paged_attention kernel（vLLM/SGLang 生产级）未在本环境实现。</li>
   <li><strong>Paged KV 使用 gather fallback</strong>：decode 阶段通过 <code>torch.gather</code> 拼接 KV block，非 GPU-native paged attention kernel。正确性已验证，但性能非优化。</li>
   <li><strong>无调度器 / 无 batching</strong>：<code>minivLLM</code> 无 scheduler、无 request queue、无批量调度。仅单序列推理。</li>
-  <li><strong>12GB 显存预算为理论值</strong>：所有显存数字是 Paper-based 估算（权重 + KV + 激活），未通过 <code>torch.cuda.memory_stats()</code> 在真实 GPU 上校准。</li>
+  <li><strong>显存预算与模型选型为理论值</strong>：所有显存数字是 Paper-based 估算（权重 + KV + 激活），未通过 <code>torch.cuda.memory_stats()</code> 在真实 GPU 上校准。</li>
   <li><strong>mm cache 策略为纯 Python 模拟器</strong>：3 策略 hash 设计完整、逻辑正确，但未接入真实推理引擎的 KV cache 读/写循环。</li>
 </ul>
 

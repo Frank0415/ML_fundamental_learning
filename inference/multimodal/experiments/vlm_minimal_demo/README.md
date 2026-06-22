@@ -30,7 +30,7 @@ minivLLM/.venv/bin/python experiments/vlm_minimal_demo/run_minimal_vlm.py --mode
 
 ### run_qwen_vl_reference.py
 
-在 12GB 显存约束下，对 4 个 VLM 候选模型按主路径 → 稳定 fallback → 先进对照 → 轻量对照顺序依次尝试推理，记录显存、输出、失败原因。4 个模型全失败时自动执行降级 smoke（tokenizer-only）。
+在 此前按受限显存假设做规划时，对 4 个 VLM 候选模型按主路径 → 稳定 fallback → 先进对照 → 轻量对照顺序依次尝试推理，记录显存、输出、失败原因。4 个模型全失败时自动执行降级 smoke（tokenizer-only）。
 
 **4 个候选模型（硬编码，不扩展）**：
 
@@ -79,7 +79,7 @@ minivLLM/.venv/bin/python experiments/vlm_minimal_demo/run_qwen_vl_reference.py 
 
 - **网络依赖**：模型首次加载需从 Hugging Face Hub 下载权重（数 GB），网络不可达时所有模型均失败，仅降级 smoke 通过。
 - **显存限制**：在无 CUDA 设备（如 macOS）上，4B 参数模型加载到 CPU 可能因内存不足失败；降级 smoke 仅需 tokenizer 配置，保证可运行。
-- **GPU 需求**：4 个模型均需 ~4-8 GB GPU 显存（bf16），推荐 ≥12GB NVIDIA GPU。CPU 推理在技术上可行但极慢且可能 OOM。
+- **GPU 需求**：4 个模型均需 ~4-8 GB GPU 显存（bf16），推荐 ≥NVIDIA GPU。CPU 推理在技术上可行但极慢且可能 OOM。
 - **模型版本**：不锁定 transformers 版本，使用当前环境中已安装的版本（`transformers>=5.0`）。
 - **图片格式**：仅测试过 JPEG/PNG；其他格式未验证。
 - **不保存权重**：模型权重不写入仓库，由 transformers 缓存管理。

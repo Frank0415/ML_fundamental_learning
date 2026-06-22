@@ -12,7 +12,7 @@
 - [x] 编写 `reports/engine_inventory.md`（18 模块静态审计，标识 2 阻塞 Bug + 2 未接线）
 - [x] 确认 `minivLLM/` 顶层结构与已知阻塞
 - [x] 编写 `reports/week_1.md`
-- [x] 12GB 显存预算矩阵（4 模型 Paper-based 估算）
+- [x] 显存预算与模型选型矩阵（4 模型 Paper-based 估算）
 
 目标达成：建立工作区基本框架，明确引擎现状。未修改任何 engine 代码。
 

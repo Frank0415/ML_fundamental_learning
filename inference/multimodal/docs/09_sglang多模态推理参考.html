@@ -5,18 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SGLang 多模态推理参考 — minivLLM 多模态推理</title>
 <style>
-  :root { --bg: #fafafa; --fg: #1a1a1a; --border: #d0d0d0; --code-bg: #f4f4f4; --accent: #2563eb; --danger: #dc2626; --warn: #d97706; --ok: #16a34a; --info: #0ea5e9; }
+  :root { color-scheme: light dark; --bg: #fafafa; --fg: #1a1a1a; --border: #d0d0d0; --code-bg: #f4f4f4; --accent: #2563eb; --danger: #dc2626; --warn: #d97706; --ok: #16a34a; --info: #0ea5e9; --subtle: #888888; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1117; --fg: #e5e7eb; --border: #333b4d; --code-bg: #1b2230; --accent: #60a5fa; --danger: #f87171; --warn: #fbbf24; --ok: #4ade80; --info: #38bdf8; --subtle: #9ca3af; }
+  }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.7; max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem; background: var(--bg); color: var(--fg); }
   h1 { font-size: 1.8rem; border-bottom: 2px solid var(--border); padding-bottom: 0.4rem; }
   h2 { font-size: 1.35rem; margin-top: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.2rem; }
   h3 { font-size: 1.1rem; margin-top: 1.5rem; }
   code, pre { font-family: "SF Mono", Monaco, "Cascadia Code", Consolas, monospace; font-size: 0.88rem; }
-  code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; }
-  pre { background: var(--code-bg); padding: 0.9rem 1.1rem; overflow-x: auto; border-radius: 5px; line-height: 1.45; }
+  code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; color: var(--fg); }
+  pre { background: var(--code-bg); padding: 0.9rem 1.1rem; overflow-x: auto; border-radius: 5px; line-height: 1.45; color: var(--fg); }
   table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
   th, td { border: 1px solid var(--border); padding: 0.45rem 0.7rem; text-align: left; font-size: 0.92rem; }
-  th { background: #f0f0f0; font-weight: 600; }
-  .box { border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.2rem; margin: 1rem 0; }
+  th { background: #f0f0f0; font-weight: 600; color: var(--fg); }
+  .box { border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.2rem; margin: 1rem 0; color: var(--fg); }
   .box-info { border-color: var(--info); background: #f0f9ff; }
   .box-warn { border-color: var(--warn); background: #fffbeb; }
   .box-bad { border-color: var(--danger); background: #fef2f2; }
@@ -24,7 +27,15 @@
   .nav li { margin: 0; }
   .nav a { color: var(--accent); text-decoration: none; padding: 0.3rem 0.6rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem; }
   .nav a:hover { background: #eff6ff; text-decoration: none; }
-  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.82rem; color: #888; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.82rem; color: var(--subtle); }
+  figcaption { color: var(--subtle) !important; }
+  @media (prefers-color-scheme: dark) {
+    th { background: #1f2937; }
+    .box-info { background: #102434; }
+    .box-warn { background: #2f2410; }
+    .box-bad { background: #301717; }
+    .nav a:hover { background: #1b2638; }
+  }
 </style>
 </head>
 <body>
@@ -65,22 +76,22 @@
 </p>
 
 <table>
-  <tr><th>特性</th><th>SGLang 的做法</th><th>对 12GB 的价值</th></tr>
+  <tr><th>特性</th><th>SGLang 的做法</th><th>对受限显存配置的价值</th></tr>
   <tr><td>Radix Tree 文本 prefix</td><td>视觉 token 之前的纯文本部分依然可共享</td><td>节省系统提示的重复 prefill，约 20~50MB/请求</td></tr>
-  <tr><td>Continuous Batching</td><td>支持 prefill 和 decode 混合 batch</td><td>提升 12GB 下的吞吐效率</td></tr>
+  <tr><td>Continuous Batching</td><td>支持 prefill 和 decode 混合 batch</td><td>提升 受限显存下的吞吐效率</td></tr>
   <tr><td>Token 级 Block 管理</td><td>与 vLLM 类似的 block 级分配</td><td>相同的碎片率优势</td></tr>
   <tr><td>Structured Output</td><td>JSON / Regex 约束解码</td><td>对文档解析 VLM 任务特别有用（如 OCR 结构化提取）</td></tr>
   <tr><td>RadixAttention Skip</td><td>对于已完全匹配的 prefix，跳过 attention 计算</td><td>显存和延迟双优化</td></tr>
 </table>
 
-<h2>3. SGLang vs vLLM 在 12GB VLM 上的对比</h2>
+<h2>3. SGLang vs vLLM 在受限显存 VLM 场景下的对比</h2>
 
 <table>
   <tr><th>维度</th><th>vLLM</th><th>SGLang</th></tr>
   <tr><td>KV Cache 机制</td><td>PagedAttention + hash-based APC</td><td>RadixAttention + Radix Tree</td></tr>
   <tr><td>多模态支持</td><td>已较为成熟（v0.5+）</td><td>快速演进中，部分 VLM 已支持</td></tr>
   <tr><td>Prefix 共享粒度</td><td>Block 级（16 token 对齐）</td><td>Token 级（精确到每个 token）</td></tr>
-  <tr><td>12GB 友好度</td><td>非常友好（block size 可定制）</td><td>友好（相同的 block 管理）</td></tr>
+  <tr><td>显存友好度</td><td>非常友好（block size 可定制）</td><td>友好（相同的 block 管理）</td></tr>
   <tr><td>社区成熟度</td><td>更成熟，VLM 文档更完善</td><td>快速增长，部分 VLM 仍为实验性</td></tr>
   <tr><td>适用场景</td><td>通用 VLM serving</td><td>多轮对话 + 渐进式 prefix（如 agent 场景）</td></tr>
 </table>
@@ -94,7 +105,7 @@
 <ul>
   <li><strong>前缀树的自动性</strong>：不需要显式配置哪些 prefix 共享。所有 prompt 自动参与共享。这个"零配置 prefix sharing"的思路很适合 minivLLM 这类教学型引擎——用户不需要关心 KV 共享的内部机制。</li>
   <li><strong>引用计数释放</strong>：Radix Tree 节点的引用计数机制让 KV 缓存的生命周期管理变得清晰。当最后一个引用该 prefix 的请求完成，KV block 自动释放。vLLM 的 hash-based 方案没有这个内置的引用追踪。</li>
-  <li><strong>Skip Attention</strong>：对于完全命中的 prefix，SGLang 直接跳过 attention 计算，将结果复用。这在大 batch 场景下节约了大量计算，在 12GB 的小 batch 场景下效果虽有限，但思路值得借鉴。</li>
+  <li><strong>Skip Attention</strong>：对于完全命中的 prefix，SGLang 直接跳过 attention 计算，将结果复用。这在大 batch 场景下节约了大量计算，在小 batch 场景下效果虽有限，但思路值得借鉴。</li>
 </ul>
 
 <h2>5. 我们这次实验中的参考状态</h2>

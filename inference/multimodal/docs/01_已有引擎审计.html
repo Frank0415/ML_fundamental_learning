@@ -6,6 +6,7 @@
 <title>已有引擎审计 — minivLLM 文本推理引擎</title>
 <style>
   :root {
+    color-scheme: light dark;
     --bg: #fafafa;
     --fg: #1a1a1a;
     --border: #d0d0d0;
@@ -14,6 +15,20 @@
     --danger: #dc2626;
     --warn: #d97706;
     --ok: #16a34a;
+    --subtle: #888888;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1117;
+      --fg: #e5e7eb;
+      --border: #333b4d;
+      --code-bg: #1b2230;
+      --accent: #60a5fa;
+      --danger: #f87171;
+      --warn: #fbbf24;
+      --ok: #4ade80;
+      --subtle: #9ca3af;
+    }
   }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -29,10 +44,10 @@
   h3 { font-size: 1.1rem; margin-top: 1.5rem; }
   table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
   th, td { border: 1px solid var(--border); padding: 0.45rem 0.7rem; text-align: left; font-size: 0.92rem; }
-  th { background: #f0f0f0; font-weight: 600; }
+  th { background: #f0f0f0; font-weight: 600; color: var(--fg); }
   code, pre { font-family: "SF Mono", Monaco, "Cascadia Code", Consolas, monospace; font-size: 0.88rem; }
-  code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; }
-  pre { background: var(--code-bg); padding: 0.9rem 1.1rem; overflow-x: auto; border-radius: 5px; line-height: 1.45; }
+  code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; color: var(--fg); }
+  pre { background: var(--code-bg); padding: 0.9rem 1.1rem; overflow-x: auto; border-radius: 5px; line-height: 1.45; color: var(--fg); }
   .status-ok { color: var(--ok); font-weight: 600; }
   .status-warn { color: var(--warn); font-weight: 600; }
   .status-bad { color: var(--danger); font-weight: 600; }
@@ -44,14 +59,21 @@
   .badge-dormant { background: #fef3c7; color: var(--warn); }
   .badge-ok { background: #dcfce7; color: var(--ok); }
   .summary-cards { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1.2rem 0; }
-  .card { flex: 1; min-width: 180px; border: 1px solid var(--border); border-radius: 6px; padding: 1rem; text-align: center; }
+  .card { flex: 1; min-width: 180px; border: 1px solid var(--border); border-radius: 6px; padding: 1rem; text-align: center; background: #fff; color: var(--fg); }
   .card .num { font-size: 2.2rem; font-weight: 700; }
-  .card .label { font-size: 0.85rem; color: #555; margin-top: 0.3rem; }
+  .card .label { font-size: 0.85rem; color: var(--subtle); margin-top: 0.3rem; }
   .link-list { list-style: none; padding: 0; }
   .link-list li { margin: 0.3rem 0; }
   .link-list a { color: var(--accent); text-decoration: none; }
   .link-list a:hover { text-decoration: underline; }
-  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.82rem; color: #888; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.82rem; color: var(--subtle); }
+  @media (prefers-color-scheme: dark) {
+    th { background: #1f2937; }
+    .badge-blocker { background: #3a1717; }
+    .badge-dormant { background: #3a2a0d; }
+    .badge-ok { background: #14311d; }
+    .card { background: #141a24; }
+  }
 </style>
 </head>
 <body>

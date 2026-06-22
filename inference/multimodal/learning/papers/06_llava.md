@@ -41,4 +41,4 @@ LLaVA 最重要的贡献不在模型架构，而在数据生成方法。它用 G
 
 ## 与本项目的关联
 
-LLaVA 路线（CLIP + Projector + LLM）是本项目最小 VLM 的首选架构，与 Qwen-VL 系列架构高度一致。我们不需要从零训练，但理解 LLaVA 的 token 拼接方式和两阶段训练，是理解 Qwen-VL 前向推理中 visual token 如何进入 LLM 的关键。12GB 显存约束下，LLaVA 的简洁性就是优势。
+LLaVA 路线（CLIP + Projector + LLM）是本项目最小 VLM 的首选架构，与 Qwen-VL 系列架构高度一致。我们不需要从零训练，但理解 LLaVA 的 token 拼接方式和两阶段训练，是理解 Qwen-VL 前向推理中 visual token 如何进入 LLM 的关键。此前按受限显存假设做规划时，LLaVA 的简洁性就是优势。

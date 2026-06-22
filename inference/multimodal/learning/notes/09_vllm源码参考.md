@@ -78,7 +78,7 @@ fragmentation_ratio = (total_allocated_blocks * block_size - total_used_tokens) 
                        (total_allocated_blocks * block_size)
 ```
 
-12GB 场景下，若 block_size=16、每个请求最后浪费平均 8 个 slot（浪费率 50% → 但只在一个 block），且总共 128 个请求，浪费 = 128 × 0.5 × 16 × kv_per_token ≈ 128 × 0.5 × 16 × 72KB ≈ 74MB。占 12GB 约 0.6%，可忽略。
+受限显存场景下，若 block_size=16、每个请求最后浪费平均 8 个 slot（浪费率 50% → 但只在一个 block），且总共 128 个请求，浪费 = 128 × 0.5 × 16 × kv_per_token ≈ 128 × 0.5 × 16 × 72KB ≈ 74MB。占 中等显存配置 约 0.6%，可忽略。
 
 ## 4. 对本项目的启发
 

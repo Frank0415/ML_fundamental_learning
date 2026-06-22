@@ -30,4 +30,4 @@ ViT 最原始用于分类，但 patch embedding + Transformer 的组合后来成
 
 ## 与本项目的关联
 
-本项目最终需要一个视觉编码器来处理输入图像并产出 visual token。ViT 是所有 VLM 视觉编码器的源头——理解 patch 切分的粒度、embedding 的投影方式、position embedding 的位置注入，是后续理解 CLIP ViT 和 Qwen-VL ViT-bigG 的前提。当我们控制 `max_pixels` 以适配 12GB 显存时，本质上是在控制 patch 数量（= visual token 数量）。
+本项目最终需要一个视觉编码器来处理输入图像并产出 visual token。ViT 是所有 VLM 视觉编码器的源头——理解 patch 切分的粒度、embedding 的投影方式、position embedding 的位置注入，是后续理解 CLIP ViT 和 Qwen-VL ViT-bigG 的前提。当我们控制 `max_pixels` 以适配 中等显存配置时，本质上是在控制 patch 数量（= visual token 数量）。

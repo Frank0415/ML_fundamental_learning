@@ -37,4 +37,4 @@ Qwen2.5-VL 是 Qwen3-VL 的 **"能力基线"**。Qwen3-VL 的目标是在保持 
 
 ## 与本项目的关联
 
-Qwen2.5-VL-3B 是我们 12GB 显存的 **稳定 fallback**，当 Qwen3-VL-4B 因显存或兼容性问题无法加载时回退到它。理解 Qwen2.5-VL 的架构继承关系，有助于我们在不同模型切换时做正确的 `max_pixels` 和 visual token 预算调整。Qwen2.5-VL 对文档的强理解能力也意味着我们的 token pipeline 在构造测试用例时应该考虑文档类图像。
+Qwen2.5-VL-3B 是我们 显存的 **稳定 fallback**，当 Qwen3-VL-4B 因显存或兼容性问题无法加载时回退到它。理解 Qwen2.5-VL 的架构继承关系，有助于我们在不同模型切换时做正确的 `max_pixels` 和 visual token 预算调整。Qwen2.5-VL 对文档的强理解能力也意味着我们的 token pipeline 在构造测试用例时应该考虑文档类图像。

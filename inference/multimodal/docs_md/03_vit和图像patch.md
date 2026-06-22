@@ -8,7 +8,7 @@ ViT 的核心操作是将一幅图像切为固定大小的小方块（patch）�
 
 例如对于一幅 224×224 的 RGB 图像，当 patch 大小为 16×16 时：总共切出 14×14 = 196 个 patch，每个 patch 是 16×16×3 = 768 个像素值。patch embedding 将这 768 个值投影到 hidden_dim（如 768 或 1280），得到 196 个 token。
 
-对于一幅 448×448 的图像，patch 大小仍为 16×16：总共 28×28 = 784 个 patch，visual token 数增加到 784 个。token 数量随分辨率平方增长，这也是为什么 12GB 显存设备必须严格控制 `max_pixels`。
+对于一幅 448×448 的图像，patch 大小仍为 16×16：总共 28×28 = 784 个 patch，visual token 数增加到 784 个。token 数量随分辨率平方增长，这也是为什么 受限显存设备必须严格控制 `max_pixels`。
 
 <figure style="margin: 1rem 0 1.5rem;">
   <img src="../docs/assets/architecture/vit_model_overview.png" alt="ViT 模型总览图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />

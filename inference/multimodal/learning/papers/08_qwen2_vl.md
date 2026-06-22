@@ -12,7 +12,7 @@ Qwen-VL 初代将任意图像 resize 到固定尺寸后切 patch，这导致高�
 
 具体做法：大图被切为若干子图（tile），每个子图独立经过 ViT 编码产生 visual token，最后将所有子图的 visual token 合并为一个序列。模型实际"看到"的是所有子图 patch 的完整集合，而不是一个被压缩到低分辨率的缩略图。
 
-这意味着系统 prompt 里的 `min_pixels` / `max_pixels` 参数直接控制 visual token 预算：`max_pixels` 越大，子图越多，visual token 也越多，显存消耗越大。12GB 设备上必须把 `max_pixels` 控制在 512×512 以内。
+这意味着系统 prompt 里的 `min_pixels` / `max_pixels` 参数直接控制 visual token 预算：`max_pixels` 越大，子图越多，visual token 也越多，显存消耗越大。中等显存设备上必须把 `max_pixels` 控制在 512×512 以内。
 
 ### 2. M-RoPE：三维位置编码
 
@@ -32,4 +32,4 @@ M-RoPE 的 t 维度天然支持视频：视频的每一帧是一幅图像，不�
 
 ## 与本项目的关联
 
-Qwen3-VL 继承了 Qwen2-VL 的动态分辨率框架和 M-RoPE 位置编码。理解 `image_grid_thw`（image grid in temporal/height/width）和 visual token 预算的计算方法，是实现多模态 prefill 中对 visual token 正确分配 position_ids 和 KV cache 空间的前提。动态分辨率也直接决定了我们对 12GB 显存的 `max_pixels` 约束是否安全。
+Qwen3-VL 继承了 Qwen2-VL 的动态分辨率框架和 M-RoPE 位置编码。理解 `image_grid_thw`（image grid in temporal/height/width）和 visual token 预算的计算方法，是实现多模态 prefill 中对 visual token 正确分配 position_ids 和 KV cache 空间的前提。动态分辨率也直接决定了我们对 `max_pixels` 约束是否安全。
