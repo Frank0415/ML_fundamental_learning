@@ -13,7 +13,7 @@
 
 **核心策略：关闭 T5（no-T5 路径）**
   SD3 Medium 有三个文本编码器：CLIP-L、CLIP-G、T5-XXL。
-  T5-XXL 单独占用约 11GB VRAM（> 12GB 总预算）。
+  T5-XXL 单独占用约 11GB VRAM（> 中等显存配置 总预算）。
   本脚本默认 `--no_t5`（关闭 T5），将 VRAM 从 ~15GB 降到 ~4.3GB。
 
 **Fallback 路径**（若本脚本失败）：
@@ -84,7 +84,7 @@ def parse_args() -> argparse.Namespace:
 
 核心策略 (no-T5):
   默认关闭 T5-XXL 文本编码器（--no_t5）。
-  T5-XXL 单独占约 11GB VRAM，在 12GB 设备上必须关闭。
+  T5-XXL 单独占约 11GB VRAM，在 中等显存设备上必须关闭。
 
 Fallback（若 OOM 或失败）:
   1. 降 resolution: --height 768 --width 768
@@ -93,7 +93,7 @@ Fallback（若 OOM 或失败）:
   4. 确认 HF token 已配置 + license 已接受
 
 设备要求:
-  需要 CUDA GPU（RTX 5070 Ti 12GB）。MPS/CPU 不支持。
+  需要 CUDA GPU（可用的 CUDA GPU 中等显存配置）。MPS/CPU 不支持。
 """,
     )
 
@@ -161,13 +161,13 @@ Fallback（若 OOM 或失败）:
         "--no_t5",
         action="store_true",
         default=True,
-        help="关闭 T5-XXL 文本编码器（默认关闭）。12GB 设备必须关闭 T5",
+        help="关闭 T5-XXL 文本编码器（默认关闭）。中等显存设备必须关闭 T5",
     )
     parser.add_argument(
         "--use_t5",
         action="store_false",
         dest="no_t5",
-        help="启用 T5-XXL（不推荐：12GB 设备几乎必然 OOM）",
+        help="启用 T5-XXL（不推荐：中等显存设备几乎必然 OOM）",
     )
     parser.add_argument(
         "--enable_cpu_offload",
@@ -219,19 +219,19 @@ def run_sd3_medium_inference(args: argparse.Namespace) -> dict:
     print(f"[INFO] Resolution: {args.height}x{args.width}")
     print(f"[INFO] Steps: {args.num_steps}, CFG: {args.cfg_scale}")
     print(f"[INFO] Dtype: {args.dtype}, Seed: {args.seed}")
-    print(f"[INFO] T5-XXL: {'关闭' if args.no_t5 else '启用（谨慎！12GB 可能 OOM）'}")
+    print(f"[INFO] T5-XXL: {'关闭' if args.no_t5 else '启用（谨慎！中等显存配置 可能 OOM）'}")
     print(f"[INFO] CPU offload: {args.enable_cpu_offload}")
     print(f"[INFO] VAE slicing: {args.enable_vae_slicing}")
 
     if not check_cuda_available():
         print("[WARN] CUDA 不可用。SD3 pipeline 在 MPS/CPU 上无法运行。")
-        print("[WARN] 建议在远程 RTX 5070 Ti 上执行本脚本。")
+        print("[WARN] 建议在远程 CUDA GPU 上执行本脚本。")
         return {
             "status": "blocker",
             "output_path": None,
             "peak_vram_mb": 0.0,
             "elapsed_s": 0.0,
-            "error": "CUDA 不可用。需 RTX 5070 Ti 远程执行。",
+            "error": "CUDA 不可用。需 可用的 CUDA GPU 远程执行。",
         }
 
     seed = args.seed if args.seed >= 0 else int(time.time())

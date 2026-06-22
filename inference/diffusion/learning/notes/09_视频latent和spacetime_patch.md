@@ -1,7 +1,7 @@
 # 视频 Latent 与 Spacetime Patch 学习笔记
 
 > **前置阅读**：`03_diffusion推理数据流.md`（第 9 节已建立 image vs video shape 基础差异）。
-> **用途**：为 T15（视频 reference 脚手架）和 T18（最终汇总）提供 video latent shape、spacetime patch、维度约定、12GB 策略与 Week 5 执行模板。
+> **用途**：为 T15（视频 reference 脚手架）和 T18（最终汇总）提供 video latent shape、spacetime patch、维度约定、受限显存策略与 Week 5 执行模板。
 > **注意**：本文档中所有规格均为理论推导和公开资料整理，标注"示例"的数值未经过本机/远程实测，T15 执行时需用真实 runtime 校验并纠正。
 
 ---
@@ -205,22 +205,22 @@ Video DiT block:
 
 ---
 
-## 5. 12GB VRAM 下的视频推理现实规格
+## 5. 受限显存配置下的视频推理现实规格
 
 ### 5.1 核心预算
 
-- 有效 VRAM：12GB × 0.85 ≈ **10.2GB**
+- 有效 VRAM：中等显存配置 × 0.85 ≈ **10.2GB**
 - 超预算行为：先降 resolution → 降帧数 → 降 steps → 开 CPU offload → 降 dtype。如果全部调到最低仍 OOM，**记录 blocker**，不再无限制调参。
 
 ### 5.2 模型优先级与推荐规格
 
-按"大概率能在 12GB 下跑通"从高到低排序：
+按"大概率能在中等显存配置下跑通"从高到低排序：
 
 | 优先级 | 模型 | 推荐规格 | 预计 VRAM | 预计耗时 | 说明 |
 |--------|------|---------|----------|---------|------|
 | **1（首选）** | LTX-Video 2B distilled | ≤16 帧, 256×256, 8 步, fp16 | ~6-8 GB | <2 min | 2B params + few-step distillation。RTX 4060 8GB 上实测 720×480×121 帧 <1 分钟。是最可能首次就跑通的视频模型。 |
-| **2（备选）** | CogVideoX-2B | ≤16 帧, 256×256, 30 步, fp16 | ~6-9 GB | ~5-10 min | 官方要求 min 4GB VRAM。12GB 充裕。49 帧 720×480 需要 ~9GB。 |
-| **3（高难度）** | Wan2.1-1.3B | ≤16 帧, 256×256, 30 步, fp16 | ~8-10 GB | ~10-15 min | 1.3B 参数轻量，但 480p × 5s（81 帧）需 ~8GB。在 12GB 下是极限操作，需开启所有 offload。 |
+| **2（备选）** | CogVideoX-2B | ≤16 帧, 256×256, 30 步, fp16 | ~6-9 GB | ~5-10 min | 官方要求 min 4GB VRAM。中等显存配置下仍较从容。49 帧 720×480 需要 ~9GB。 |
+| **3（高难度）** | Wan2.1-1.3B | ≤16 帧, 256×256, 30 步, fp16 | ~8-10 GB | ~10-15 min | 1.3B 参数轻量，但 480p × 5s（81 帧）需 ~8GB。在中等显存配置下是极限操作，需开启所有 offload。 |
 
 ### 5.3 降级路径（每级降到"能跑"为止）
 
@@ -238,14 +238,14 @@ Level 3（记录 blocker）:
   全部降级方案均 OOM → 记录为 blocker，不再尝试。这仍然是有效产出。
 ```
 
-### 5.4 不推荐的模型（12GB 下无法跑通）
+### 5.4 不推荐的模型（在中等显存配置下无法跑通）
 
 | 模型 | 原因 |
 |------|------|
-| HunyuanVideo (13B+) | 权重文件 >26GB，12GB 连加载都做不到 |
-| Wan2.1-14B | 权重 ~28GB，远超 12GB |
+| HunyuanVideo (13B+) | 权重文件 >26GB，中等显存配置 连加载都做不到 |
+| Wan2.1-14B | 权重 ~28GB，远超 中等显存配置 |
 | Sora（任何版本） | 未开源，无可用权重 |
-| CogVideoX-5B | 权重 ~10GB，加上 latent 和中间激活会超过 12GB，需要用 24GB+ 卡 |
+| CogVideoX-5B | 权重 ~10GB，加上 latent 和中间激活会超过 中等显存配置，需要用 24GB+ 卡 |
 
 ---
 
@@ -314,14 +314,14 @@ experiments/reference_video_inference/results/
 
 **T15 的交付物无论模型是否跑通，都是有效的**：
 - ✅ 至少一个模型跑通 → 交付 1+ 个 mp4 + 完整记录字段
-- ✅ 全部模型失败 → 交付 3 个 blocker.md + video_summary.md（分析为什么在 12GB 下无法完成，以及如果换 24GB 卡预期会如何）
+- ✅ 全部模型失败 → 交付 3 个 blocker.md + video_summary.md（分析为什么在中等显存配置下无法完成，以及如果换 24GB 卡预期会如何）
 - ❌ 无效交付：只写了"模型太大跑不了"但没有尝试过任何降级路径
 
 ---
 
 ## 7. 本页结论
 
-视频 latent 的核心复杂度来自**多出来的时间维度**、**不统一的维度约定 `(B,C,T,H,W)` vs `(B,T,C,H,W)`**、以及**spacetime patch 引入的 3D tokenization**。video DiT 不是 image DiT + 一个参数开关，而是需要独立的 temporal attention 层和修改后的 patchify 流程。在 12GB VRAM 下，视频推理必须走"小规格 + 优先少步蒸馏模型"的路线，并设置明确的 timebox 和 blocker 边界以防无底洞式的调试。
+视频 latent 的核心复杂度来自**多出来的时间维度**、**不统一的维度约定 `(B,C,T,H,W)` vs `(B,T,C,H,W)`**、以及**spacetime patch 引入的 3D tokenization**。video DiT 不是 image DiT + 一个参数开关，而是需要独立的 temporal attention 层和修改后的 patchify 流程。在 受限显存配置下，视频推理必须走"小规格 + 优先少步蒸馏模型"的路线，并设置明确的 timebox 和 blocker 边界以防无底洞式的调试。
 
 **对下游任务的影响**：
 - T15（视频 reference 脚手架）：本文档第 6 节是直接执行手册。

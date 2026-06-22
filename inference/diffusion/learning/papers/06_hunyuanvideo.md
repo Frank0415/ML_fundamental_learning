@@ -10,7 +10,7 @@
 
 ## 1. 为什么对现代 diffusion 推理重要
 
-HunyuanVideo 是目前最系统的开源视频生成框架。它不只是发布一个模型，而是覆盖了 data curation、3D VAE、DiT 设计、training recipe 的**全链路方法论**。尽管它的主力模型（8.3B 参数）在 12GB 上偏紧，但它的系统化文档和经验对于理解"工业级视频推理需要什么"有不可替代的参考价值。另外，HunyuanVideo 1.5 引入了 step distillation，使得推理步数大幅减少，这是 12GB 场景下"边界可跑"的关键利好。
+HunyuanVideo 是目前最系统的开源视频生成框架。它不只是发布一个模型，而是覆盖了 data curation、3D VAE、DiT 设计、training recipe 的**全链路方法论**。尽管它的主力模型（8.3B 参数）在中等显存配置上偏紧，但它的系统化文档和经验对于理解"工业级视频推理需要什么"有不可替代的参考价值。另外，HunyuanVideo 1.5 引入了 step distillation，使得推理步数大幅减少，这是 受限显存场景下"边界可跑"的关键利好。
 
 ---
 
@@ -62,7 +62,7 @@ HunyuanVideo 使用多语言双向 text encoder 系统：
 
 ### 3.4 Step Distillation（1.5 版本关键特性）
 
-HunyuanVideo 1.5 引入了 **step distillation**，这是对 12GB 场景最重要的利好：
+HunyuanVideo 1.5 引入了 **step distillation**，这是对 受限显存场景最重要的利好：
 - 原始模型：50 步推理
 - 蒸馏后：**10~20 步**推理即可达到类似质量
 - 蒸馏方式：推测使用 progressive distillation（teacher 50 步 → student 20 步 → 10 步）
@@ -121,8 +121,8 @@ denoising loop（step-distilled: 10~20 步；原始: 50 步）
 
 | 规格 | 帧数 | 分辨率 | Latent Shape | Spacetime Tokens | Full Attn 矩阵（fp16） |
 |------|------|--------|-------------|-----------------|----------------------|
-| **12GB 极限** | 9 | 256×256 | `(16, 3, 32, 32)` | `3×16×16 = 768` | ~1.2 MB |
-| **12GB 现实** | 17 | 384×384 | `(16, 5, 48, 48)` | `5×24×24 = 2,880` | ~16.6 MB |
+| **中等显存极限** | 9 | 256×256 | `(16, 3, 32, 32)` | `3×16×16 = 768` | ~1.2 MB |
+| **中等显存配置 现实** | 17 | 384×384 | `(16, 5, 48, 48)` | `5×24×24 = 2,880` | ~16.6 MB |
 | **边界** | 33 | 480×640 | `(16, 9, 60, 80)` | `9×30×40 = 10,800` | ~233 MB |
 | **官方默认** | 129 | 720×1280 | `(16, 33, 90, 160)` | `33×45×80 = 118,800` | ~28 GB ❌ |
 
@@ -135,7 +135,7 @@ denoising loop（step-distilled: 10~20 步；原始: 50 步）
           ↓
 降分辨率： 33f × 480p → 13,500 tokens  → 364MB attention
           ↓
-12GB 目标：17f × 384p → 2,880 tokens   → 16MB attention ✅
+受限显存目标：17f × 384p → 2,880 tokens   → 16MB attention ✅
 ```
 
 **关键**：每次降低分辨率或帧数，token 数都按乘积关系下降。从 118,800 → 2,880（41× 减少），attention 矩阵从 28GB → 16MB（1750× 减少）。这就是为什么"降规格"在视频推理中效果如此显著。
@@ -157,14 +157,14 @@ denoising loop（step-distilled: 10~20 步；原始: 50 步）
 | 排序 | 组件 | VRAM | 说明 |
 |------|------|------|------|
 | 🔴 1 | DiT attention activations | 随 token 数 O(n²) 增长 | 最大变量 |
-| 🔴 2 | DiT 权重（8.3B） | ~16.6 GB fp16 | 单权重就超过 12GB |
+| 🔴 2 | DiT 权重（8.3B） | ~16.6 GB fp16 | 单权重就超过 中等显存配置 |
 | 🟡 3 | T5 text encoder | ~5 GB | |
 | 🟡 4 | CLIP text encoder | ~2 GB | |
 | 🟡 5 | 3D VAE decoder | ~3 GB | |
 
-### 6.2 12GB 可行路径
+### 6.2 中等显存配置 可行路径
 
-由于 8.3B DiT 权重本身就是 16.6GB fp16，**纯 fp16 加载必然 OOM**。要在 12GB 上运行，必须采用以下组合：
+由于 8.3B DiT 权重本身就是 16.6GB fp16，**纯 fp16 加载必然 OOM**。要在中等显存配置上运行，必须采用以下组合：
 
 | 方案 | 效果 | 代价 |
 |------|------|------|
@@ -173,9 +173,9 @@ denoising loop（step-distilled: 10~20 步；原始: 50 步）
 | **降规格到 17f×256p** | token 数从 118K → 768 | 视频极短、极低分辨率 |
 | **Step distillation（10 步）** | wall time 缩短 | 每步 peak VRAM 不变 |
 
-**社区实测（12GB）**：GGUF Q4 量化版 + 17f×384p + 10 步 + CPU offload → VRAM ≈ 6-7 GB，推理时间 ~10-15 分钟。
+**社区实测（中等显存配置）**：GGUF Q4 量化版 + 17f×384p + 10 步 + CPU offload → VRAM ≈ 6-7 GB，推理时间 ~10-15 分钟。
 
-### 6.3 12GB RTX 5070 Ti 可行性判断
+### 6.3 资源档位与运行边界
 
 | 配置 | 判断 | 说明 |
 |------|------|------|
@@ -183,7 +183,7 @@ denoising loop（step-distilled: 10~20 步；原始: 50 步）
 | **GGUF Q4 + 降规格 + CPU offload** | 🟡 极限可跑 | ~6-7 GB，但 slow |
 | **GGUF Q4 + 17f×384p + 10 steps** | 🟡 极限可跑 | 小而短的视频可尝试 |
 
-**结论：HunyuanVideo 在 12GB 上偏紧，不属于本项目的主力路线。仅作为 bonus 了解（理解工业级视频推理的全链路），实际尝试以 Wan2.1-1.3B / CogVideoX-2B / LTX-Video 为主。**
+**结论：HunyuanVideo 在中等显存配置上偏紧，不属于本项目的主力路线。仅作为 bonus 了解（理解工业级视频推理的全链路），实际尝试以 Wan2.1-1.3B / CogVideoX-2B / LTX-Video 为主。**
 
 ---
 
@@ -193,11 +193,11 @@ denoising loop（step-distilled: 10~20 步；原始: 50 步）
 - 双流 Video DiT 是 MMDiT 在视频模态的延伸。当前 TinyDiT 是单流（image-only），双流需要分别处理 image stream 和 text stream 的 AdaLN 调制——这对 T12 的 text conditioning 设计有直接影响。
 
 ### 7.2 `attention.py`
-- HunyuanVideo 的 token 爆炸问题（118K tokens → 28GB attention）是一个重要的反面教材：**在 12GB 上做 video attention，token 数必须控制在 ~3K 以下**，否则 O(n²) 无法承受。
+- HunyuanVideo 的 token 爆炸问题（118K tokens → 28GB attention）是一个重要的反面教材：**在中等显存配置上做 video attention，token 数必须控制在 ~3K 以下**，否则 O(n²) 无法承受。
 - 这反过来证明了 attention.py 需要 `max_tokens` 参数和 linear attention 替代方案。
 
 ### 7.3 `memory_manager.py`
-- HunyuanVideo 证明了"模型权重量化"（GGUF/NF4）是 12GB 视频推理的必然路径。memory_manager 应预留 "weight_quantization" 和 "offload_strategy" 的配置项。
+- HunyuanVideo 证明了"模型权重量化"（GGUF/NF4）是 受限显存视频推理的常见路径。memory_manager 应预留 "weight_quantization" 和 "offload_strategy" 的配置项。
 - 注意力显存的公式：`n² × 2bytes × num_attention_layers × 2(QK + AV)`——这个公式对 video DiT 的显存预估算至关重要。
 
 ### 7.4 `pipeline.py`
@@ -219,10 +219,10 @@ denoising loop（step-distilled: 10~20 步；原始: 50 步）
 **读**：
 - 官方 README 中的系统要求和推理命令
 - Architecture 文档（了解双流 DiT 和 3D VAE 的设计决策）
-- 社区的 12GB 尝试报告（GGUF 量化效果、offload 策略）
+- 社区的 中等显存配置 尝试报告（GGUF 量化效果、offload 策略）
 
 **输出**：
-- 本文档：`learning/papers/06_hunyuanvideo.md`（8 字段完整 + 降级策略表 + 12GB 复杂度分析）
+- 本文档：`learning/papers/06_hunyuanvideo.md`（8 字段完整 + 降级策略表 + 中等显存配置 复杂度分析）
 
 ---
 

@@ -47,7 +47,7 @@ prompt → text_encoder → text embedding（不变！）
 - CLIP-G: ~1.3B 参数，约 2.6GB fp16
 - T5-XXL: ~11B 参数，约 22GB fp16（通常 offload 或不加载）
 
-在 12GB VRAM 上，加载 CLIP-L + CLIP-G 已经占用约 4.1GB，T5-XXL 必须 offload。
+在 中等显存配置 上，加载 CLIP-L + CLIP-G 已经占用约 4.1GB，T5-XXL 必须 offload。
 
 ---
 

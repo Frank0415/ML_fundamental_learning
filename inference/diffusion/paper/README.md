@@ -4,7 +4,7 @@
 
 ## 10 篇主论文 + 2 篇 bonus + 2 个占位
 
-| 编号 | 文件 | 类型 | 12GB 友好 |
+| 编号 | 文件 | 类型 | 显存友好 |
 |------|------|------|----------|
 | 00 | [00_flow_matching_original.pdf](00_flow_matching_original.pdf) | 理论（Flow Matching 原始） | — |
 | 00 | [00_rectified_flow_original.pdf](00_rectified_flow_original.pdf) | 理论（Rectified Flow 原始） | — |
@@ -58,12 +58,12 @@ OpenAI 未发表 arXiv 论文，仅有技术说明网页。本文件是占位说
 - `paper_09_pyramid_flow_中文解读.md` — Pyramid Flow Matching
 - `paper_10_consistency_distillation_中文解读.md` — Consistency / LCM
 
-## 12GB 可行性总览
+## 资源档位总览
 
-| 类别 | 适合 12GB | 极限 | 不适合 |
+| 类别 | 适合中等显存配置 | 极限 | 不适合 |
 |------|----------|------|--------|
 | **文生图** | SD3 Medium no-T5 / FLUX schnell / Sana 0.6B int4 / Sana 1.6B int4 | SD3 Medium with T5 / FLUX dev | SD3 Large |
 | **文生视频** | LTX-Video 2B distilled / CogVideoX-2B | Wan2.1-1.3B | HunyuanVideo / SD3 Large video |
 | **蒸馏** | FLUX schnell (4步) / Sana-Sprint (2步) / SD-Turbo / LCM | — | — |
 
-**核心洞察**：12GB 场景下，**few-step 蒸馏模型**比"小参数 + 多步"模型更有效。FLUX.1-schnell (4 步) 和 LTX-Video 2B distilled (4-8 步) 是 12GB 用户最舒适的选择。
+**核心洞察**：受限显存场景下，**few-step 蒸馏模型**比"小参数 + 多步"模型更有效。FLUX.1-schnell (4 步) 和 LTX-Video 2B distilled (4-8 步) 是 中等显存配置 用户最舒适的选择。

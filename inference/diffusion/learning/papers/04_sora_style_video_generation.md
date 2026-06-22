@@ -127,7 +127,7 @@ video VAE decoder → 像素视频 (B, 3, T_frame, H_pixel, W_pixel)
 | `(1, 2, 2)` | 8 | 64 | 64 | `8 × 32 × 32 = 8192` |
 | `(1, 2, 2)` | 16 | 64 | 64 | `16 × 32 × 32 = 16384` |
 
-**关键观察**：128 帧 × 512×512 的视频（t_p=1, h_p=w_p=2）：T_latent=32, H_latent=W_latent=64 → 32×32×32 = **32768 tokens**。Full attention 矩阵 32768² ≈ 1.07B 元素，在 fp16 下约 2.1 GB per attention layer。这已经超出了 12GB 的承受范围。
+**关键观察**：128 帧 × 512×512 的视频（t_p=1, h_p=w_p=2）：T_latent=32, H_latent=W_latent=64 → 32×32×32 = **32768 tokens**。Full attention 矩阵 32768² ≈ 1.07B 元素，在 fp16 下约 2.1 GB per attention layer。这已经超出了 中等显存配置的承受范围。
 
 ### 5.3 视频 VAE Latent Shape 与其他模型对比
 
@@ -162,11 +162,11 @@ Sora 未开源，以下基于公开信息推理：
 - **Denoiser K/V**：每步 latent 刷新，K/V 不能复用（与所有 diffusion 模型相同）。
 - **Spacetime attention activation**：不同 timestep 下 attention pattern 不同。
 
-### 6.4 12GB RTX 5070 Ti 可行性判断
+### 6.4 资源档位与运行边界
 
-> 🔴 **不适合**。Sora 未开源且原模型巨大（数十 B 参数），12GB 完全不足以运行。即使降分辨率到 128×128 和 8 帧，数十 B 的 DiT 权重加载就已超过 12GB。
+> 🔴 **不适合**。Sora 未开源且原模型巨大（数十 B 参数），在中等显存配置下也远远不够。即使降分辨率到 128×128 和 8 帧，数十 B 的 DiT 权重加载就已超过 中等显存配置。
 
-但这**不意味着理解 Sora 没有价值**。Sora 定义的 spacetime patch + 视频 VAE 范式正是理解 Wan、HunyuanVideo、CogVideoX、LTX-Video 等小模型的基础。这些模型在更小参数规模（0.6B~14B）下实现了类似 Sora 的视频生成能力，其中多个可以在 12GB 上运行。
+但这**不意味着理解 Sora 没有价值**。Sora 定义的 spacetime patch + 视频 VAE 范式正是理解 Wan、HunyuanVideo、CogVideoX、LTX-Video 等小模型的基础。这些模型在更小参数规模（0.6B~14B）下实现了类似 Sora 的视频生成能力，其中多个可以在中等显存配置上运行。
 
 **结论：Sora 不直接跑，其架构概念是小模型的推理基础。**
 
@@ -209,7 +209,7 @@ Sora 未开源，以下基于公开信息推理：
 - 社区关于 spacetime patch token 计算和 video VAE 压缩比的讨论
 
 **输出**：
-- 本文档：`learning/papers/04_sora_style_video_generation.md`（8 字段完整 + spacetime patch 计算 + 视频 VAE 说明 + 12GB 判断）
+- 本文档：`learning/papers/04_sora_style_video_generation.md`（8 字段完整 + spacetime patch 计算 + 视频 VAE 说明 + 资源档位判断）
 - 不要求独立 HTML（Sora 架构内容融入 T8 docs/04-06 + T15 docs/09-10）
 
 ---

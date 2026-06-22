@@ -9,7 +9,7 @@
 - 视频 vs 图像 attention 倍率: **16.0×**
 - 复杂度: Attention 内存 O(N²)。Token 数翻倍 → attention matrix 翻四倍。
 
-> ★★★ Diffusion 主优化不是 LLM KV cache，但 attention memory 是扩散推理的真实瓶颈。LLM KV cache 线性增长 O(N)，diffusion full attention 平方增长 O(N²)。12GB VRAM 下，1024² 图像 → attention matrix ~2 MB (fp16)，可接受；2048² 图像 → ~67 MB，勉强；视频 4096 tokens → ~32 MB (fp16)，需 memory-efficient attention。
+> ★★★ Diffusion 主优化不是 LLM KV cache，但 attention memory 是扩散推理的真实瓶颈。LLM KV cache 线性增长 O(N)，diffusion full attention 平方增长 O(N²)。受限显存配置下，1024² 图像 → attention matrix ~2 MB (fp16)，可接受；2048² 图像 → ~67 MB，勉强；视频 4096 tokens → ~32 MB (fp16)，需 memory-efficient attention。
 
 > 📝 未接入 flash-attn / xformers，本实验是 toy 统计估算。真实 flash-attn 可将峰值显存从 O(N²) 降至 ~O(N)，但需要 CUDA/MPS 支持且本环境无法验证。
 
@@ -52,7 +52,7 @@
 
 > Token 数 ×2 → N² ×4。验证 O(N²) 复杂度。
 
-## 12GB VRAM 策略
+## 中等显存配置 策略
 
 | 场景 | N | FP16 Attn Matrix | 建议 |
 |------|---|-----------------|------|

@@ -61,7 +61,7 @@
 
 <div class="compare-box">
   <p><strong>FLUX = SD3 的 MMDiT 范式 × 工程优化 × few-step 蒸馏</strong></p>
-  <p>FLUX 由原 Stability AI 核心团队（Black Forest Labs）开发，是目前最强的 open-weight flow transformer。它的 schnell 变体（4 步推理，Apache 2.0 许可）是 12GB 场景下质量最高的文生图模型之一。</p>
+  <p>FLUX 由原 Stability AI 核心团队（Black Forest Labs）开发，是目前最强的 open-weight flow transformer。它的 schnell 变体（4 步推理，Apache 2.0 许可）是 受限显存场景下质量最高的文生图模型之一。</p>
 </div>
 
 <h2>2. FLUX vs SD3：架构层面对比</h2>
@@ -110,7 +110,7 @@ x = x + attn(adaln_norm(x)) + ffn(adaln_norm_parallel(x))</code></pre>
   <tr><td>T5-XXL</td><td>4096</td><td>256~512</td><td>~5 GB</td><td><strong>可选</strong>（omit 可节省 ~5GB）</td></tr>
 </table>
 
-<p><strong>12GB 策略</strong>：schnell 去 T5 是最舒适的配置——CLIP-L 单独 ~0.9GB，剩余 VRAM 留给 DiT 权重和 attention。</p>
+<p><strong>受限显存策略</strong>：schnell 去 T5 是最舒适的配置——CLIP-L 单独 ~0.9GB，剩余 VRAM 留给 DiT 权重和 attention。</p>
 
 <h3>Latent 管线</h3>
 
@@ -143,14 +143,14 @@ VAE decoder: (1, 16, 128, 128) → (1, 3, 1024, 1024)</code></pre>
   <tr><td>CFG Scale</td><td>0 ~ 1.5（guidance 蒸馏内化）</td><td>3.5 ~ 7.0</td></tr>
   <tr><td>每步 Forward</td><td>1 次（不需要 uncond）</td><td>2 次（cond + uncond）</td></tr>
   <tr><td>Total DiT Forward</td><td><strong>4 次</strong></td><td>100 次</td></tr>
-  <tr><td>Wall Time（RTX 5070 Ti）</td><td>~2-5 秒</td><td>~30-60 秒</td></tr>
+  <tr><td>Wall Time（可用的 CUDA GPU）</td><td>~2-5 秒</td><td>~30-60 秒</td></tr>
   <tr><td>Peak VRAM（1024px, fp16）</td><td>~6-8 GB</td><td>~12-14 GB</td></tr>
   <tr><td>许可</td><td>Apache 2.0</td><td>非商用</td></tr>
 </table>
 
 <p><strong>schnell 的 CFG 内化是什么</strong>：</p>
 
-<p>在标准扩散中，CFG 需要每步做两次 forward（cond 有文本 + uncond 空文本），然后按公式 <code>v_cfg = v_uncond + s * (v_cond - v_uncond)</code> 合并。schnell 的蒸馏过程把这个"条件引导"能力内化到了模型权重中——模型在单次 forward 中就能产生相当于 "文本引导 + 无引导混合" 的结果。对 12GB 意味着：<strong>每步仅需一次 forward，时间和显存都减半。</strong></p>
+<p>在标准扩散中，CFG 需要每步做两次 forward（cond 有文本 + uncond 空文本），然后按公式 <code>v_cfg = v_uncond + s * (v_cond - v_uncond)</code> 合并。schnell 的蒸馏过程把这个"条件引导"能力内化到了模型权重中——模型在单次 forward 中就能产生相当于 "文本引导 + 无引导混合" 的结果。对中档显存卡来说，这意味着：<strong>每步仅需一次 forward，时间和显存都能明显减半。</strong></p>
 
 <h2>5. 与 SD3 主线模型的对比</h2>
 
@@ -160,11 +160,11 @@ VAE decoder: (1, 16, 128, 128) → (1, 3, 1024, 1024)</code></pre>
   <tr><td>步数</td><td>28</td><td><strong>4</strong></td><td>50</td></tr>
   <tr><td>CFG</td><td>3.5~7.0（双 forward）</td><td>~0（单 forward）</td><td>3.5~7.0（双 forward）</td></tr>
   <tr><td>Text Encoder VRAM</td><td>CLIP (~2GB) + 可选 T5</td><td>CLIP (~1GB) + 可选 T5</td><td>CLIP + T5 (~6GB)</td></tr>
-  <tr><td>Total VRAM（12GB 配置）</td><td>~5 GB（无 T5）</td><td>~6-7 GB（无 T5）</td><td>~12-14 GB</td></tr>
+  <tr><td>Total VRAM（中等显存配置 配置）</td><td>~5 GB（无 T5）</td><td>~6-7 GB（无 T5）</td><td>~12-14 GB</td></tr>
   <tr><td>质量</td><td>中等（2B 模型限制）</td><td>高（4-5B + 4步 = 出奇的好）</td><td>最高</td></tr>
 </table>
 
-<h2>6. 12GB 友好路径</h2>
+<h2>6. 显存友好路径</h2>
 
 <h3>推荐配置（由稳到优）</h3>
 
@@ -185,7 +185,7 @@ pipe.enable_sequential_cpu_offload()
 # 从 HF 下载 city96/FLUX.1-schnell-gguf
 # VRAM ≈ 4-5 GB</code></pre>
 
-<h3>为什么 schnell 比 SD3 Medium 更适合 12GB</h3>
+<h3>为什么 schnell 比 SD3 Medium 更适合中等显存配置</h3>
 
 <ul>
   <li>虽然 schnell 参数量（4-5B）比 SD3 Medium（2B）更大，但 <strong>4 步推理 + CFG 内化</strong> 使每步计算量极少，总 wall time 更短</li>
@@ -197,7 +197,7 @@ pipe.enable_sequential_cpu_offload()
 
 <div class="conclusion">
 <h3>本页结论</h3>
-<p>FLUX 在 SD3 的 rectified flow + DiT 范式上做了关键工程改进：单流架构简化了 text-image 交互，parallel attention block 减少了 kernel launch，RoPE 利用 FlashAttention 原生加速。schnell 变体通过 guided distillation 将 50 步压缩到 4 步且内化了 CFG guidance——这是 12GB 场景下质量/速度/VRAM 均衡的最佳文生图方案。对 diffusion_engine 的启发：few-step scheduler 需要非均匀 timestep，CFG 内化可消除双 forward 瓶颈。</p>
+<p>FLUX 在 SD3 的 rectified flow + DiT 范式上做了关键工程改进：单流架构简化了 text-image 交互，parallel attention block 减少了 kernel launch，RoPE 利用 FlashAttention 原生加速。schnell 变体通过 guided distillation 将 50 步压缩到 4 步且内化了 CFG guidance——这是 受限显存场景下质量/速度/VRAM 均衡的最佳文生图方案。对 diffusion_engine 的启发：few-step scheduler 需要非均匀 timestep，CFG 内化可消除双 forward 瓶颈。</p>
 </div>
 
 <div class="relation">

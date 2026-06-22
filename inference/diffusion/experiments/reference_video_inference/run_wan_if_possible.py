@@ -2,16 +2,16 @@
 """
 run_wan_if_possible.py — Wan2.1-T2V-1.3B 视频生成（T15）
 
-尝试在 12GB VRAM 下使用 diffusers.WanPipeline 生成短视频。
+尝试在 中等显存配置 VRAM 下使用 diffusers.WanPipeline 生成短视频。
 默认小规格：16 帧、256×256、8 步、bf16、cpu_offload。
 
-优先级：T15 第三选模型（1.3B 轻量参数，但 480p×81 帧需 ~10GB，12GB 极限）。
+优先级：T15 第三选模型（1.3B 轻量参数，但 480p×81 帧需 ~10GB，中等显存极限）。
 
 前置条件：
   1. Python 3.13+ 环境已通过 `uv sync` 安装依赖
   2. HF token 已配置（huggingface-cli login）
   3. 已在 https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B 接受许可协议
-  4. RTX 5070 Ti 上有 ≥10GB 空闲 VRAM
+  4. 可用的 CUDA GPU 上有 ≥10GB 空闲 VRAM
 
 不强制真的能跑 — 缺失依赖或无法加载模型时会记录 blocker 并 exit。
 """
@@ -302,7 +302,7 @@ def _write_blocker(
 
 **日期**：{datetime.now().strftime("%Y-%m-%d")}
 **模型**：{model_id}
-**设备**：RTX 5070 Ti（12GB VRAM）（预期设备，实际可能为其他）
+**设备**：可用的 CUDA GPU（中等显存配置 VRAM）（预期设备，实际可能为其他）
 **执行者**：T15 系统尝试
 
 ## 失败原因
@@ -319,8 +319,8 @@ def _write_blocker(
 ## 对后续的建议
 - 若依赖缺失：`uv sync` 安装依赖
 - 若授权未通过：检查 HF token 和 Wan2.1 许可协议接受状态
-- 若 CUDA 不可用：在远程 RTX 5070 Ti 上运行
-- 若 OOM：Wan2.1 在 12GB 下是极限操作，可能需要 480p 配置 + 全部 offload
+- 若 CUDA 不可用：在远程 CUDA GPU 上运行
+- 若 OOM：Wan2.1 在中等显存配置下是极限操作，可能需要 480p 配置 + 全部 offload
 """
     with open(blocker_path, "w", encoding="utf-8") as f:
         f.write(content)
@@ -329,7 +329,7 @@ def _write_blocker(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Wan2.1-T2V-1.3B — 在 12GB VRAM 下尝试视频生成。"
+        description="Wan2.1-T2V-1.3B — 在 中等显存配置 VRAM 下尝试视频生成。"
         " 默认小规格：16 帧 × 256×256 × 8 步。"
         " 失败则记录 blocker 并 exit(1)。",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -338,7 +338,7 @@ def main() -> None:
   1. `uv sync` 安装依赖（torch, diffusers, imageio）
   2. `huggingface-cli login` 配置 HF token
   3. 在 https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B 接受许可协议
-  4. RTX 5070 Ti 上有 ≥10GB 空闲 VRAM
+  4. 可用的 CUDA GPU 上有 ≥10GB 空闲 VRAM
 
 降级路径 (OOM 时逐级尝试):
   Level 0 (默认): --num_frames 16 --height 256 --width 256 --num_steps 8 --dtype bf16 --enable_cpu_offload
@@ -346,12 +346,12 @@ def main() -> None:
   Level 2:        --num_frames 8  --height 192 --width 192 --num_steps 4 --dtype fp16 --enable_cpu_offload
   Level 3:        记录 blocker，停止尝试
 
-12GB 现实路径:
+中等显存配置 现实路径:
   - Wan2.1-1.3B 参数量最小（1.3B），但 3D VAE 和 text encoder 额外显存大。
   - 480p × 5s（81 帧）→ VAE latent 约 (1,16,21,60,104) → 大量 token。
-  - 在 12GB 下，默认小规格 (16f×256²) 约 8-10GB，属于极限操作。
+  - 在中等显存配置下，默认小规格 (16f×256²) 约 8-10GB，属于极限操作。
   - 必须开启 cpu_offload，推荐 bfloat16 降低显存。
-  - Wan 是 4 个模型中对 12GB 最不友好的（小而密架构 → 中间激活大）。
+  - Wan 是 4 个模型中对 中等显存配置 最不友好的（小而密架构 → 中间激活大）。
 
 Wan2.1 特有参数:
   - cfg_scale: 官方推荐 5.0

@@ -16,7 +16,7 @@
   - FLUX.1-schnell: base ~8GB + (resolution² / 1024²) * 0.004GB + steps * 0.1GB
   以上公式为 rough estimate，实际值取决于 batch size、attention 实现等。
 
-**降级建议表**（12GB 预算，85% 有效 = 10.2GB）：
+**降级建议表**（中等显存配置 预算，85% 有效 = 10.2GB）：
   | 预估 VRAM | 颜色 | 建议 |
   |-----------|------|------|
   | < 8 GB    | 🟢   | yes — 安全可跑 |
@@ -76,12 +76,12 @@ MODEL_META = {
         "recommended_steps": 4,
         "recommended_res": 1024,
         "recommended_dtype": "fp16",
-        "note": "12GB 偏紧，推荐 sequential CPU offload 或 GGUF Q4 量化",
+        "note": "在中等显存配置下偏紧，推荐 sequential CPU offload 或 GGUF Q4 量化",
     },
 }
 
-VRAM_BUDGET_GB = 10.2  # 12GB × 0.85
-GPU_NAME = "RTX 5070 Ti"
+VRAM_BUDGET_GB = 10.2  # 中等显存配置 × 0.85
+GPU_NAME = "可用的 CUDA GPU"
 GPU_TOTAL_GB = 12.0
 
 

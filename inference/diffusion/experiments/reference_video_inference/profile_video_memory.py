@@ -255,7 +255,7 @@ def run_dry_profile(script_name: str, output_dir: str) -> int:
         print(f"    开销:        {cfg_data['overhead_gb']:.2f} GB")
         print(f"    ─────────────────────────")
         print(f"    总计:        {cfg_data['total_gb']:.2f} GB")
-        print(f"    12GB 可行性: {'✅ 可行' if cfg_data['feasible_on_12gb'] else '❌ 超预算'}")
+        print(f"    中等显存配置 可行性: {'✅ 可行' if cfg_data['feasible_on_12gb'] else '❌ 超预算'}")
         print(f"    剩余预算:    {cfg_data['budget_remaining_gb']:+.2f} GB")
         print(f"    Latent shape:{cfg_data['latent_shape']}")
         print(f"    DiT tokens:  {cfg_data['n_tokens_total']}")

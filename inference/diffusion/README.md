@@ -13,11 +13,11 @@
 
 - **理解**：通过论文卡片、学习笔记、静态知识库，系统建立对 rectified flow、DiT/MMDiT、文生图/文生视频推理数据流的认识。
 - **实现**：从零构建最小 `diffusion_engine/`，覆盖 scheduler、rectified flow、DiT transformer block、text conditioning、pipeline、memory manager 等 10 个核心模块。
-- **运行**：在 12GB RTX 5070 Ti 上至少跑通一个真实文生图 reference inference；文生视频做小规格尝试并如实记录 blocker。
+- **运行**：在一块可用的 CUDA GPU 上至少跑通一个真实文生图 reference inference；文生视频做小规格尝试并如实记录 blocker。
 - **优化**：设计并运行 prompt cache、latent buffer、scheduler benchmark、CFG batching、attention memory、VAE tiling 共 6 个对照实验。
 - **总结**：产出一份最终报告，清楚对比扩散推理与 LLM 推理的系统优化差异。
 
-**策略**：双轨执行——日常在 Mac M5 (Metal 4) 上开发和跑 toy 实验，真实 reference inference 通过远程 RTX 5070 Ti（12GB VRAM）执行。
+**策略**：双轨执行——日常在 Mac M5 (Metal 4) 上开发和跑 toy 实验，真实 reference inference 放到远程 CUDA GPU 上执行。
 
 ---
 
@@ -38,7 +38,7 @@ diffusion/
 │   ├── 04_rectified_flow和flow_matching.html  # Rectified Flow 理论与实现
 │   ├── 05_diffusion_transformer架构.html    # DiT 核心组件
 │   ├── 06_stable_diffusion_3_mmdit.html     # SD3 MMDiT 双流注意力
-│   ├── 07_flux和现代文生图推理.html         # FLUX 架构与 12GB 可行性
+│   ├── 07_flux和现代文生图推理.html         # FLUX 架构与资源档位分析
 │   ├── 08_sana高效高分辨率生成.html         # Sana 高效架构
 │   ├── 09_sora_style视频生成架构.html        # Spacetime patch 与 3D VAE
 │   ├── 10_wan_hunyuan_cogvideox_ltx视频模型.html  # 视频模型横向对比
@@ -158,12 +158,12 @@ python3 experiments/toy_dit_inference/infer_tiny_dit.py --device cpu --steps 8
 
 ## 7. 如何运行 reference image inference
 
-T13 脚手架已完成（3 个模型脚本 + memory profiler）。T14 真实尝试因远程 RTX 5070 Ti 不可用而阻塞，脚本就绪，详见 `experiments/reference_image_inference/results/attempt_manifest.md`。
+T13 脚手架已完成（3 个模型脚本 + memory profiler）。T14 真实尝试因远程 CUDA GPU 不可用而阻塞，脚本就绪，详见 `experiments/reference_image_inference/results/attempt_manifest.md`。
 
 **推荐首选**（环境就绪后）：
 
 ```bash
-# Sana 0.6B — Apache 2.0，无授权障碍，12GB 最友好
+# Sana 0.6B — Apache 2.0，无授权障碍，对中低显存更友好
 python3 experiments/reference_image_inference/run_sana_if_possible.py \
   --prompt "一只柴犬在樱花树下"
 
@@ -218,9 +218,9 @@ python3 experiments/diffusion_inference_optimization/run_all_benchmarks.py
 
 ---
 
-## 10. 12GB RTX 5070 Ti 下的推荐参数
+## 10. 可用的 CUDA GPU 下的推荐参数
 
-**基础原则**：有效 VRAM 预算 ~10.2GB（12GB 的 85%）。超过预算先降 resolution / steps / dtype / 开 offload，再记录 blocker，不无限调参。
+**基础原则**：先按一张中档单卡做保守估算，有效 VRAM 预算大约可以看成 10GB 左右；如果你的显存更大，就按同样思路往上放宽。超过预算时先降 resolution / steps / dtype / 开 offload，再记录 blocker，不要无限调参。
 
 ### 文生图推荐配置
 
@@ -268,13 +268,13 @@ python3 experiments/diffusion_inference_optimization/run_all_benchmarks.py
 
 | 任务 | 产出 | 状态 |
 |------|------|------|
-| T1 - 前置环境验证 | `reports/week_1.md`、HF 连通性、磁盘检查 | ✅ macOS M5 + 远程 RTX 5070 Ti 双轨确认 |
+| T1 - 前置环境验证 | `reports/week_1.md`、HF 连通性、磁盘检查 | ✅ macOS M5 + 远程 CUDA GPU 双轨确认 |
 | T2 - 旧引擎清点 | `reports/engine_inventory.md`（515 行） | ✅ 14 模块逐一审计，选 C（不复用） |
 | T3 - 复用决策 | 2 篇笔记 + `docs/02_老引擎审计.html` | ✅ 三份文件结论一致，KV cache guardrail |
 | T4 - 项目骨架 | `README.md`、`TODO.md`、`pyproject.toml`、目录树 | ✅ 骨架就绪 |
 | T5 - 数据流笔记 | 1 篇笔记 + `docs/03_*.html` | ✅ 9 要点覆盖，CFG/shape 共识建立 |
 | T6 - 论文清单 | `learning/papers/00_论文清单.md` | ✅ 10 篇条目 + 统一模板 |
-| T7 - 图像论文卡片 | `papers/01-03` (SD3/FLUX/Sana) | ✅ 3 篇，每篇含 12GB 可行性判断 |
+| T7 - 图像论文卡片 | `papers/01-03` (SD3/FLUX/Sana) | ✅ 3 篇，每篇含 资源档位与运行边界 |
 | T8 - 视频论文卡片 + 中段知识库 | `papers/04-10` + `docs/04-08` | ✅ 7 篇卡片 + 5 页 HTML |
 | T9 - 视频学习笔记 | `notes/09-10` (视频 latent + 源码走读) | ✅ 2 篇笔记 |
 | T10 - Scheduler / RF / Toy | 3 个核心模块 + 36 个 pytest + toy 实验 | ✅ 36/36 pytest 通过，trajectory PNG+JSON |
@@ -301,14 +301,14 @@ python3 experiments/diffusion_inference_optimization/run_all_benchmarks.py
 本任务**仅**在 `inference/diffusion/` 范围内创建和修改文件。以上两个目录的 git 未跟踪状态（`??`）与 diffusion 项目无关，不应视为本任务的范围泄露或未完成项。验证方法：`git log --diff-filter=A -- inference/.omo inference/multimodal` 返回空（从未纳入版本控制）。
 
 ### 开发环境限制
-- **Dev host**：macOS Apple M5 (Metal 4)，无 NVIDIA GPU，不支持 CUDA。所有真实 reference inference 必须在远程 RTX 5070 Ti 上执行。
+- **Dev host**：macOS Apple M5 (Metal 4)，无 NVIDIA GPU，不支持 CUDA。所有真实 reference inference 必须在远程 CUDA GPU 上执行。
 - **MPS 兼容性**：PyTorch MPS 后端在 attention 和高维操作可能存在性能退化。toy 实验在 CPU 上运行，不做 MPS 性能基准。
 - **Python 版本**：系统 Python 3.9.6 低于项目要求的 3.13+。需通过 `uv` 管理独立环境。
 - **torch blocker**：dev host 未安装 torch 和 diffusers，导致 DiT/pipeline 的 42 个测试 skip，T12/T14/T15 的真实运行受阻。
 
 ### 模型与显存限制
-- **VRAM 预算**：12GB × 0.85 ≈ 10.2GB 实际可用。视频推理在 12GB 下天然紧张。
-- **T14 真实 ref 未跑通**：三模型（Sana/SD3/FLUX）均因环境依赖缺失而阻塞。远程 RTX 5070 Ti 不可用。
+- **VRAM 预算**：如果按一张中档单卡做保守估算，可先把有效预算看成 10GB 左右。视频推理在这个档位通常会比较紧张，更高显存则会明显放宽选择。
+- **T14 真实 ref 未跑通**：三模型（Sana/SD3/FLUX）均因环境依赖缺失而阻塞。远程 CUDA GPU 不可用。
 - **T15 视频 ref 未跑通**：三个模型脚本均已就绪，但未在真实 GPU 上运行。blocker 为占位记录。
 - **flash-attn / xformers 未接入**：attention memory benchmark 使用 numpy 估算，真实 GPU 效果未验证。
 
@@ -321,13 +321,13 @@ python3 experiments/diffusion_inference_optimization/run_all_benchmarks.py
 ## 13. 下一步计划
 
 ### 短期（环境就绪后）
-- 在远程 RTX 5070 Ti 上通过 uv 安装 Python 3.13 + torch 2.7+ + diffusers + transformers
+- 在远程 CUDA GPU 上通过 uv 安装 Python 3.13 + torch 2.7+ + diffusers + transformers
 - 跑通 `run_sana_if_possible.py`（Sana 0.6B，无授权障碍）
 - 跑通 `run_cogvideox_if_possible.py`（CogVideoX-2B，小规格 16f×256²）
 - 用真实 GPU 数据替换 T14/T15 的 blocker 文件
 
 ### 中期（优化集成）
-- 接入 xformers / flash-attn，实测 memory-efficient attention 在 RTX 5070 Ti 上的加速比
+- 接入 xformers / flash-attn，实测 memory-efficient attention 在一块可用的 CUDA GPU 上的加速比
 - 测试 torch.compile 对 DiT transformer block 的加速效果
 - 评估 MPS 后端在 Apple M5 上的 diffusion 推理可用性
 
@@ -375,7 +375,7 @@ python3 experiments/diffusion_inference_optimization/run_all_benchmarks.py
 
 - **Week 3 永远是峰值**：DiT 实现 + pipeline + memory manager 三个模块跨子领域，理解成本最高
 - **Week 4 受网络影响最大**：gated repo（SD3/FLUX/Wan/LTX）需要先到 HF 接受 license，可能多耗 1–2h
-- **Week 5 取决于远程 RTX 5070 Ti 是否就绪**：如果远程 GPU 不可用，纯 M5 跑视频只能 toy-level，1–2h 就够；如果远程可达，可能多耗 2–4h 调参
+- **Week 5 取决于远程 CUDA GPU 是否就绪**：如果远程 GPU 不可用，纯 M5 跑视频只能 toy-level，1–2h 就够；如果远程可达，可能多耗 2–4h 调参
 
 ### 实际参考
 

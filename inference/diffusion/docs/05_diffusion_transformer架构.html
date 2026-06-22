@@ -199,7 +199,7 @@ x = x + gate * ffn_output</code></pre>
   <tr><td>LTX-Video (32×VAE)：121f×720×480</td><td><code>(4, 15, 22, 15)</code></td><td>15×11×8</td><td>= 1,320</td><td>~3.5 MB</td></tr>
 </table>
 
-<p><strong>关键洞察</strong>：LTX-Video 的激进 VAE 压缩（32×空间而非 8×）将 token 数从 40,500+ 降到 1,320——减少了 30×。这意味着 attention 成本降低了近 1000×。在 12GB VRAM 约束下，<strong>减少 token 数比优化 attention 算法更直接有效</strong>。</p>
+<p><strong>关键洞察</strong>：LTX-Video 的激进 VAE 压缩（32×空间而非 8×）将 token 数从 40,500+ 降到 1,320——减少了 30×。这意味着 attention 成本降低了近 1000×。在 中等显存配置 约束下，<strong>减少 token 数比优化 attention 算法更直接有效</strong>。</p>
 
 <h3>3D Position Encoding</h3>
 

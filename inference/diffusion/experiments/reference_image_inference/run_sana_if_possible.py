@@ -87,7 +87,7 @@ Fallback（若 OOM 或失败）:
   3. 切更小模型: --model_id Efficient-Large-Model/Sana_600M_1024px_diffusers
 
 设备要求:
-  需要 CUDA GPU（RTX 5070 Ti 12GB）。
+  需要 CUDA GPU（可用的 CUDA GPU 中等显存配置）。
   MPS / CPU 不支持真实 diffusers pipeline。
 """,
     )
@@ -105,7 +105,7 @@ Fallback（若 OOM 或失败）:
         "--model_id",
         type=str,
         default="Efficient-Large-Model/Sana_600M_1024px_diffusers",
-        help="HF 模型 ID。默认 Sana 0.6B（12GB 最友好）。"
+        help="HF 模型 ID。默认 Sana 0.6B（中等显存配置 最友好）。"
         " 备用: Efficient-Large-Model/SANA1.5_1.6B_1024px_diffusers",
     )
     parser.add_argument(
@@ -211,13 +211,13 @@ def run_sana_inference(args: argparse.Namespace) -> dict:
     # 检查 CUDA
     if not check_cuda_available():
         print("[WARN] CUDA 不可用。Sana pipeline 在 MPS/CPU 上可能无法运行。")
-        print("[WARN] 建议在远程 RTX 5070 Ti 上执行本脚本。")
+        print("[WARN] 建议在远程 CUDA GPU 上执行本脚本。")
         return {
             "status": "blocker",
             "output_path": None,
             "peak_vram_mb": 0.0,
             "elapsed_s": 0.0,
-            "error": "CUDA 不可用。需 RTX 5070 Ti 远程执行。",
+            "error": "CUDA 不可用。需 可用的 CUDA GPU 远程执行。",
         }
 
     # 设置随机种子

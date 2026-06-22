@@ -8,6 +8,7 @@
 
 /* ---------- CSS 自定义属性（设计令牌）---------- */
 :root {
+  color-scheme: light dark;
   /* 浅色主题 */
   --color-bg:            #fafafa;
   --color-bg-card:       #ffffff;
@@ -65,6 +66,14 @@
   /* 布局 */
   --nav-height:          56px;
   --content-max-width:   900px;
+
+  /* 兼容旧页面使用的变量名 */
+  --accent:              var(--color-accent);
+  --accent-bg:           var(--color-accent-subtle);
+  --border:              var(--color-border);
+  --bg-secondary:        var(--color-bg-code);
+  --bg-tertiary:         var(--color-bg-card);
+  --text-secondary:      var(--color-text-secondary);
 }
 
 /* ---------- 深色主题 ---------- */
@@ -237,6 +246,35 @@ blockquote {
 
 blockquote p:last-child {
   margin-bottom: 0;
+}
+
+figure {
+  color: var(--color-text);
+}
+
+figcaption {
+  color: var(--color-text-secondary) !important;
+}
+
+.code-block,
+.code-block code,
+.conclusion-box,
+.conclusion-box p,
+.conclusion-box li,
+.relation-box,
+.relation-box p,
+.relation-box li,
+.note,
+.note strong,
+.note code,
+.comparison-table th,
+.shape-table th {
+  color: var(--color-text);
+}
+
+.comparison-table td,
+.shape-table td {
+  color: var(--color-text-secondary);
 }
 
 /* ---------- 水平线 ---------- */

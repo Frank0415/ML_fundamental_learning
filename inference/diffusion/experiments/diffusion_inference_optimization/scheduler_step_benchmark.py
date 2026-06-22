@@ -401,7 +401,7 @@ def generate_markdown_table(results: dict) -> str:
     lines.append("4. **质量与步数**：4 步仅适合蒸馏模型，28 步是 SD3/FLUX 默认，50 步边际收益递减")
     lines.append("5. **注意**：本 benchmark 使用 mock denoiser（numpy 模拟），真实 DiT 每步延迟受 attention O(N²) 影响更大")
     lines.append("")
-    lines.append("## 推荐配置（12GB RTX 5070 Ti）")
+    lines.append("## 推荐配置（可用的 CUDA GPU）")
     lines.append("")
     lines.append("| 场景 | 推荐 Step 数 | 推荐 Scheduler | 推理时间 |")
     lines.append("|------|------------|---------------|---------|")

@@ -22,4 +22,4 @@ torch 未安装 (No module named 'torch')。
 ## 建议
 
 - 在 `.venv` 中安装 torch: `uv pip install torch`
-- 或在远程 RTX 5070 Ti 上运行
+- 或在远程 CUDA GPU 上运行

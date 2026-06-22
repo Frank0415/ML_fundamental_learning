@@ -144,7 +144,7 @@ N_spacetime = (T_latent / t_p) × (H_latent / h_p) × (W_latent / w_p)
 | Wan2.1-1.3B：81f×480×832 | `(16, 21, 60, 104)` | 21×30×52 | = 32,760 | ~2.1 GB |
 | LTX-Video (32×VAE)：121f×720×480 | `(4, 15, 22, 15)` | 15×11×8 | = 1,320 | ~3.5 MB |
 
-**关键洞察**：LTX-Video 的激进 VAE 压缩（32×空间而非 8×）将 token 数从 40,500+ 降到 1,320——减少了 30×。这意味着 attention 成本降低了近 1000×。在 12GB VRAM 约束下，**减少 token 数比优化 attention 算法更直接有效**。
+**关键洞察**：LTX-Video 的激进 VAE 压缩（32×空间而非 8×）将 token 数从 40,500+ 降到 1,320——减少了 30×。这意味着 attention 成本降低了近 1000×。在 中等显存配置 约束下，**减少 token 数比优化 attention 算法更直接有效**。
 
 ### 3D Position Encoding
 

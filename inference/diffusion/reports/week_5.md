@@ -18,9 +18,9 @@
 
 在 `experiments/reference_video_inference/` 下完成：
 
-- **`README.md`**：三模型优先级排序（LTX-Video 2B distilled > CogVideoX-2B > Wan2.1-T2V-1.3B）、12GB VRAM 预算表、降级规格（≤16 帧 × 256² × ≤8 步）、15 分钟 timebox 超时策略。
+- **`README.md`**：三模型优先级排序（LTX-Video 2B distilled > CogVideoX-2B > Wan2.1-T2V-1.3B）、中等显存配置 预算表、降级规格（≤16 帧 × 256² × ≤8 步）、15 分钟 timebox 超时策略。
 
-- **`run_ltx_video_if_possible.py`**：LTX-Video 2B（Lightricks，开放协议）。默认配置：16f × 256²、8 steps、bf16、cpu_offload。预期 VRAM ~8 GB（12GB 安全）。
+- **`run_ltx_video_if_possible.py`**：LTX-Video 2B（Lightricks，开放协议）。默认配置：16f × 256²、8 steps、bf16、cpu_offload。预期 VRAM ~8 GB（在中等显存配置下较安全）。
 
 - **`run_cogvideox_if_possible.py`**：CogVideoX-2B（THUDM，Apache 2.0，无授权障碍）。默认配置：16f × 256²、8 steps、bf16、cpu_offload。预期 VRAM ~6-8 GB。
 
@@ -43,7 +43,7 @@
 
 - **`docs/09_sora_style视频生成架构.html`**：Sora-style 视频生成架构说明。覆盖 spacetime patch、3D VAE、causal 3D attention（temporal + spatial 分离或联合）、video DiT 与 image DiT 的差异。
 
-- **`docs/10_wan_hunyuan_cogvideox_ltx视频模型.html`**：四个开源视频模型横向对比。按授权、VRAM、架构对比（DiT vs 3D causal VAE vs existing VAE）。12GB 可行性排序表。
+- **`docs/10_wan_hunyuan_cogvideox_ltx视频模型.html`**：四个开源视频模型横向对比。按授权、VRAM、架构对比（DiT vs 3D causal VAE vs existing VAE）。资源档位排序表。
 
 ---
 
@@ -54,21 +54,21 @@
 视频的 3D VAE 不仅压缩空间维度（通常 8× 下采样），还压缩时间维度（通常 4× 下采样）。这意味着：
 - 原始 49 帧 × 720 × 480 的视频 → latent ≈ (C, 13, 90, 60)（T 方向 49/4≈13，H 方向 720/8=90，W 方向 480/8=60）
 - Latent token 数 ≈ 13 × 90 × 60 / patch_size²（通常 patch_size=2，token 数 ≈ 17550）
-- 对于 16 帧小规格：latent ≈ (C, 4, 32, 32)，patch_size=2 → 1024 tokens。这是 12GB VRAM 安全的。
+- 对于 16 帧小规格：latent ≈ (C, 4, 32, 32)，patch_size=2 → 1024 tokens。这是 中等显存配置 安全的。
 
 ### 2.2 三个视频模型的优先级理由
 
 | 模型 | 优先级 | 授权 | VRAM 预计 | 理由 |
 |------|--------|------|----------|------|
-| LTX-Video 2B | 1 | 开放 | ~8 GB | 蒸馏到极低步数（4-8 steps），延迟短。121f 能力但 12GB 下只建议 16f。 |
+| LTX-Video 2B | 1 | 开放 | ~8 GB | 蒸馏到极低步数（4-8 steps），延迟短。121f 能力但 在中等显存配置下只建议 16f。 |
 | CogVideoX-2B | 2 | Apache 2.0 | ~6-8 GB | 无任何授权和 download gate，是最无障碍的模型。`diffusers` 原生支持。 |
 | Wan2.1-1.3B | 3 | Apache 2.0 | ~8-10 GB | 1.3B 参数较小，但 81f 默认帧数偏多，需手动降帧数。支持多分辨率。 |
 
-HunyuanVideo 不包含在正式尝试范围内（13B 参数，12GB VRAM 几乎不可能），仅作 bonus。
+HunyuanVideo 不包含在正式尝试范围内（13B 参数，中等显存配置 几乎不可能），仅作 bonus。
 
 ### 2.3 视频推理的 Timebox 策略
 
-针对 12GB VRAM + 视频推理的时间不确定性，制定了严格的 timebox：
+针对 中等显存配置 + 视频推理的时间不确定性，制定了严格的 timebox：
 - 单次推理超时：15 分钟
 - 超时即记录 blocker，不无限重试
 - 降级顺序：降帧数（49→25→16）→ 降分辨率（720×480→512×384→256×256）→ 减 steps（50→30→8）
@@ -86,8 +86,8 @@ HunyuanVideo 不包含在正式尝试范围内（13B 参数，12GB VRAM 几乎�
 
 ## 4. 本周风险与未完成项
 
-- **三模型均未实际运行**：由于 dev host 为 macOS M5（无 CUDA），远程 RTX 5070 Ti 当前不可用。所有视频验证均在"脚本已就绪，待远程执行"状态。
-- **LTX-Video 的真实 VRAM 是估算**：LTX-Video 2B 的 8 GB 预估来自官方文档和社区报告，但未在 RTX 5070 Ti 上实测。
+- **三模型均未实际运行**：由于 dev host 为 macOS M5（无 CUDA），远程 CUDA GPU 当前不可用。所有视频验证均在"脚本已就绪，待远程执行"状态。
+- **LTX-Video 的真实 VRAM 是估算**：LTX-Video 2B 的 8 GB 预估来自官方文档和社区报告，但未在一块可用的 CUDA GPU 上实测。
 - **视频质量未验证**：小规格（16f × 256²）能否产生有意义的结果，待真实运行后才能确认。
 
 ### 诚实声明

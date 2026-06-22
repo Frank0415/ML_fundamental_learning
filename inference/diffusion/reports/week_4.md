@@ -24,16 +24,16 @@
 
 **关键结论**：dev host 当前**不能运行任何真实 diffusers 模型推理**。这是预期状态——T1 已记录的已知限制。
 
-### 1.2 远程 RTX 5070 Ti（目标执行环境）
+### 1.2 远程 CUDA GPU（目标执行环境）
 
 | 属性 | 值 |
 |------|-----|
-| 设备 | RTX 5070 Ti (12GB VRAM) |
+| 设备 | 可用的 CUDA GPU (中等显存配置) |
 | GPU | CUDA（支持 diffusers real pipeline） |
 | Python | 需要 3.13+ via uv |
 | **当前状态** | **不可用** |
 
-**原因**：用户未在 Week 4 期间提供远程设备的 SSH 访问凭证或已就绪的 Python 环境。双轨策略中"轨道 B（远程 RTX 5070 Ti）"未在 Week 4 内执行。
+**原因**：用户未在 Week 4 期间提供远程设备的 SSH 访问凭证或已就绪的 Python 环境。双轨策略中"轨道 B（远程 CUDA GPU）"未在 Week 4 内执行。
 
 ---
 
@@ -55,14 +55,14 @@
 | prompt | "一只柴犬在樱花树下"（sample_prompts.txt 第 1 条） | N/A |
 | HF token 需求 | 无（Apache 2.0 开放） | 无需（未到下载阶段） |
 | **peak VRAM** | 预计 < 6GB | **N/A** |
-| **latency** | 预计 ~5-10 秒（20 步 1024², A10/5070 Ti） | **N/A** |
+| **latency** | 预计 ~5-10 秒（20 步 1024²，中档 CUDA 卡） | **N/A** |
 | **output path** | `results/sana_<timestamp>_<seed>.png` | **N/A** |
 | **尝试结果** | — | **BLOCKED** |
 | **blocker** | — | `ModuleNotFoundError: No module named 'torch'` |
 
 **详细分析**：
 
-Sana 是 12GB 最友好的选择：Apache 2.0 开放模型，无需 HF token；单文本编码器 Gemma-2B 仅约 4GB；linear attention 将复杂度从 O(n²) 降到 O(n)。理论上在 RTX 5070 Ti 上直接可跑。但当前环境（M5 + Python 3.9.6 + 无 torch）连 `import torch` 都失败，更不可能加载 diffusers pipeline。
+Sana 是 对中低显存更友好的选择：Apache 2.0 开放模型，无需 HF token；单文本编码器 Gemma-2B 仅约 4GB；linear attention 将复杂度从 O(n²) 降到 O(n)。理论上在一块可用的 CUDA GPU 上直接可跑。但当前环境（M5 + Python 3.9.6 + 无 torch）连 `import torch` 都失败，更不可能加载 diffusers pipeline。
 
 脚手架状态：`run_sana_if_possible.py` 经 `--help` 验证可正常解析参数。参数语义清晰（--prompt / --model_id / --num_steps / --height / --width / --seed / --dtype 等），环境就绪后单条命令可跑。
 
@@ -88,9 +88,9 @@ Sana 是 12GB 最友好的选择：Apache 2.0 开放模型，无需 HF token；�
 
 **详细分析**：
 
-SD3 Medium 是次选方案。核心策略是关闭 T5-XXL（`--no_t5`），将 VRAM 从约 15GB+ 降到约 4.3GB，在 12GB 设备上完全可行。但额外前置条件比 Sana 多一步：需要 HuggingFace 注册、创建 token、accept license。当前跳过此步骤，因为即使 token 就绪，torch/diffusers 仍然缺失，无法运行。
+SD3 Medium 是次选方案。核心策略是关闭 T5-XXL（`--no_t5`），将 VRAM 从约 15GB+ 降到约 4.3GB，在 中等显存设备上完全可行。但额外前置条件比 Sana 多一步：需要 HuggingFace 注册、创建 token、accept license。当前跳过此步骤，因为即使 token 就绪，torch/diffusers 仍然缺失，无法运行。
 
-脚手架状态：`run_sd3_medium_if_possible.py` 经 `--help` 验证可正常解析参数。`--no_t5` 默认开启，`--use_t5` 显式启用且有警告说明 12GB 设备必须关闭。
+脚手架状态：`run_sd3_medium_if_possible.py` 经 `--help` 验证可正常解析参数。`--no_t5` 默认开启，`--use_t5` 显式启用且有警告说明 中等显存设备必须关闭。
 
 ### 2.3 尝试 3：FLUX.1-schnell
 
@@ -107,7 +107,7 @@ SD3 Medium 是次选方案。核心策略是关闭 T5-XXL（`--no_t5`），将 V
 | prompt | "一只柴犬在樱花树下" | N/A |
 | HF token 需求 | **是**：需注册 + token + accept license | 未验证（因环境未就绪跳过） |
 | 下载体积 | ~23GB | 未执行 |
-| **peak VRAM** | 预计 ~10GB（12GB 偏紧） | **N/A** |
+| **peak VRAM** | 预计 ~10GB（在中等显存配置下偏紧） | **N/A** |
 | **latency** | 预计 ~8-15 秒（4 步，但模型体量大） | **N/A** |
 | **output path** | `results/flux_schnell_<timestamp>_<seed>.png` | **N/A** |
 | **尝试结果** | — | **BLOCKED** |
@@ -115,7 +115,7 @@ SD3 Medium 是次选方案。核心策略是关闭 T5-XXL（`--no_t5`），将 V
 
 **详细分析**：
 
-FLUX.1-schnell 是第三选方案。优势是仅需 4 步（蒸馏），不考虑 CFG（cfg_scale=1.0），但模型体量大（下载 ~23GB，推理 VRAM 约 10GB），在 12GB 设备上偏紧。与 SD3 一样需要 HF token + license accept。当前跳过——根本原因仍是 torch/diffusers 缺失。
+FLUX.1-schnell 是第三选方案。优势是仅需 4 步（蒸馏），不考虑 CFG（cfg_scale=1.0），但模型体量大（下载 ~23GB，推理 VRAM 约 10GB），在 中等显存设备上偏紧。与 SD3 一样需要 HF token + license accept。当前跳过——根本原因仍是 torch/diffusers 缺失。
 
 脚手架状态：`run_flux_schnell_if_possible.py` 经 `--help` 验证可正常解析参数。
 
@@ -188,7 +188,7 @@ python run_flux_schnell_if_possible.py \
 
 1. **Python 3.9.6 < 3.13**：需 `uv python install 3.13` 获取项目 Python。
 2. **torch / diffusers 未安装**：需 `uv pip install torch diffusers transformers accelerate`。
-3. **无 CUDA GPU**：M5 的 MPS 后端不支持 diffusers real pipeline。必须在远程 RTX 5070 Ti 上执行。
+3. **无 CUDA GPU**：M5 的 MPS 后端不支持 diffusers real pipeline。必须在远程 CUDA GPU 上执行。
 
 **三个模型无一跑通**。这不是因为某个模型太吃显存或 gated 拒绝——根本原因是环境从未被设置为可运行状态。
 
@@ -197,9 +197,9 @@ python run_flux_schnell_if_possible.py \
 | 轨道 | 状态 | 说明 |
 |------|------|------|
 | A（M5 dev host） | ✅ 有进展 | T10–T13 代码和脚手架在此完成；profile_memory.py dry-run 可用 |
-| B（远程 RTX 5070 Ti） | ❌ 未执行 | 用户未提供 SSH 访问；环境未在远程就绪 |
+| B（远程 CUDA GPU） | ❌ 未执行 | 用户未提供 SSH 访问；环境未在远程就绪 |
 
-**"轨道 B（远程 RTX 5070 Ti）"未在 Week 4 内执行**。这导致所有三个模型的真实推理尝试在"环境检查"阶段即被 blocker，未进入模型下载/推理阶段。
+**"轨道 B（远程 CUDA GPU）"未在 Week 4 内执行**。这导致所有三个模型的真实推理尝试在"环境检查"阶段即被 blocker，未进入模型下载/推理阶段。
 
 ### 5.3 脚手架完备，达成"随时可跑通"
 
@@ -237,9 +237,9 @@ python experiments/reference_image_inference/run_sana_if_possible.py --help
 
 此方案不产生真实图片，但可以验证脚手架的"设备不支持"分支是否正确。
 
-### 方案 2：登录远程 RTX 5070 Ti 后跑 SD3/FLUX（推荐产图片）
+### 方案 2：登录远程 CUDA GPU 后跑 SD3/FLUX（推荐产图片）
 
-若远程 RTX 5070 Ti 已完成：
+若远程 CUDA GPU 已完成：
 - Python 3.13+ 环境
 - `uv sync` 成功
 - `huggingface-cli login` 完成
@@ -248,7 +248,7 @@ python experiments/reference_image_inference/run_sana_if_possible.py --help
 则直接运行：
 
 ```bash
-# SD3 Medium（no-T5，12GB 舒适）
+# SD3 Medium（no-T5，在中等显存配置下从容）
 python experiments/reference_image_inference/run_sd3_medium_if_possible.py \
   --prompt "一只柴犬在樱花树下" --output_dir results
 
@@ -280,7 +280,7 @@ python experiments/reference_image_inference/run_flux_schnell_if_possible.py \
 - **未伪造任何图片或成功记录**：`results/` 目录下无 PNG 输出文件。本文中所有 `output path` 均为 N/A。
 - **未在 M5 上强行运行 diffusers real pipeline**：这既不可能（无 CUDA），也不应该（MPS 不支持，T13 README §6.4 明确禁止）。
 - **未为"看起来完成"而忽略环境 blocker**：这是故意的、诚实的 blocker 记录。T1 的环境偏差和双轨策略为本文的结论提供了充分的"为什么"。
-- **三个模型的 blocker 是同一 root cause**：`ModuleNotFoundError: No module named 'torch'`。不存在"某模型专有 bug"或"12GB 太紧张"的情况——完全没有进入推理阶段。
+- **三个模型的 blocker 是同一 root cause**：`ModuleNotFoundError: No module named 'torch'`。不存在"某模型专有 bug"或"中等显存配置 太紧张"的情况——完全没有进入推理阶段。
 - **脚手架完备，这是值得肯定的进展**：T13 的产出使得 T14 在环境到位后"单条命令可跑"。这不是"没做成"——是"做好了准备，等待环境就绪"。
 
 ---

@@ -63,7 +63,7 @@ CFG（Classifier-Free Guidance）在每步需要跑 **两次** denoiser forward�
 | 7.5 | 8.97 | 8.89 | 1.01× | 1.5 MB | 2.0 MB |
 | 15.0 | 9.00 | 8.92 | 1.01× | 1.5 MB | 2.0 MB |
 
-数值差异 **0.00e+00**（理论上完全一致，微小差异仅来自浮点 accumulate order）。12GB VRAM 策略：剩余 > 6GB → Batched CFG；3-6GB → 视具体情况；< 3GB → Sequential CFG。
+数值差异 **0.00e+00**（理论上完全一致，微小差异仅来自浮点 accumulate order）。中等显存配置 策略：剩余 > 6GB → Batched CFG；3-6GB → 视具体情况；< 3GB → Sequential CFG。
 
 ## 5. Attention Memory（注意力显存估算）
 
@@ -94,7 +94,7 @@ VAE tiling 是应用层优化：将 latent/像素切分成多个 tile，分别�
 | 2048² | Full | 1 | 117.53 | 72.0 | — | — |
 | 2048² | Tiled 32×32 | 64 | 198.94 | 97.4 | 1.69× | 1.35× |
 
-典型开销：overlap=4 latent pixels → 额外 10-20% 计算量。12GB VRAM 下 VAE tiling **几乎总是必要的**。推荐 tile 大小：1024² → 64×64 latent tile；2048² → 32×32 latent tile。
+典型开销：overlap=4 latent pixels → 额外 10-20% 计算量。受限显存配置下 VAE tiling **几乎总是必要的**。推荐 tile 大小：1024² → 64×64 latent tile；2048² → 32×32 latent tile。
 
 ## 7. 与 LLM KV Cache 的根本差异
 

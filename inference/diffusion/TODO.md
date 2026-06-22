@@ -70,11 +70,11 @@
   - 产出：`experiments/reference_image_inference/README.md`、3 个模型脚本（`run_sana_if_possible.py` 等）、`profile_memory.py`、`sample_prompts.txt`
 
 - [x] **T14 — 真实 reference 文生图尝试、结果记录与 Week 4 报告**
-  - blocker：**远程 RTX 5070 Ti 不可用** + dev host 无 CUDA/torch/diffusers。T14 脚手架就绪，真实推理未执行。blocker 如实记录在 `attempt_manifest.md`。非代码 bug。
+  - blocker：**远程 CUDA GPU 不可用** + dev host 无 CUDA/torch/diffusers。T14 脚手架就绪，真实推理未执行。blocker 如实记录在 `attempt_manifest.md`。非代码 bug。
   - 产出：`experiments/reference_image_inference/results/attempt_manifest.md`（详细 blocker 记录）、`reports/week_4.md`
 
 - [x] **T15 — 视频 reference 脚手架、尝试、blocker 与 Week 5 报告**
-  - blocker：**远程 RTX 5070 Ti 不可用**。3 个模型脚本均已就绪（help 通过），3 个 blocker 占位文件待 GPU 环境就绪后更新。
+  - blocker：**远程 CUDA GPU 不可用**。3 个模型脚本均已就绪（help 通过），3 个 blocker 占位文件待 GPU 环境就绪后更新。
   - 产出：`experiments/reference_video_inference/` 完整实验目录、`results/blocker_*.md`（3 个）、`reports/week_5.md`、`docs/09_` 和 `docs/10_`
 
 ---
@@ -110,7 +110,7 @@
 
 | 任务 | 未完成内容 | 原因 | 是否可修复 |
 |------|-----------|------|-----------|
-| T14 | 真实 reference image inference 未在 GPU 上跑通 | 远程 RTX 5070 Ti 不可用；dev host 无 CUDA/torch | 是：环境就绪后单条命令即可 |
+| T14 | 真实 reference image inference 未在 GPU 上跑通 | 远程 CUDA GPU 不可用；dev host 无 CUDA/torch | 是：环境就绪后单条命令即可 |
 | T15 | 真实 reference video inference 未在 GPU 上跑通 | 同上 | 是：环境就绪后单条命令即可 |
 | T11/T12 | DiT/pipeline 的 42 个 pytest skip | dev host 无 torch 安装 | 是：`uv pip install torch` 后即可运行 |
 
@@ -119,6 +119,6 @@
 ## 跨任务依赖提醒
 
 - **T10 已等 T4**：`diffusion_engine/core/` 目录在写 `scheduler.py` 前已存在 ✅
-- **T14 需远程 RTX 5070 Ti**：Mac M5 (MPS) 不支持 CUDA。脚手架就绪，待远程执行。
+- **T14 需远程 CUDA GPU**：Mac M5 (MPS) 不支持 CUDA。脚手架就绪，待远程执行。
 - **T15 时间预算**：视频推理设置 15 分钟超时，超时即记录 blocker。T15 的 3 个 blocker 为占位文件。
 - **T18 的 README 更新在 T4 初版基础上升级**：13 小节结构保持，各节补齐运行命令和结果总结 ✅

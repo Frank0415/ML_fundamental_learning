@@ -10,7 +10,7 @@
 
 ## 1. 为什么对现代 diffusion 推理重要
 
-LTX-Video 是目前**最快的开源视频生成模型**，其 2B distilled 变体可以在消费级 GPU（如 RTX 4060 8GB）上以 < 1 分钟生成 121 帧 × 720×480 的视频。它代表了"few-step distillation + 激进 VAE 压缩 + 紧凑 DiT"的组合策略，是 12GB 场景下视频推理的**最佳选择**。对于 `diffusion_engine`，LTX-Video 验证了：① 视频可以在 few-step（4-8 步）下生成；② VAE 激进的压缩比可以大幅降低 DiT 的 token 数；③ real-time 推理不需要巨大的模型。
+LTX-Video 是目前**最快的开源视频生成模型**，其 2B distilled 变体可以在消费级 GPU（如 RTX 4060 8GB）上以 < 1 分钟生成 121 帧 × 720×480 的视频。它代表了"few-step distillation + 激进 VAE 压缩 + 紧凑 DiT"的组合策略，是 受限显存场景下视频推理的**最佳选择**。对于 `diffusion_engine`，LTX-Video 验证了：① 视频可以在 few-step（4-8 步）下生成；② VAE 激进的压缩比可以大幅降低 DiT 的 token 数；③ real-time 推理不需要巨大的模型。
 
 ---
 
@@ -30,7 +30,7 @@ LTX-Video 是目前**最快的开源视频生成模型**，其 2B distilled 变�
 
 **与同类模型的"速度"对比**：
 
-| 模型 | 帧数 | 分辨率 | 步数 | 12GB 推理时间（估） | 速度等级 |
+| 模型 | 帧数 | 分辨率 | 步数 | 中等显存配置推理时间（估） | 速度等级 |
 |------|------|--------|------|-------------------|---------|
 | **LTX-Video 2B** | 121 | 720×480 | 4-8 | < 1 min | ⚡ 极快 |
 | CogVideoX-2B | 49 | 720×480 | 50 | ~5-10 min | 🚶 中等 |
@@ -109,7 +109,7 @@ for t in [1.0, 0.7, 0.3, 0.0]:   # 仅 4 个 timestep
 
 LTX-Video 支持视频 chunking：对于不满足显存的超长视频，可以将视频分成多个 chunk 分别生成后在时间维度上拼接。每个 chunk 独立走 denoising loop，chunk 之间通过少量重叠帧保持连贯性。
 
-**对 12GB 的影响**：chunking 允许以更小的 per-chunk 显存需求生成长视频——例如 241 帧的视频可以分两个 121 帧的 chunk 分别生成。
+**对受限显存配置的影响**：chunking 允许以更小的 per-chunk 显存需求生成长视频——例如 241 帧的视频可以分两个 121 帧的 chunk 分别生成。
 
 ### 3.5 Attention 结构
 
@@ -182,7 +182,7 @@ VAE decoder: (1, 4, 15, 22, 15) → (1, 3, 121, 720, 480)
 
 ### 6.1 显存瓶颈
 
-LTX-Video 的显存瓶颈很低——即使标准规格也远低于 12GB：
+LTX-Video 的显存瓶颈很低——即使标准规格也远低于 中等显存配置：
 
 | 排序 | 组件 | VRAM（121f×720p, fp16） | 说明 |
 |------|------|------------------------|------|
@@ -191,7 +191,7 @@ LTX-Video 的显存瓶颈很低——即使标准规格也远低于 12GB：
 | 🟢 3 | Attention activations | ~0.03 GB | 仅 1,320 tokens！ |
 | 🟢 4 | VAE decoder | ~1-2 GB | |
 
-### 6.2 12GB RTX 5070 Ti 可行性判断
+### 6.2 资源档位与运行边界
 
 | 配置 | 判断 | VRAM 估算 |
 |------|------|----------|
@@ -199,7 +199,7 @@ LTX-Video 的显存瓶颈很低——即使标准规格也远低于 12GB：
 | **LTX-Video 2B, 121f×720p, 8 steps** | 🟢 舒适 | ~7-8 GB |
 | **LTX-Video 2B, 241f×720p (chunked)** | 🟡 极限可跑 | ~9-10 GB |
 
-**推荐 12GB fallback 命令**：
+**一个受限显存示例命令**：
 
 ```bash
 # LTX-Video：最佳视频选择
@@ -210,7 +210,7 @@ pipe = LTXPipeline.from_pretrained(
     torch_dtype=torch.float16
 )
 pipe = pipe.to('cuda')
-# 不需要 offload！2B + T5 + 1,320 tokens 完全 fit 12GB
+# 不需要 offload！2B + T5 + 1,320 tokens 完全 fit 中等显存配置
 video = pipe(
     '一只柴犬在草地上奔跑',
     num_frames=121,
@@ -263,7 +263,7 @@ video = pipe(
 - Diffusers pipeline 源码中的 scheduler 配置
 
 **输出**：
-- 本文档：`learning/papers/08_ltx_video.md`（8 字段完整 + VAE 激进压缩分析 + 12GB 判断）
+- 本文档：`learning/papers/08_ltx_video.md`（8 字段完整 + VAE 激进压缩分析 + 资源档位判断）
 
 ---
 

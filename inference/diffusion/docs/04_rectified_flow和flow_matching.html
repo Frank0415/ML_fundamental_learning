@@ -204,7 +204,7 @@ v_cfg = v_uncond + s × (v_cond − v_uncond)
         <th>框架</th>
         <th>推理步数</th>
         <th>Video Latent Shape 示例</th>
-        <th>12GB 可行性</th>
+        <th>资源档位</th>
       </tr>
     </thead>
     <tbody>
@@ -244,7 +244,7 @@ v_cfg = v_uncond + s × (v_cond − v_uncond)
     <li><strong>Latent 维度</strong>：图像 latent 是 4D <code>(B,C,H,W)</code>，视频 latent 是 5D <code>(B,C,T,H,W)</code>。多出的时间轴使 token 数乘上了 T_latent 因子。</li>
     <li><strong>Attention 规模</strong>：图像 DiT 在 1024px 下的 token 数约 4096，视频 DiT 在 720p×49f 下的 token 数可达 17,550（CogVideoX）甚至 32,760（Wan 1.3B）。O(n²) attention 在视频中压力极大。</li>
     <li><strong>CFG Scale</strong>：视频模型通常使用更高的 CFG（5.0~7.0 vs 图像的 3.5~5.0），意味着 text guidance 在视频中更重要——但也意味着每步 cond+uncond 双 forward 更"贵"。</li>
-    <li><strong>Few-step 蒸馏</strong>：LTX-Video 和 HunyuanVideo 1.5 的蒸馏版本证明，视频模型也可以从 50 步降到 4-20 步。这对 12GB 场景是决定性利好。</li>
+    <li><strong>Few-step 蒸馏</strong>：LTX-Video 和 HunyuanVideo 1.5 的蒸馏版本证明，视频模型也可以从 50 步降到 4-20 步。这对 受限显存场景是决定性利好。</li>
   </ul>
 
   <h2>10. 延伸阅读</h2>

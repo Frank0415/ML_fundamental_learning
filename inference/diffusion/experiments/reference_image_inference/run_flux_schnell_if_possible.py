@@ -85,7 +85,7 @@ def parse_args() -> argparse.Namespace:
 关键特性:
   - schnell 仅需 4 步（distilled）
   - 不使用 CFG（cfg_scale ≈ 1.0）
-  - VRAM 约 10GB（12GB 偏紧，推荐 sequential CPU offload）
+  - VRAM 约 10GB（在中等显存配置下偏紧，推荐 sequential CPU offload）
 
 Fallback（若 OOM 或失败）:
   1. 降 resolution: --height 768 --width 768
@@ -93,7 +93,7 @@ Fallback（若 OOM 或失败）:
   3. 确认 HF token 已配置 + license 已接受
 
 设备要求:
-  需要 CUDA GPU（RTX 5070 Ti 12GB）。MPS/CPU 不支持。
+  需要 CUDA GPU（可用的 CUDA GPU 中等显存配置）。MPS/CPU 不支持。
 """,
     )
 
@@ -167,7 +167,7 @@ Fallback（若 OOM 或失败）:
         "--no-enable_cpu_offload",
         action="store_false",
         dest="enable_cpu_offload",
-        help="禁用 CPU offload。12GB 设备不建议禁用",
+        help="禁用 CPU offload。中等显存设备不建议禁用",
     )
     parser.add_argument(
         "--enable_vae_slicing",
@@ -225,13 +225,13 @@ def run_flux_schnell_inference(args: argparse.Namespace) -> dict:
 
     if not check_cuda_available():
         print("[WARN] CUDA 不可用。FLUX pipeline 在 MPS/CPU 上无法运行。")
-        print("[WARN] 建议在远程 RTX 5070 Ti 上执行本脚本。")
+        print("[WARN] 建议在远程 CUDA GPU 上执行本脚本。")
         return {
             "status": "blocker",
             "output_path": None,
             "peak_vram_mb": 0.0,
             "elapsed_s": 0.0,
-            "error": "CUDA 不可用。需 RTX 5070 Ti 远程执行。",
+            "error": "CUDA 不可用。需 可用的 CUDA GPU 远程执行。",
         }
 
     seed = args.seed if args.seed >= 0 else int(time.time())
@@ -311,7 +311,7 @@ def run_flux_schnell_inference(args: argparse.Namespace) -> dict:
         print(f"  错误: {err_msg}")
 
         if "out of memory" in str(exc).lower():
-            print("[HINT] OOM — FLUX schnell 在 12GB 上偏紧。尝试降级:")
+            print("[HINT] OOM — FLUX schnell 在中等显存配置上偏紧。尝试降级:")
             print("  1. --height 768 --width 768")
             print("  2. --num_steps 4（已是最小值）")
             print("  3. 尝试社区 GGUF Q4 量化路径")

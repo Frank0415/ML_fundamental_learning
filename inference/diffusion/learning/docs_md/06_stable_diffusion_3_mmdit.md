@@ -90,7 +90,7 @@ SD3 使用 **三个文字编码器**：
 | CLIP-G (ViT-bigG/14) | 1280 (pooled) + 77×1280 (seq) | 高质量视觉语义 |
 | T5-XXL (4.7B) | 4096 (seq only) | 详细描述理解 |
 
-三个编码器的输出拼接后投影到 MMDiT 的 hidden_size。**关键**：T5-XXL 显存占用很大（>10GB），SD3.5 Medium 可以去掉 T5 以适配 12GB VRAM。
+三个编码器的输出拼接后投影到 MMDiT 的 hidden_size。**关键**：T5-XXL 显存占用很大（>10GB），SD3.5 Medium 可以去掉 T5 以适配 中等显存配置。
 
 ## 4. 推理 Pipeline（SD3 完整流程）
 
@@ -106,7 +106,7 @@ SD3 使用 **三个文字编码器**：
 6. 保存图像
 ```
 
-## 5. 12GB VRAM 策略
+## 5. 中等显存配置 策略
 
 | 策略 | 节省显存 | 代价 |
 |------|---------|------|
@@ -116,7 +116,7 @@ SD3 使用 **三个文字编码器**：
 | VAE slicing | ~4 GB（decode 阶段） | 分块解码，略慢 |
 | Batched CFG | ~1.5 GB | 实现复杂度 |
 
-### 推荐 12GB 配置
+### 推荐 中等显存配置 配置
 
 ```bash
 --model stabilityai/stable-diffusion-3.5-medium
@@ -147,7 +147,7 @@ v_cfg = v_uncond + s · (v_cond − v_uncond)
 
 其中 s 是 CFG scale（通常 3.0~7.0）。这与 DDPM 框架的 CFG 等价，但因为 rectified flow 学习的是 v_θ 而非 ε_θ，所以公式稍有不同。
 
-CFG 需要 **双重前向传播**（有文本 + 无文本），对 12GB 显存是一个负担。T16/T17 将探索 batched CFG 以节省显存。
+CFG 需要 **双重前向传播**（有文本 + 无文本），对中档显存卡会是个不小的负担。T16/T17 将探索 batched CFG 以节省显存。
 
 ## 8. 与 DiT 的递进关系
 
@@ -174,13 +174,13 @@ MMDiT 的双流设计（text stream + image stream 独立 QKV + joint attention�
 | CogVideoX | Expert Transformer | Cross-Attention (causal) | 单流 | ~17,550 |
 | LTX-Video | Compact DiT | Cross-Attention | 单流 | ~1,320 |
 
-**观察**：HunyuanVideo 是唯一明确延续 MMDiT 双流设计的视频模型（text stream + image stream 独立 AdaLN + joint attention）。其他视频模型选择了更简单的单流 + cross-attention 方案——对于 12GB 场景，单流意味着更少的参数和更简单的推理路径。
+**观察**：HunyuanVideo 是唯一明确延续 MMDiT 双流设计的视频模型（text stream + image stream 独立 AdaLN + joint attention）。其他视频模型选择了更简单的单流 + cross-attention 方案——对于 受限显存场景，单流意味着更少的参数和更简单的推理路径。
 
-**12GB 场景下的"双流 vs 单流"选择**：双流（如 HunyuanVideo）虽然 text-image 交互更精细，但双倍的 QKV 和 AdaLN 参数也意味着更大的 DiT 权重。当 HunyuanVideo 的 8.3B DiT 权重本身就超 12GB 时（fp16 ~16.6GB），双流的"质量优势"在 12GB 约束下没有实现空间。这也是为什么 CogVideoX-2B（单流）和 LTX-Video 2B（单流）更受 12GB 用户青睐。
+**受限显存场景下的"双流 vs 单流"选择**：双流（如 HunyuanVideo）虽然 text-image 交互更精细，但双倍的 QKV 和 AdaLN 参数也意味着更大的 DiT 权重。当 HunyuanVideo 的 8.3B DiT 权重本身就超 中等显存配置 时（fp16 ~16.6GB），双流的"质量优势"在 中等显存配置 约束下没有实现空间。这也是为什么 CogVideoX-2B（单流）和 LTX-Video 2B（单流）更受 中等显存配置 用户青睐。
 
 ## 本页结论
 
-SD3 将 rectified flow（训练框架）和 MMDiT（模型架构）结合，用双流 joint attention 让文本和图像 tokens 在所有层交互。相比 DiT，采样步数大幅减少（250→28），文本理解和图像质量均有提升。但三编码器（尤其是 T5-XXL）带来的显存压力需要在 12GB VRAM 下通过去 T5、offload、slicing 等策略缓解。在视频 DiT 中，双流 MMDiT 设计被 HunyuanVideo 延续但被大多数 12GB 友好视频模型放弃（选择更轻的单流方案）。
+SD3 将 rectified flow（训练框架）和 MMDiT（模型架构）结合，用双流 joint attention 让文本和图像 tokens 在所有层交互。相比 DiT，采样步数大幅减少（250→28），文本理解和图像质量均有提升。但三编码器（尤其是 T5-XXL）带来的显存压力，在受限显存配置下往往需要靠去 T5、offload、slicing 等策略缓解。在视频 DiT 中，双流 MMDiT 设计被 HunyuanVideo 延续，但大多数显存更友好的视频模型都转向了更轻的单流方案。
 
 ## 和我的 diffusion_engine 的关系
 

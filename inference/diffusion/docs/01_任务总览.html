@@ -127,7 +127,7 @@
 
 <p>本项目是一个<strong>现代扩散模型推理学习与实现项目</strong>，位于 <code>diffusion/</code> 子目录内，与旧 <code>minivLLM/</code> 引擎完全隔离。</p>
 
-<p>核心目标：从零理解现代扩散模型的推理路径，落地一个最小但完整的 <code>diffusion_engine/</code>，并在 12GB RTX 5070 Ti 上跑通至少一个真实 reference inference。全程中文文档，纯静态 HTML 知识库，不做生产部署。</p>
+<p>核心目标：从零理解现代扩散模型的推理路径，落地一个最小但完整的 <code>diffusion_engine/</code>，并在一块可用的 CUDA GPU 上跑通至少一个真实 reference inference。全程中文文档，纯静态 HTML 知识库，不做生产部署。</p>
 
 <h3>四个维度</h3>
 
@@ -135,7 +135,7 @@
   <tr><th>维度</th><th>目标</th><th>状态</th></tr>
   <tr><td><strong>理解</strong></td><td>通过论文卡片、学习笔记、静态知识库，系统建立对 rectified flow、DiT/MMDiT、文生图/文生视频推理数据流的认识</td><td><span class="tag tag-ok">完成</span></td></tr>
   <tr><td><strong>实现</strong></td><td>从零构建最小 <code>diffusion_engine/</code>，覆盖 scheduler、rectified flow、DiT transformer block、text conditioning、pipeline、memory manager</td><td><span class="tag tag-ok">完成</span></td></tr>
-  <tr><td><strong>运行</strong></td><td>12GB RTX 5070 Ti 上至少跑通一个真实文生图 reference inference；视频小规格尝试并如实记录 blocker</td><td><span class="tag tag-block">脚手架就绪，环境未跑通</span></td></tr>
+  <tr><td><strong>运行</strong></td><td>可用的 CUDA GPU 上至少跑通一个真实文生图 reference inference；视频小规格尝试并如实记录 blocker</td><td><span class="tag tag-block">脚手架就绪，环境未跑通</span></td></tr>
   <tr><td><strong>优化</strong></td><td>设计并运行 prompt cache、latent buffer、scheduler benchmark、CFG batching、attention memory、VAE tiling 对照实验</td><td><span class="tag tag-ok">完成</span></td></tr>
 </table>
 

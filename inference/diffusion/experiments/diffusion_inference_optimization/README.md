@@ -1,7 +1,7 @@
 # Diffusion 推理系统优化实验
 
 > **负责任务**：T16（prompt cache / latent buffer / scheduler benchmark）+ T17（CFG batching / attention memory / VAE tiling）
-> **执行环境**：Mac M5（开发测试）+ RTX 5070 Ti（真实 benchmark）
+> **执行环境**：Mac M5（开发测试）+ 可用的 CUDA GPU（真实 benchmark）
 > **最后更新**：2026-06-07
 
 ---
@@ -47,9 +47,9 @@ LLM 的推理优化集中在**自回归生成**这一单一范式上：
 >   5. **VAE tiling**（高分辨率 decode 显存控制）
 >   6. **Video chunking**（长视频帧数显存控制）
 
-### 1.3 在 12GB 预算下的优化优先级
+### 1.3 在 显存预算下的优化优先级
 
-| 优先级 | 优化项 | 预计收益 | 12GB 影响 |
+| 优先级 | 优化项 | 预计收益 | 中等显存配置 影响 |
 |-------|--------|---------|----------|
 | P0 | Prompt embedding cache | ~1–3 GB（避免重复加载 text encoder） | 决定性 |
 | P0 | CFG batching | ~1.3× 加速（省一次 forward） | 显存代价 ~1.8×（双倍 batch） |
@@ -206,7 +206,7 @@ tokens: (B, N, D)          如 (1, 256, 64) = 16,384 元素  (patch 后)
 - **B. Out-of-place reset**：每次 step 分配新 buffer → 旧 buffer 被 GC——大量 malloc/free
 - 模拟 28 步推理，记录 allocation_count、peak_allocated bytes、每步 latency
 
-**12GB 预算下的真实占比**：
+**显存预算下的真实占比**：
 
 - 1024² latent (fp16, 16ch)：2,097,152 元素 × 2B = 4 MB × 4 buffers = **16 MB**
 - 真正瓶颈在 attention activations：4096 token × 4096 × 16 heads × 4B = **~1 GB per layer**

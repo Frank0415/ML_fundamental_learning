@@ -130,7 +130,7 @@
 **差异 3：Video Chunking**
 - 视频去噪通常逐 chunk 进行（每次处理 8-16 帧的 chunk）
 - 视频 VAE decode 也逐 chunk 进行（一次 decode 整个视频极易 OOM）
-- 12GB VRAM 预算下，建议 ≤16 帧 × 256² × ≤8 步
+- 在受限显存配置下，建议 ≤16 帧 × 256² × ≤8 步
 
 **Shape 流转**（16f 小规格）：
 - prompt → text encoder → (1, 77, 4096) embedding
@@ -169,7 +169,7 @@ LLM 的自回归解码有一个关键假设：第 N+1 个 token 需要 attend �
 
 **关键差异总结**：LLM 的核心优化是"如何高效存储和访问历史"（因为历史可复用），diffusion 的核心优化是"如何压缩单步的计算量"（因为每步都从头算）。这是两个本质上不同的优化方向。
 
-### 问题 4：12GB 显存下实际能做什么
+### 问题 4：在受限显存配置下实际能做什么
 
 #### 已完成（本项目中可验证）
 
@@ -182,12 +182,12 @@ LLM 的自回归解码有一个关键假设：第 N+1 个 token 需要 attend �
 
 #### 可做但未做（环境就绪后可立即执行）
 
-**真实文生图**（需要远程 RTX 5070 Ti + Python 3.13 + torch + diffusers）：
+**真实文生图**（需要远程 CUDA GPU + Python 3.13 + torch + diffusers）：
 - Sana-0.6B（推荐首选）：Apache 2.0 开放，无需授权。`Efficient-Large-Model/Sana_600M_1024px_diffusers`。预计 VRAM < 6 GB，20 步 1024² 约 5-10 秒。脚本 `run_sana_if_possible.py` 已就绪。
 - SD3 Medium（备选）：需 HF token + license accept。`stabilityai/stable-diffusion-3-medium-diffusers`。预计 VRAM ~8 GB，28 步 1024² 约 8-12 秒。脚本 `run_sd3_medium_if_possible.py` 已就绪。
 - FLUX.1-schnell（备选）：需 HF token + license accept。`black-forest-labs/FLUX.1-schnell`。预计 VRAM ~10 GB，4 步 1024² 约 2-3 秒。脚本 `run_flux_schnell_if_possible.py` 已就绪。
 
-**真实文生视频**（需要远程 RTX 5070 Ti）：
+**真实文生视频**（需要远程 CUDA GPU）：
 - CogVideoX-2B（推荐首选）：Apache 2.0，无授权障碍。`THUDM/CogVideoX-2b`。小规格 16f × 256² × 8 steps 预计 VRAM ~4-6 GB。脚本 `run_cogvideox_if_possible.py` 已就绪。
 - LTX-Video 2B distilled（推荐备选）：开放协议。小规格 16f × 256² × 8 steps 预计 VRAM ~5-8 GB。
 - Wan2.1-T2V-1.3B（极限尝试）：Apache 2.0。1.3B 参数相对小，但默认 81f 需手动降帧。
@@ -195,22 +195,22 @@ LLM 的自回归解码有一个关键假设：第 N+1 个 token 需要 attend �
 #### 做不到的（无需尝试）
 
 - **FLUX dev**：~10 GB VRAM 是极限，可能 OOM。不建议。
-- **SD3 Large / T5-XXL 双编码器**：T5-XXL 自身 ~10 GB，加上 DiT 和 VAE 远超 12GB。
-- **HunyuanVideo (13B)**：12GB VRAM 远远不够。即使是 2B 蒸馏版，也需 16GB+。
+- **SD3 Large / T5-XXL 双编码器**：T5-XXL 自身 ~10 GB，加上 DiT 和 VAE 远超 中等显存配置。
+- **HunyuanVideo (13B)**：中等显存配置 远远不够。即使是 2B 蒸馏版，也需 16GB+。
 - **高分辨率视频**（≥ 720p × ≥ 49f）：attention O(N²) 和 VAE decode 都会 OOM，不尝试。
 
 ### 问题 5：后续如何继续往高性能 Diffusion Serving 发展
 
 #### 短期（环境就绪后，Week 7-8）
 
-1. **环境准备**：在远程 RTX 5070 Ti 上通过 uv 安装 Python 3.13 + torch 2.7+ + diffusers + transformers。
+1. **环境准备**：在远程 CUDA GPU 上通过 uv 安装 Python 3.13 + torch 2.7+ + diffusers + transformers。
 2. **跑通 Sana**：先跑 Sana-0.6B（最简单，无授权障碍），验证整个 pipeline 正常工作。记录真实 VRAM / latency 数据，替换 T14 blocker。
 3. **跑通 CogVideoX-2B**：用小规格（16f × 256²）跑通视频推理，记录真实 VRAM / latency，替换 T15 blocker。
 4. **真实 benchmark 数据**：将 T16/T17 的 mock benchmark 在真实 GPU 上重新运行，获取 CUDA 下的真实数据（非 numpy mock）。
 
 #### 中期（环境就绪后，Week 9-12）
 
-5. **xformers / flash-attn 集成**：在 RTX 5070 Ti 上安装 xformers 或 flash-attn，实测 memory-efficient attention 对 DiT 的加速比。这是 attention memory benchmark 的实际验证——理论上的 4.19× 节省（16384 tokens）能否兑现。
+5. **xformers / flash-attn 集成**：在一块可用的 CUDA GPU 上安装 xformers 或 flash-attn，实测 memory-efficient attention 对 DiT 的加速比。这是 attention memory benchmark 的实际验证——理论上的 4.19× 节省（16384 tokens）能否兑现。
 6. **torch.compile 测试**：对 DiT transformer block 应用 `@torch.compile`，测试 Blackwell 架构下的 kernel fusion 效果。
 7. **MPS 后端评估**：在 Apple M5 上安装 PyTorch MPS 后端，评估 toy 实验的 MPS 性能，判断 M5 是否适合扩散推理的开发用途。
 8. **多模型批量测试**：在真实 GPU 环境下跑通 SD3 Medium 和 FLUX schnell，记录每个模型的 VRAM/latency 曲线。
@@ -231,7 +231,7 @@ LLM 的自回归解码有一个关键假设：第 N+1 个 token 需要 attend �
 ## 四、已知限制与未完成项
 
 ### 环境限制
-- Dev host 为 macOS M5 (Metal 4)，无 CUDA。真实 reference inference 依赖远程 RTX 5070 Ti。
+- Dev host 为 macOS M5 (Metal 4)，无 CUDA。真实 reference inference 依赖远程 CUDA GPU。
 - 系统 Python 3.9.6 < 3.13，需通过 uv 管理独立环境。
 - torch/diffusers 未在 dev host 安装（预期状态）。
 
@@ -243,7 +243,7 @@ LLM 的自回归解码有一个关键假设：第 N+1 个 token 需要 attend �
 - T14/T15 的真实 reference inference 未跑通，脚手架已就绪。
 
 ### 诚实声明
-- T14 的 blocker 是"远程 RTX 5070 Ti 不可用 + dev host 无 torch"，不是"代码有 bug"或"模型无法推理"。
+- T14 的 blocker 是"远程 CUDA GPU 不可用 + dev host 无 torch"，不是"代码有 bug"或"模型无法推理"。
 - T15 的三个 blocker 是占位 blocker（脚本就绪，等待 GPU 环境），不是"尝试失败"。
 - 没有伪造任何推理结果或成功记录。results/ 下的 PNG 均为 toy 实验产出（非真实模型推理）。
 
@@ -254,7 +254,7 @@ LLM 的自回归解码有一个关键假设：第 N+1 个 token 需要 attend �
 | 决策 | 内容 | 理由 | 任务 |
 |------|------|------|------|
 | **A/B/C 复用** | 选 C：minivLLM 完全不适合扩散推理，新建 diffusion_engine | LLM 自回归 + KV cache 与扩散的迭代去噪 + full attention 不兼容 | T2-T3 |
-| **双轨策略** | Mac M5 开发（toy + 文档）+ 远程 RTX 5070 Ti 运行（真实 reference） | 确保日常开发不受 GPU 可用性阻塞 | T1 |
+| **双轨策略** | Mac M5 开发（toy + 文档）+ 远程 CUDA GPU 运行（真实 reference） | 确保日常开发不受 GPU 可用性阻塞 | T1 |
 | **KV cache guardrail** | 不把 LLM KV cache 硬套到 diffusion | 扩散每步 latent 全刷新，无递增状态可缓存。仅 prompt embedding cache 共享 | T3 |
 | **跳过 DDPM/U-Net** | 直接从 rectified flow + DiT 切入 | 工业界已全面转向，老路线不暴露 attention O(N²) 瓶颈 | T1/T5 |
 | **T14 诚实 blocker** | 不伪造推理结果，如实记录环境阻塞 | "看起来完成"的虚假成就感比诚实 blocker 更糟糕 | T14 |
@@ -283,7 +283,7 @@ LLM 的自回归解码有一个关键假设：第 N+1 个 token 需要 attend �
 
 2. **迭代语义不同**：LLM 的迭代是"追加"（生成一个新 token 追加到序列末尾），扩散的迭代是"修正"（用当前 noise estimate 更新整个 latent）。"追加"意味着有历史可复用，"修正"意味着每次都是新的。这就是为什么 KV cache 对 LLM 是革命性的优化、对 diffusion 却几乎没用。
 
-3. **瓶颈位置不同**：LLM 的瓶颈在 KV cache（历史越长越慢），扩散的瓶颈在 attention matrix（分辨率越高越慢）。前者是 O(N)，后者是 O(N²)。12GB VRAM 下，LLM 的 8K context 很轻松，扩散的 1024² 图像已经比较重。
+3. **瓶颈位置不同**：LLM 的瓶颈在 KV cache（历史越长越慢），扩散的瓶颈在 attention matrix（分辨率越高越慢）。前者是 O(N)，后者是 O(N²)。受限显存配置下，LLM 的 8K context 很轻松，扩散的 1024² 图像已经比较重。
 
 ### 最小可行引擎的价值
 

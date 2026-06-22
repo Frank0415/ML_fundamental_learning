@@ -10,11 +10,11 @@ vae_tiling_experiment.py — VAE Tiling 对照实验
   分别做 VAE decode，最后拼接回完整图像。
 - 适用场景：高分辨率（>= 1024×1024）VAE 解码 OOM 时。
   例如 SD3 在 2048×2048 下 decode，完整 latent (256×256×16ch) → 2048×2048×3 RGB，
-  VAE decoder 的中间激活可能超过 12GB。
+  VAE decoder 的中间激活可能超过 中等显存配置。
 - VAE tiling 的核心思想：以空间换时间 → 以时间换空间。
   不 tiling：大 latent 一次性 decode，峰值显存高；
   tiling：切成小块逐步 decode，峰值显存降低，但总计算量增加（overlap 区域重复计算）。
-- 12GB 预算：tiling 几乎总是必要的。尤其是文生视频的 VAE decode，
+- 中等显存配置 预算：tiling 几乎总是必要的。尤其是文生视频的 VAE decode，
   原始 latent 可能是 (T, C, H, W) 的张量，一次性 decode 极易 OOM。
 
 实验设计：
@@ -496,7 +496,7 @@ def run_demo(
             ),
             "when_to_use": (
                 "适用场景：高分辨率（>= 1024×1024）VAE 解码 OOM 时。"
-                "12GB VRAM 预算下，tiling 几乎总是必要的。"
+                "中等显存配置 VRAM 预算下，tiling 几乎总是必要的。"
                 "尤其是文生视频，原始 latent (T, C, H, W) 一次性 decode 极易 OOM。"
             ),
             "limitations": (
@@ -516,7 +516,7 @@ def run_demo(
         },
         "results_per_resolution": results_per_resolution,
         "conclusion": (
-            "VAE tiling 是 12GB VRAM 下高分辨率扩散推理的必备技术。"
+            "VAE tiling 是 中等显存配置 VRAM 下高分辨率扩散推理的必备技术。"
             "推荐 tile 大小：1024² → 64×64 latent tile；2048² → 32×32 latent tile。"
             "tile 大小的选择取决于：目标 VRAM 预算 vs 可接受的额外计算量。"
             "★★★ VAE tiling 不是 torch.compile 或 flash-attn 等价物，"
@@ -601,7 +601,7 @@ def generate_markdown(results: Dict) -> str:
             )
         lines.append("")
 
-    lines.append("## 12GB VRAM 建议")
+    lines.append("## 中等显存配置 VRAM 建议")
     lines.append("")
     lines.append("| 分辨率 | Latent 大小 | 建议 Tile | 预期 Tile 显存 |")
     lines.append("|--------|------------|----------|---------------|")

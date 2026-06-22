@@ -11,9 +11,9 @@
 | 项目 | 实际值 | 计划值 | 结论 |
 |------|--------|--------|------|
 | **主机** | MacBook (franksAir.local) | — | — |
-| **芯片** | Apple M5 | NVIDIA RTX 5070 Ti (Blackwell) | **关键偏差** |
+| **芯片** | Apple M5 | NVIDIA 可用的 CUDA GPU (Blackwell) | **关键偏差** |
 | **GPU API** | Metal 4 | CUDA 12.x+ | **关键偏差** |
-| **NVIDIA GPU** | 无（`nvidia-smi` 不可用） | 12 GB VRAM | **关键偏差** |
+| **NVIDIA GPU** | 无（`nvidia-smi` 不可用） | 中档 CUDA 单卡 | **关键偏差** |
 | **macOS** | 26.5 (Build 25F71) | — | 最新正式版 |
 | **系统 Python** | 3.9.6 (`/usr/bin/python3`) | 3.13 | 不可用于 diffusion 项目 |
 | **uv** | 0.11.17 (aarch64-apple-darwin) | — | 可用于管理 Python 3.13 |
@@ -25,21 +25,21 @@
 
 ## 2. 与原计划的偏差说明 — 这是最关键的发现
 
-**原计划假设的目标硬件是 12 GB NVIDIA RTX 5070 Ti（Blackwell 架构），但当前开发宿主机是 Apple Silicon M5（Metal 4），没有 NVIDIA GPU。**
+**原计划里默认的是一张中档 CUDA 单卡，但当前开发宿主机是 Apple Silicon M5（Metal 4），没有 NVIDIA GPU。**
 
 这意味着：
 
 1. **本地开发的 GPU 后端截然不同**：M5 使用 Metal Performance Shaders (MPS) 而非 CUDA。PyTorch 在 Apple Silicon 上通过 `torch.device("mps")` 使用 GPU，但 MPS 后端的算子覆盖度、性能特征和显存管理方式与 CUDA 完全不同。
 
-2. **M5 的统一内存（UMA）不等于独立 VRAM**：M5 的 CPU 和 GPU 共享同一片物理内存池，对于 PyTorch MPS 后端，峰值可用"显存"取决于系统总内存和 macOS 动态分配策略，而非固定的 12 GB。
+2. **M5 的统一内存（UMA）不等于独立 VRAM**：M5 的 CPU 和 GPU 共享同一片物理内存池，对于 PyTorch MPS 后端，峰值可用"显存"取决于系统总内存和 macOS 动态分配策略，而不是一块独立显卡上的固定显存。
 
-3. **"12 GB 显存预算"的适用性变化**：
-   - 若用户确认在远程 RTX 5070 Ti 上运行真实 reference inference，12 GB × 0.85 ≈ 10.2 GB 有效预算仍然适用。
+3. **"中档单卡预算"的适用性变化**：
+   - 若用户确认在远程 CUDA GPU 上运行真实 reference inference，按 85% 利用率做保守估算仍然成立。
    - 若在 M5 本地运行，需根据 M5 具体配置（统一内存大小）重新计算有效预算，且 MPS 后端的实际可用内存需实测。
 
 4. **CUDA 专属特性完全缺失**：FlashAttention CUDA kernel、xformers、torch.compile CUDA 后端、fp8 硬件支持等均不可用，必须走纯 PyTorch 或 MPS 兼容路径。
 
-**建议**：本报告的 fallback 策略（见第 8 节）将明确区分"本地 M5 玩具实验路径"与"远程 RTX 5070 Ti 真实推理路径"。
+**建议**：本报告的 fallback 策略（见第 8 节）将明确区分"本地 M5 玩具实验路径"与"远程 CUDA GPU 真实推理路径"。
 
 ---
 
@@ -137,15 +137,15 @@ login(token="hf_xxxxxxxxxxxxxxxxx")
 
 ---
 
-## 7. 12 GB 显存有效预算公式
+## 7. 中档单卡的有效预算公式
 
-即使在远程 RTX 5070 Ti 上，也不能按满额 12 GB 计划：
+即使在远程 CUDA GPU 上，也不该按满额显存去计划：
 
 ```
-有效预算 = 12 GB × 0.85 = 10.2 GB
+有效预算 = 标称显存 × 0.85
 ```
 
-**12 GB × 0.85 的理由**：
+**按 85% 做保守估算的理由**：
 - OS/驱动预留约 5%~8%
 - PyTorch CUDA context + allocator 预留约 3%~5%
 - 推理峰值通常超出"模型参数内存"的 20%~30%（因 activation、中间张量、VAE decode 等）
@@ -161,16 +161,16 @@ login(token="hf_xxxxxxxxxxxxxxxxx")
 
 ---
 
-## 8. Fallback 策略：M5 统一内存 vs 远程 RTX 5070 Ti 双轨
+## 8. Fallback 策略：M5 统一内存 vs 远程 CUDA GPU 双轨
 
 ### 双轨策略概述
 
-由于实际开发环境（M5 Metal）与计划目标硬件（RTX 5070 Ti CUDA）严重不匹配，必须采用双轨策略：
+由于实际开发环境（M5 Metal）与计划目标硬件（可用的 CUDA GPU CUDA）严重不匹配，必须采用双轨策略：
 
 | 轨道 | 硬件 | 用途 | 可运行内容 |
 |------|------|------|-----------|
 | **轨道 A：本地 M5** | Apple M5 + Metal 4 (MPS) | toy 实验、小规模验证、开发与测试 | toy rectified flow (T10)、toy DiT inference (T12)、scheduler/attention/pipeline 单元测试 |
-| **轨道 B：远程 RTX 5070 Ti** | NVIDIA RTX 5070 Ti (CUDA) | 真实 reference inference、性能 profiling | SD3 Medium / FLUX schnell / CogVideoX-2B / LTX-Video 等真实模型推理 (T14/T15)、优化实验 (T16/T17) |
+| **轨道 B：远程 CUDA GPU** | NVIDIA 可用的 CUDA GPU (CUDA) | 真实 reference inference、性能 profiling | SD3 Medium / FLUX schnell / CogVideoX-2B / LTX-Video 等真实模型推理 (T14/T15)、优化实验 (T16/T17) |
 
 ### 轨道 A：M5 本地（toy 实验路径）
 
@@ -187,18 +187,18 @@ login(token="hf_xxxxxxxxxxxxxxxxx")
 - T12 (toy DiT inference with pipeline)：完全可在 M5 上运行
 - T16 (prompt cache / latent buffer / scheduler benchmark)：可在 M5 上运行 toy 规模
 
-### 轨道 B：远程 RTX 5070 Ti（真实推理路径）
+### 轨道 B：远程 CUDA GPU（真实推理路径）
 
 - **优势**：CUDA 完整生态、FlashAttention、xformers、torch.compile 全功能可用
 - **前提条件**：用户需在远程机器上配置好 Python 3.13 + PyTorch CUDA + diffusers 环境，并解决 HF token 与模型下载
-- **不可跳过**：T14 (真实 image reference) 和 T15 (视频 reference) 的最终执行必须在 RTX 5070 Ti 或等效 CUDA 设备上完成
+- **不可跳过**：T14 (真实 image reference) 和 T15 (视频 reference) 的最终执行必须在 可用的 CUDA GPU 或等效 CUDA 设备上完成
 
 ### 用户确认清单
 
 在进入 T10 之前，请用户确认以下事项：
 
 - [ ] M5 的统一内存大小是多少？（16/24/32/其他 GB？）
-- [ ] 远程 RTX 5070 Ti 是否已可用？若不可用，何时可用？
+- [ ] 远程 CUDA GPU 是否已可用？若不可用，何时可用？
 - [ ] 远程机器上的 HF token 是否已配置？
 - [ ] 远程机器的 Python/CUDA/PyTorch 版本是否就绪？
 - [ ] T14/T15 是否接受在 M5 上尝试（以 MPS 后端，可能在部分模型上失败或性能极差）？
@@ -213,8 +213,8 @@ login(token="hf_xxxxxxxxxxxxxxxxx")
 Toy 实验 (T10/T11/T12)     → M5 本地直接跑
 单元测试 (全部 *_test*.py)  → M5 本地直接跑
 优化实验 (T16/T17 toy 规模) → M5 本地直接跑
-真实 image 推理 (T14)       → 优先远程 RTX 5070 Ti，次选 M5 + blocker 记录
-真实 video 推理 (T15)       → 仅远程 RTX 5070 Ti（M5 MPS 后端视频模型支持度未知）
+真实 image 推理 (T14)       → 优先远程 CUDA GPU，次选 M5 + blocker 记录
+真实 video 推理 (T15)       → 仅远程 CUDA GPU（M5 MPS 后端视频模型支持度未知）
 ```
 
 ### T10: scheduler / rectified flow / toy rectified flow
@@ -238,23 +238,23 @@ Toy 实验 (T10/T11/T12)     → M5 本地直接跑
 
 - **不可在 T13 下载模型**（MUST NOT），但可编写和验证脚本结构
 - `--help`、参数解析、`torch.device` 自动检测（cuda > mps > cpu）可在 M5 上完成
-- **注意**：`run_sd3_medium_if_possible.py` 等脚本应在 `--help` 中明确标注"需远程 RTX 5070 Ti 或等效 CUDA 设备"
+- **注意**：`run_sd3_medium_if_possible.py` 等脚本应在 `--help` 中明确标注"需远程 CUDA GPU 或等效 CUDA 设备"
 
 ### T14: 真实 reference 文生图尝试
 
-- **强烈建议在远程 RTX 5070 Ti 上执行**
+- **强烈建议在远程 CUDA GPU 上执行**
 - 若用户坚持在 M5 上尝试，必须使用 `torch.device("mps")`，并在结果中明确记录"MPS 后端，非 CUDA，性能不可比"
 - 若因 MPS 不兼容导致失败，应记录为 blocker（类别：`MPS_UNSUPPORTED`）而非"模型无法运行"
 
 ### T15: 视频 reference 脚手架与尝试
 
-- **必须在远程 RTX 5070 Ti 上执行**：视频模型（特别是 CogVideoX 和 Wan）对 CUDA 依赖较深，MPS 后端大概率不支持
+- **必须在远程 CUDA GPU 上执行**：视频模型（特别是 CogVideoX 和 Wan）对 CUDA 依赖较深，MPS 后端大概率不支持
 - LTX-Video 相对轻量，可能是 M5 上唯一可尝试的视频模型，但仍需实际验证
 
 ### T16/T17: 优化实验
 
 - **toy 规模可在 M5 本地执行**：prompt cache、latent buffer manager、scheduler benchmark 的 toy 版本
-- **真实规模对照必须在 RTX 5070 Ti 上执行**：CFG batching latency/VRAM 对比、attention memory benchmark 的真实 activation 大小、VAE tiling 的真实效果
+- **真实规模对照必须在一块可用的 CUDA GPU 上执行**：CFG batching latency/VRAM 对比、attention memory benchmark 的真实 activation 大小、VAE tiling 的真实效果
 - 优化结论应标注执行环境（MPS vs CUDA），避免误导
 
 ---
@@ -296,7 +296,7 @@ HF 连通性证据已保存到 `.omo/evidence/task-1-hf-check.txt`。
 | PyTorch (MPS) 可用 | ❌ 未安装 | `uv pip install torch` |
 | HuggingFace 可达 | ✅ 200 OK | — |
 | 磁盘充足 | ✅ 772 GiB | — |
-| NVIDIA/CUDA 可用 | ❌ 无 | 需远程 RTX 5070 Ti |
+| NVIDIA/CUDA 可用 | ❌ 无 | 需远程 CUDA GPU |
 | 旧引擎虚拟环境 | ❌ 未创建 | 不需要（新项目独立） |
 
 ---
@@ -305,12 +305,12 @@ HF 连通性证据已保存到 `.omo/evidence/task-1-hf-check.txt`。
 
 | 风险 ID | 描述 | 严重度 | 缓解措施 |
 |---------|------|--------|---------|
-| R1 | 开发环境为 M5 Metal 而非 RTX 5070 Ti CUDA | **高** | 双轨策略：toy 实验在 M5，真实推理在远程 RTX 5070 Ti |
+| R1 | 开发环境为 M5 Metal 而非 可用的 CUDA GPU CUDA | **高** | 双轨策略：toy 实验在 M5，真实推理在远程 CUDA GPU |
 | R2 | M5 MPS 后端可能不支持部分 diffusers pipeline 组件 | **中** | T14 若在 M5 执行，需有 MPS_UNSUPPORTED blocker 分类 |
 | R3 | Python 3.13 与 PyTorch diffusers 的兼容性未知 | **低** | `uv` 可选择安装不同 Python 版本作为 fallback |
-| R4 | 远程 RTX 5070 Ti 的可用性未知 | **中** | 需用户确认；若不可用，M5 toy-only 路线仍需完成核心任务 |
+| R4 | 远程 CUDA GPU 的可用性未知 | **中** | 需用户确认；若不可用，M5 toy-only 路线仍需完成核心任务 |
 | R5 | Gated 模型需要用户手动接受 license | **低** | 已在报告第 6 节列出清单，T13 脚本将检测并引导 |
 
 ---
 
-> **下一步**：等待用户确认第 8 节 M5 统一内存大小 + 远程 RTX 5070 Ti 可用性，然后推进 T2（旧引擎审计）。
+> **下一步**：等待用户确认第 8 节 M5 统一内存大小 + 远程 CUDA GPU 可用性，然后推进 T2（旧引擎审计）。

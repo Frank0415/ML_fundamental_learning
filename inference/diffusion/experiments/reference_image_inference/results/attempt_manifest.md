@@ -4,7 +4,7 @@
 **任务**：T14 — 真实 reference 文生图尝试、结果记录与 Week 4 报告
 **设备**：Apple M5 (Metal 4, arm64)，无 NVIDIA GPU
 **Python**：3.9.6（系统，低于 3.13 要求）
-**远程 RTX 5070 Ti**：当前不可用（用户未提供 SSH 访问凭证）
+**远程 CUDA GPU**：当前不可用（用户未提供 SSH 访问凭证）
 
 ---
 
@@ -99,7 +99,7 @@
 
 **开发主机 Apple M5 上未安装 torch 和 diffusers**，且系统 Python 版本 3.9.6 低于项目要求的 3.13+。
 
-这是预期的环境状态——T1 已记录的已知限制。双轨策略中，dev host 负责开发和 toy 实验，真实 reference inference 应在远程 RTX 5070 Ti 上执行。远程 RTX 5070 Ti 当前不可用（用户未提供 SSH 访问凭证或已就绪的远程环境）。
+这是预期的环境状态——T1 已记录的已知限制。双轨策略中，dev host 负责开发和 toy 实验，真实 reference inference 应在远程 CUDA GPU 上执行。远程 CUDA GPU 当前不可用（用户未提供 SSH 访问凭证或已就绪的远程环境）。
 
 ### 脚手架完备性
 

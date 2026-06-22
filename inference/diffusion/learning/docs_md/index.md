@@ -25,10 +25,10 @@ DiT 核心组件：patchify、AdaLN-Zero、full attention、joint attention。
 多模态 DiT：image + text token 联合处理。双流注意力设计。
 
 ### 07 FLUX 与现代文生图推理
-FLUX 架构、few-step distillation、12GB 可行性分析。
+FLUX 架构、few-step distillation、资源档位分析。
 
 ### 08 Sana 高效高分辨率生成
-Sana 的 DC-AE、linear DiT、高分辨率效率。12GB 最友好模型。
+Sana 的 DC-AE、linear DiT、高分辨率效率。对中低显存更友好模型。
 
 ## 视频生成
 
@@ -36,7 +36,7 @@ Sana 的 DC-AE、linear DiT、高分辨率效率。12GB 最友好模型。
 Spacetime patch、3D VAE、视频 latent 结构。架构范式对比。
 
 ### 10 Wan / Hunyuan / CogVideoX / LTX 视频模型
-开源视频模型横向对比：架构、显存、授权。12GB 可行性排序。
+开源视频模型横向对比：架构、显存、授权。资源档位排序。
 
 ## 优化与总结
 

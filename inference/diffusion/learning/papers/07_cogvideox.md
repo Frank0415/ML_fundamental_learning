@@ -4,14 +4,14 @@
 > **官方仓库**：[github.com/THUDM/CogVideo](https://github.com/THUDM/CogVideo)
 > **HF Model Card (2B)**：[huggingface.co/THUDM/CogVideoX-2b](https://huggingface.co/THUDM/CogVideoX-2b)
 > **HF Model Card (5B)**：[huggingface.co/THUDM/CogVideoX-5b](https://huggingface.co/THUDM/CogVideoX-5b)
-> **分类**：文生视频 + image-to-video — 12GB 最易尝试的视频模型
+> **分类**：文生视频 + image-to-video — 最易尝试的视频模型
 > **阅读日期**：2026-06-07
 
 ---
 
 ## 1. 为什么对现代 diffusion 推理重要
 
-CogVideoX-2B 是 12GB VRAM 上**最现实的开源视频模型**。仅 2B 参数，Apache 2.0 许可，官方最低要求仅 4GB 显存。它与 Wan2.1-1.3B 和 LTX-Video 2B 并列 12GB 视频推理的"三驾马车"。在架构上，CogVideoX 采用了独特的 **3D Causal VAE + Expert Transformer** 设计，其 3D causal attention 虽然限制了并行性但提供了更稳定的帧间一致性。对于 `diffusion_engine` 项目，CogVideoX 是 video reference inference 的首选。
+CogVideoX-2B 是 中等显存配置 上**最现实的开源视频模型**。仅 2B 参数，Apache 2.0 许可，官方最低要求仅 4GB 显存。它与 Wan2.1-1.3B 和 LTX-Video 2B 并列 开源小型视频推理的代表组合。在架构上，CogVideoX 采用了独特的 **3D Causal VAE + Expert Transformer** 设计，其 3D causal attention 虽然限制了并行性但提供了更稳定的帧间一致性。对于 `diffusion_engine` 项目，CogVideoX 是 video reference inference 的首选。
 
 ---
 
@@ -19,7 +19,7 @@ CogVideoX-2B 是 12GB VRAM 上**最现实的开源视频模型**。仅 2B 参数
 
 **文生视频（text-to-video）+ image-to-video**。CogVideoX 系列有两个尺寸：
 
-| 变体 | 参数量 | 最低 VRAM | 典型帧数/分辨率 | 许可 | 12GB 可行性 |
+| 变体 | 参数量 | 最低 VRAM | 典型帧数/分辨率 | 许可 | 资源档位 |
 |------|--------|----------|---------------|------|-----------|
 | **CogVideoX-2B** | 2B | **4 GB** | 49f × 720×480 | Apache 2.0 | 🟢 非常舒适 |
 | CogVideoX-5B | 5B | ~10 GB | 49f × 720×480 | Apache 2.0（？） | 🟡 极限可跑 |
@@ -123,7 +123,7 @@ denoising loop（50 步）
 |------|------|--------|---------------------|-----------------|
 | **最小** | 17 | 256×256 | `(4, 5, 32, 32)` | `5 × 16 × 16 = 1,280` |
 | **推荐** | 49 | 480×720 | `(4, 13, 60, 90)` | `13 × 30 × 45 = 17,550` |
-| **12GB 极限** | 49 | 576×1024 | `(4, 13, 72, 128)` | `13 × 36 × 64 = 29,952` |
+| **中等显存极限** | 49 | 576×1024 | `(4, 13, 72, 128)` | `13 × 36 × 64 = 29,952` |
 
 ### 5.2 与同类模型 Token 数对比（相似帧数和分辨率）
 
@@ -155,15 +155,15 @@ CogVideoX 的 token 数处于中等水平。因为 C=4（VAE 通道少），patc
 | 🟢 3 | DiT 权重（2B） | ~4 GB | fp16 参数 |
 | 🟢 4 | 3D VAE decoder | ~1-2 GB | |
 
-### 6.2 12GB RTX 5070 Ti 可行性判断
+### 6.2 资源档位与运行边界
 
 | 配置 | 判断 | VRAM 估算 | 说明 |
 |------|------|----------|------|
-| **CogVideoX-2B, 49f×480p** | 🟢 适合 | ~8-9 GB | 官方最低 4GB，12GB 很舒适 |
+| **CogVideoX-2B, 49f×480p** | 🟢 适合 | ~8-9 GB | 官方最低 4GB，在中等显存配置下仍较从容 |
 | **CogVideoX-2B, 49f×576p** | 🟡 极限可跑 | ~10-11 GB | 边界，需 offload |
 | CogVideoX-5B, 49f×480p | 🟡 极限可跑 | ~10-12 GB | 5B 权重 ~10GB，需 offload |
 
-**推荐 12GB fallback 命令**：
+**一个受限显存示例命令**：
 
 ```bash
 # CogVideoX-2B：最舒适
@@ -211,7 +211,7 @@ video = pipe(prompt, num_frames=25, width=576, height=384).frames[0]
 - CFG scale=6.0 高于文生图的 4.5，意味着视频需要更强的文本引导（每步 cond+uncond 双 forward 不可避免）。
 
 ### 7.4 `vae_stub.py`
-- C=4 的 3D VAE 比 C=16 的 VAE 更轻量，对 12GB 更友好。在 vae_stub 中应预留 "channels" 参数以支持不同 VAE。
+- C=4 的 3D VAE 比 C=16 的 VAE 更轻量，对 中等显存配置 更友好。在 vae_stub 中应预留 "channels" 参数以支持不同 VAE。
 
 ### 7.5 `memory_manager.py`
 - Causal attention 的显存预估不同于 full attention：平均约 50% 的 token 参与实际 attention（因为有 causal mask），但存储的 activation 矩阵仍然是 n×n（只是 masked 部分为 0）。如果使用 FlashAttention 或 xformers 的 block-sparse 实现，可以真正节省显存。
@@ -232,7 +232,7 @@ video = pipe(prompt, num_frames=25, width=576, height=384).frames[0]
 - Diffusers pipeline 源码：`diffusers/pipelines/cogvideo/pipeline_cogvideox.py`
 
 **输出**：
-- 本文档：`learning/papers/07_cogvideox.md`（8 字段完整 + causal attention 对比 + 12GB 判断）
+- 本文档：`learning/papers/07_cogvideox.md`（8 字段完整 + causal attention 对比 + 资源档位判断）
 
 ---
 

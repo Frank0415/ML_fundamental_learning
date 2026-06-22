@@ -45,7 +45,7 @@
   - Batched 加速比：1.01-1.02×（mock denoiser 下效果有限，真实 DiT 下预期 1.3-2.0×）
   - 数值差异：**0.00e+00**（浮点 accumulate order 可忽略）
   - 显存差异：Batched 比 Sequential 多 ~33%（2.0 MB vs 1.5 MB，mock 数据）
-  - 12GB 策略：剩余 > 6GB → Batched；< 3GB → Sequential
+  - 受限显存策略：剩余 > 6GB → Batched；< 3GB → Sequential
 
 **Attention Memory** (`attention_memory_benchmark.py`)
 - 估算不同场景下的 attention matrix 大小（fp16）
@@ -67,7 +67,7 @@
   - 1024² tiled 16×16（64 tiles）：66.93 ms，24.5 MB（2.27× 慢，1.36× 省显存）
   - 2048² tiled 32×32（64 tiles）：198.94 ms，97.4 MB（1.69× 慢，1.35× 省显存）
   - Tiling 不是 flash-attn 或 torch.compile 等价物——它是应用层的显式 chunk decode + overlap blending
-  - 12GB VRAM 下 tiling 几乎总是必要的
+  - 受限显存配置下 tiling 几乎总是必要的
 
 ### 1.3 T18：知识库收束
 
@@ -136,7 +136,7 @@
 - T18：知识库收束（12 页 + index.html + 6 周报 + final_report + README + TODO）
 
 ### 未完成（1/18 任务）
-- T14 真实 ref 跑通：因远程 RTX 5070 Ti 不可用，无法在 Week 4-6 执行。脚本已就绪，环境 blocker 已记录在 `attempt_manifest.md`，不视为失败。
+- T14 真实 ref 跑通：因远程 CUDA GPU 不可用，无法在 Week 4-6 执行。脚本已就绪，环境 blocker 已记录在 `attempt_manifest.md`，不视为失败。
 
 ---
 

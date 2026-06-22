@@ -118,7 +118,7 @@ tokens: (B, 16*16*16, embedding_dim) = (1, 4096, d)
   <li><strong>Patchify 的灵活性</strong>：无论输入是 240p×3s 还是 1080p×1min，patchify 后都是统一的 token 序列，DiT 只关心 token 的数量和 embedding，不关心它们是"多少帧"还是"多高分辨率"。</li>
 </ol>
 
-<p>在开源实现中，这一特性并未完全兑现（训练固定分辨率/帧数），但<strong>推理时可以通过调整 num_frames 和 resolution 来修改输出</strong>——这正是 T15 实验的基础：用小规格（16f×256²）在 12GB 上跑通，大规格需要更大 GPU。</p>
+<p>在开源实现中，这一特性并未完全兑现（训练固定分辨率/帧数），但<strong>推理时可以通过调整 num_frames 和 resolution 来修改输出</strong>——这正是 T15 实验的基础：用小规格（16f×256²）在中等显存配置上跑通，大规格需要更大 GPU。</p>
 
 <h2>5. Video DiT 与 Image DiT 的结构差异</h2>
 
@@ -141,7 +141,7 @@ tokens: (B, 16*16*16, embedding_dim) = (1, 4096, d)
 </ol>
 
 <div class="conclusion-box">
-  <strong>本页结论</strong>：视频生成的核心增量来自三个方面：<strong>(1) spacetime patch</strong> 将 3D latent 统一 token 化；<strong>(2) 视频 VAE</strong> 在空间和时间上同时压缩，使 DiT 在紧凑的 latent 空间操作；<strong>(3) temporal attention</strong> 使 DiT 能建模帧间运动，而非逐帧独立生成。这些概念在 Sora（未开源）中提出并推广，在 CogVideoX、LTX-Video、Wan 等开源模型中得到了不同风格的实现。在 12GB VRAM 下，视频推理需要通过降低分辨率（≤256p）、减少帧数（≤16）、减少步数（≤8 steps distilled）来控制显存。
+  <strong>本页结论</strong>：视频生成的核心增量来自三个方面：<strong>(1) spacetime patch</strong> 将 3D latent 统一 token 化；<strong>(2) 视频 VAE</strong> 在空间和时间上同时压缩，使 DiT 在紧凑的 latent 空间操作；<strong>(3) temporal attention</strong> 使 DiT 能建模帧间运动，而非逐帧独立生成。这些概念在 Sora（未开源）中提出并推广，在 CogVideoX、LTX-Video、Wan 等开源模型中得到了不同风格的实现。在 受限显存配置下，视频推理需要通过降低分辨率（≤256p）、减少帧数（≤16）、减少步数（≤8 steps distilled）来控制显存。
 </div>
 
 <h2>6. 和我的 diffusion_engine 的关系</h2>
@@ -169,7 +169,7 @@ tokens: (B, 16*16*16, embedding_dim) = (1, 4096, d)
   <li><strong>Sora Technical Report</strong>：OpenAI 发布的视频生成技术报告——提出了 spacetime patch 和 variable duration/resolution 的概念框架。</li>
   <li><strong>CogVideoX 论文</strong>：开源实现，分离式 spatial + temporal attention + causal mask，16ch latent VAE。</li>
   <li><strong>LTX-Video 论文</strong>：2B distilled real-time DiT，128ch latent（无时间 VAE 压缩）+ joint spacetime attention。</li>
-  <li><strong>学习笔记</strong>：<code>learning/notes/09_视频latent和spacetime_patch.md</code> — 视频 latent shape 的 (B,C,T,H,W) vs (B,T,C,H,W) 约定与 12GB 策略。</li>
+  <li><strong>学习笔记</strong>：<code>learning/notes/09_视频latent和spacetime_patch.md</code> — 视频 latent shape 的 (B,C,T,H,W) vs (B,T,C,H,W) 约定与 受限显存策略。</li>
 </ul>
 
 </main>

@@ -542,7 +542,7 @@ def run_demo(
                 "但 attention memory 是扩散推理的真实瓶颈。"
                 "LLM KV cache 线性增长 O(N)，"
                 "diffusion full attention 平方增长 O(N²)。"
-                "12GB VRAM 下，1024² 图像 → attention matrix ~2 MB (fp16)，可接受；"
+                "中等显存配置 VRAM 下，1024² 图像 → attention matrix ~2 MB (fp16)，可接受；"
                 "2048² 图像 → ~67 MB，勉强；"
                 "视频 4096 tokens → ~32 MB (fp16)，需 memory-efficient attention。"
             ),
@@ -671,7 +671,7 @@ def generate_markdown(results: Dict) -> str:
     lines.append("> Token 数 ×2 → N² ×4。验证 O(N²) 复杂度。")
     lines.append("")
 
-    lines.append("## 12GB VRAM 策略")
+    lines.append("## 中等显存配置 VRAM 策略")
     lines.append("")
     lines.append("| 场景 | N | FP16 Attn Matrix | 建议 |")
     lines.append("|------|---|-----------------|------|")

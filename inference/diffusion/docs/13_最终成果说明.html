@@ -226,16 +226,16 @@ python experiments/reference_video_inference/run_ltx_video_if_possible.py \
 
 <h3>环境限制</h3>
 <ul>
-  <li><strong>Dev host</strong>：macOS Apple M5 (Metal 4)，无 NVIDIA GPU，不支持 CUDA。所有真实 reference inference 需要远程 RTX 5070 Ti。</li>
+  <li><strong>Dev host</strong>：macOS Apple M5 (Metal 4)，无 NVIDIA GPU，不支持 CUDA。所有真实 reference inference 需要远程 CUDA GPU。</li>
   <li><strong>Python 版本</strong>：系统 Python 3.9.6 低于项目要求的 3.13+。需通过 uv 安装 Python 3.13。</li>
   <li><strong>torch / diffusers</strong>：dev host 上未安装（开发期间未在 M5 上装 PyTorch），所有 toy 和 benchmark 实验使用 numpy mock 模式运行。</li>
 </ul>
 
 <h3>模型与显存限制</h3>
 <ul>
-  <li><strong>T14 Reference Image</strong>：脚手架就绪，但三模型（Sana/SD3/FLUX）均因环境依赖缺失而阻塞。远程 RTX 5070 Ti 不可用。</li>
+  <li><strong>T14 Reference Image</strong>：脚手架就绪，但三模型（Sana/SD3/FLUX）均因环境依赖缺失而阻塞。远程 CUDA GPU 不可用。</li>
   <li><strong>T15 Reference Video</strong>：脚手架就绪，3 个 blocker 占位文件表示"脚本已就绪但尚未在 GPU 上执行"。CogVideoX-2B 无授权障碍，LTX-Video 2B 开放协议。</li>
-  <li><strong>Video 规格</strong>：建议 12GB 下默认使用 ≤16 帧 × 256² × ≤8 步。严格按此执行，不无限调参。</li>
+  <li><strong>Video 规格</strong>：建议 在中等显存配置下默认使用 ≤16 帧 × 256² × ≤8 步。严格按此执行，不无限调参。</li>
 </ul>
 
 <h3>实现限制</h3>
@@ -250,15 +250,15 @@ python experiments/reference_video_inference/run_ltx_video_if_possible.py \
 
 <h3>短期（环境就绪后）</h3>
 <ol>
-  <li>在远程 RTX 5070 Ti 上安装 Python 3.13 + torch + diffusers</li>
-  <li>跑通 <code>run_sana_if_possible.py</code>（Sana 0.6B，无授权障碍，12GB 友好）</li>
+  <li>在远程 CUDA GPU 上安装 Python 3.13 + torch + diffusers</li>
+  <li>跑通 <code>run_sana_if_possible.py</code>（Sana 0.6B，无授权障碍，显存友好）</li>
   <li>跑通 <code>run_cogvideox_if_possible.py</code>（CogVideoX-2B，小规格 16f×256²）</li>
   <li>用真实 GPU 数据替换 T14/T15 的 blocker 文件</li>
 </ol>
 
 <h3>中期（优化集成）</h3>
 <ol>
-  <li>接入 xformers 或 flash-attn，实测 memory-efficient attention 在 RTX 5070 Ti 上的加速比</li>
+  <li>接入 xformers 或 flash-attn，实测 memory-efficient attention 在一块可用的 CUDA GPU 上的加速比</li>
   <li>测试 torch.compile 对 DiT transformer block 的加速效果</li>
   <li>评估 MPS 后端在 Apple M5 上的 attention 性能（能否达到 toy 实验可用）</li>
 </ol>
@@ -273,7 +273,7 @@ python experiments/reference_video_inference/run_ltx_video_if_possible.py \
 
 <div class="conclusion-box">
   <h3>本页结论</h3>
-  <p>本项目在 6 周内完成了 17/18 个任务，产出了 13 页静态知识库、20 篇学习资料、10 个核心模块（36 个测试）、5 组实验目录、8 份报告。真实 reference inference 因远程 GPU 环境未就绪而阻塞，但脚手架已完整就绪——环境就绪后单条命令即可运行。系统优化实验数据表明：prompt embedding cache（52% hit）、latent buffer（91.8% allocation 节省）、CFG batching（1.01-1.02× 加速）是有效的扩散推理优化；attention memory O(N²) 是真实瓶颈，12GB VRAM 下高分辨率必须 memory-efficient attention。</p>
+  <p>本项目在 6 周内完成了 17/18 个任务，产出了 13 页静态知识库、20 篇学习资料、10 个核心模块（36 个测试）、5 组实验目录、8 份报告。真实 reference inference 因远程 GPU 环境未就绪而阻塞，但脚手架已完整就绪——环境就绪后单条命令即可运行。系统优化实验数据表明：prompt embedding cache（52% hit）、latent buffer（91.8% allocation 节省）、CFG batching（1.01-1.02× 加速）是有效的扩散推理优化；attention memory O(N²) 是真实瓶颈，受限显存配置下高分辨率必须 memory-efficient attention。</p>
 </div>
 
 <div class="conclusion-box relation">

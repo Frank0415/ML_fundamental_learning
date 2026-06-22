@@ -18,7 +18,7 @@
 ## 2. 模型类型
 
 **文生图（text-to-image）**。SD3 系列有三个尺寸：
-- **SD3 Medium**：2B 参数，适合消费级 GPU（12GB VRAM 可跑）
+- **SD3 Medium**：2B 参数，适合消费级 GPU（中等显存配置 可跑）
 - **SD3 Large**：8B 参数，需高端 GPU
 - **SD3 Large Turbo**：Large 的蒸馏版，4 步推理
 
@@ -173,7 +173,7 @@ SD3 的显存瓶颈按严重程度排序：
 |------|------|---------------------|------|
 | 🔴 1 | T5-XXL text encoder | ~11 GB（单独加载） | 最大单组件，但可 omit（Medium） |
 | 🟡 2 | MMDiT backbone (Large) | ~16 GB（8B 参数量） | fp16 权重 ~16GB |
-| 🟢 3 | MMDiT backbone (Medium) | ~4-5 GB | 2B 参数量，12GB 友好 |
+| 🟢 3 | MMDiT backbone (Medium) | ~4-5 GB | 2B 参数量，显存友好 |
 | 🟡 4 | Attention activations | ~3-4 GB/step | 4096² × 2B × layers |
 | 🟢 5 | CLIP encoders | ~4.6 GB（两个 CLIP） | 加载后可 offload |
 | 🟢 6 | VAE decoder | ~2 GB（峰值） | 支持 tiling 进一步降低 |
@@ -200,16 +200,16 @@ SD3 的显存瓶颈按严重程度排序：
 - **Text embeddings**：加载后常驻显存，不释放
 - **Attention activation**：若使用 activation checkpointing，每层激活在 backward 时重算（forward 时释放），减少峰值显存约 40%，但增加 ~30% 计算时间
 
-### 6.5 12GB RTX 5070 Ti 可行性判断
+### 6.5 资源档位与运行边界
 
 | 变体 | 判断 | VRAM 预估 | 推荐配置 |
 |------|------|----------|---------|
 | **SD3 Medium（no-T5）** | 🟢 适合 | ~4-5 GB | `--model stabilityai/stable-diffusion-3.5-medium --no_t5 --dtype fp16 --enable_model_cpu_offload` |
 | SD3 Medium（含 T5） | 🟡 极限可跑 | ~9-10 GB | 需开 sequential offload，T5 占 ~5GB |
-| SD3 Large（含 T5） | 🔴 不适合 | ~22 GB+ | 8B 权重 + T5 已超 12GB，即使 offload 也需频繁换页 |
+| SD3 Large（含 T5） | 🔴 不适合 | ~22 GB+ | 8B 权重 + T5 已超 中等显存配置，即使 offload 也需频繁换页 |
 | SD3 Large Turbo（4 步，含 T5） | 🟡 极限可跑 | ~12 GB（边界） | 4 步推理缩短了 peak time，但权重加载仍受限 |
 
-**推荐 12GB fallback 命令**：
+**一个受限显存示例命令**：
 
 ```bash
 # 最稳妥：SD3 Medium，去 T5，开 offload
@@ -286,7 +286,7 @@ image.save('output.png')
 - Diffusers pipeline 源码的 `__call__` 方法：实际推理循环的代码结构
 
 **输出**：
-- 本文档：`learning/papers/01_scaling_rectified_flow_transformers_sd3.md`（8 字段完整 + 12GB 判断）
+- 本文档：`learning/papers/01_scaling_rectified_flow_transformers_sd3.md`（8 字段完整 + 资源档位判断）
 - 不要求产出 HTML（HTML 留给 T8）
 - 本文档将作为 T13（reference image inference 脚手架）和 T18（最终报告）的 SD3 部分输入
 

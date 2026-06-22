@@ -74,7 +74,7 @@ output = pipe(
   pipe.enable_model_cpu_offload()
   image = pipe("prompt", num_inference_steps=28, guidance_scale=4.5).images[0]
   ```
-- **12GB 判断**：SD3-Medium（no-T5）在 fp16 + CPU offload 下约 8GB VRAM，安全可跑。SD3-Large 需 ~12GB，在 12GB 卡上是极限操作。
+- **资源档位判断**：SD3-Medium（no-T5）在 fp16 + CPU offload 下约 8GB VRAM，安全可跑。SD3-Large 需 ~中等显存配置，在 中等显存卡上是极限操作。
 
 ### 2.2 `diffusers.FluxPipeline`
 
@@ -93,7 +93,7 @@ output = pipe(
   pipe.enable_sequential_cpu_offload()  # FLUX 较大，用 sequential
   image = pipe("prompt", num_inference_steps=4, guidance_scale=0.0).images[0]
   ```
-- **12GB 判断**：schnell 在 fp16 + sequential offload 下约 10GB，可行但紧张。dev 在大分辨率下可能 OOM。
+- **资源档位判断**：schnell 在 fp16 + sequential offload 下约 10GB，可行但紧张。dev 在大分辨率下可能 OOM。
 
 ### 2.3 `diffusers.SanaPipeline`
 
@@ -103,7 +103,7 @@ output = pipe(
   - `num_inference_steps`：推荐 14~20。
   - `guidance_scale`：推荐 4.0~5.0。
   - `height` / `width`：支持 1024×1024 甚至更高，得益于 32× 高压缩 VAE。
-- **12GB 判断**：Sana 是 12GB 下最友好的图像模型。1024×1024 仅需 <6GB VRAM（fp16，无 CPU offload 也能跑）。**T14 文生图参考推理的首选模型**。
+- **资源档位判断**：Sana 是 在中等显存配置下最友好的图像模型。1024×1024 仅需 <6GB VRAM（fp16，无 CPU offload 也能跑）。**T14 文生图参考推理的首选模型**。
 
 ---
 
@@ -132,14 +132,14 @@ output = pipe(
       height=256, width=256,
   ).frames[0]
   ```
-- **12GB 判断**：2B params + few-step + 小分辨率 → ~6-8GB VRAM。RTX 4060 8GB 上实测可跑 720×480@121f。是 T15 的首选视频模型。
+- **资源档位判断**：2B params + few-step + 小分辨率 → ~6-8GB VRAM。RTX 4060 8GB 上实测可跑 720×480@121f。是 T15 的首选视频模型。
 
 ### 3.2 `diffusers.CogVideoXPipeline`
 
 - **API 路径**：`diffusers.CogVideoXPipeline`
 - **架构**：CogVideoX expert transformer + T5-XXL text encoder。2B 参数（CogVideoX-2B）。temporal attention 使用 **causal mask**（当前帧只能看过去的帧），这是视频模型中非常独特的设计。
 - **关键参数**：
-  - `num_inference_steps`：默认 50。建议降级至 30（12GB）。
+  - `num_inference_steps`：默认 50。建议降级至 30（中等显存配置）。
   - `num_frames`：默认 49。降级至 16 或 25。
   - `height` / `width`：默认 480×720。降级至 256×256。
   - `guidance_scale`：推荐 6.0（比图像模型高，CogVideoX 的 optimal scale 较大）。
@@ -160,14 +160,14 @@ output = pipe(
       guidance_scale=6.0,
   ).frames[0]
   ```
-- **12GB 判断**：官方 min VRAM 为 4GB。49f@480p 约 9GB，安全可跑。**需要注意**：CogVideoX 的 tokenizer 和 text encoder 是 T5-XXL（~9GB 权重），CPU offload 是必须的。
+- **资源档位判断**：官方 min VRAM 为 4GB。49f@480p 约 9GB，安全可跑。**需要注意**：CogVideoX 的 tokenizer 和 text encoder 是 T5-XXL（~9GB 权重），CPU offload 是必须的。
 
 ### 3.3 `diffusers.WanPipeline`
 
 - **API 路径**：`diffusers.WanPipeline`（Wan 2.1 系列）
 - **架构**：Wan DiT + Wan 3D VAE。1.3B 参数是最小版本（Wan2.1-T2V-1.3B）。3D VAE 直接在 `(B, C, T, H, W)` latent 上编码/解码，非逐帧处理。
 - **关键参数**：
-  - `num_inference_steps`：默认 50。建议降级到 30（12GB）。
+  - `num_inference_steps`：默认 50。建议降级到 30（中等显存配置）。
   - `num_frames`：默认 81（~5s @ 16fps）。降级至 16。
   - `height` / `width`：默认 480×832。降级至 256×256。
   - `guidance_scale`：推荐 5.0。
@@ -185,7 +185,7 @@ output = pipe(
       height=256, width=256,
   ).frames[0]
   ```
-- **12GB 判断**：1.3B params + 3D VAE，480p 时 81 帧约 8GB。在 12GB 下极限可跑但需将所有优化开关全开。
+- **资源档位判断**：1.3B params + 3D VAE，480p 时 81 帧约 8GB。在中等显存配置下极限可跑但需将所有优化开关全开。
 
 ---
 

@@ -488,7 +488,7 @@ def run_demo(
             "速度快 ~1.3–2.0×，但峰值显存增 ~2×。"
             "数值差异极小（<1e-6），理论上应完全一致，"
             "微小差异仅来自浮点 accumulate order 不同。"
-            "对 12GB VRAM 建议：若剩余显存 >50%，优先 Batched CFG；"
+            "对 中等显存配置 VRAM 建议：若剩余显存 >50%，优先 Batched CFG；"
             "否则退而用 Sequential CFG。"
             "★★★ CFG 是在 vector field 层面做的线性插值，"
             "不是 latent 层面的 blending。"
@@ -548,7 +548,7 @@ def generate_markdown(results: Dict) -> str:
     lines.append("")
     lines.append(f"> {results['conclusion']}")
     lines.append("")
-    lines.append("### 12GB VRAM 策略建议")
+    lines.append("### 中等显存配置 VRAM 策略建议")
     lines.append("")
     lines.append("| VRAM 预算 | 建议 CFG Mode | 理由 |")
     lines.append("|----------|-------------|------|")

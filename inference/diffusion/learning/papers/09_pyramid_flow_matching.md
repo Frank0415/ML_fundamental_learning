@@ -9,7 +9,7 @@
 
 ## 1. 为什么对现代 diffusion 推理重要
 
-Pyramid Flow Matching 提出了用 **"金字塔式 flow"（多分辨率/多尺度 flow matching）** 提高视频生成效率的方法。它的核心思想——用低分辨率 latent 计算粗粒度 flow，再用高分辨率 latent 细化细节——直接降低了大分辨率 latent 下的 attention 开销。在 12GB VRAM 约束下，multi-scale 策略比单纯降分辨率更智能：低分辨率阶段快速生成结构，高分辨率阶段只做局部精修。
+Pyramid Flow Matching 提出了用 **"金字塔式 flow"（多分辨率/多尺度 flow matching）** 提高视频生成效率的方法。它的核心思想——用低分辨率 latent 计算粗粒度 flow，再用高分辨率 latent 细化细节——直接降低了大分辨率 latent 下的 attention 开销。在 中等显存配置 约束下，multi-scale 策略比单纯降分辨率更智能：低分辨率阶段快速生成结构，高分辨率阶段只做局部精修。
 
 ---
 
@@ -61,7 +61,7 @@ Pyramid 框架的 denoiser 可以有多种组织方式：
 - **Separate denoisers**：每个 level 有一个专用的小 DiT（参数更多但各 level 的 DiT 可以更小）
 - **LoRA-style adapter**：一个共享 DiT + 每 level 一个轻量 LoRA 适配器
 
-对于 12GB 推理，**shared denoiser + 简单插值 upsample** 是最经济的方案（只需加载一个 DiT，显存占用与单 scale 模型相同）。
+对于 受限显存推理，**shared denoiser + 简单插值 upsample** 是最经济的方案（只需加载一个 DiT，显存占用与单 scale 模型相同）。
 
 ### 3.4 与 Single-Scale 视频 DiT 的对比
 
@@ -132,11 +132,11 @@ VAE decoder: → video pixels
 - **晚期 level**：与 single-scale DiT 相同（attention 是瓶颈）
 - **Level 切换**：upsample 需要临时 buffer（2× latent size），但时间很短
 
-### 6.2 12GB RTX 5070 Ti 可行性
+### 6.2 可用的 CUDA GPU 可行性
 
 > 🟢 **适合**（方法论层面）。Pyramid 思想本身就是为了让大 latent 的 attention 负担分散到不同 scale。具体可行性取决于两个因素：① 是否有开源 pyramid 视频模型（当前生态中 pyramid flow 的成熟实现较少）；② shared denoiser 方案的参数量。
 
-对于 12GB 场景：即使没有现成的 pyramid 视频模型，在自写 `diffusion_engine` 中实现 multi-scale denoising loop 也是非常有价值的优化方向（T16/T17 可考虑）。核心思路：先在小 latent 上粗去噪（attention 快），再在 target latent 上精去噪（attention 贵但步数少）。
+对于 受限显存场景：即使没有现成的 pyramid 视频模型，在自写 `diffusion_engine` 中实现 multi-scale denoising loop 也是非常有价值的优化方向（T16/T17 可考虑）。核心思路：先在小 latent 上粗去噪（attention 快），再在 target latent 上精去噪（attention 贵但步数少）。
 
 ---
 
@@ -170,7 +170,7 @@ VAE decoder: → video pixels
 - Inference section（各 level 的步数分配和 upsample 方式）
 
 **输出**：
-- 本文档：`learning/papers/09_pyramid_flow_matching.md`（8 字段完整 + pyramid 推理路径 + 12GB 价值分析）
+- 本文档：`learning/papers/09_pyramid_flow_matching.md`（8 字段完整 + pyramid 推理路径 + 受限显存价值分析）
 
 ---
 

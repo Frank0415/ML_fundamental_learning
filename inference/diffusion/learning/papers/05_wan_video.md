@@ -11,7 +11,7 @@
 
 ## 1. 为什么对现代 diffusion 推理重要
 
-Wan2.1 是阿里开源的视频生成模型，公开了完整的 3D VAE 和 DiT 推理代码。它的 **Wan2.1-T2V-1.3B** 变体（仅 1.3B 参数）是 12GB VRAM 上可以跑通的实用视频模型之一——官方报告 480p 视频在 8.19GB 显存即可运行。对比 SD3 Medium 的 2B 文生图模型，1.3B 视频 DiT 能在相近参数规模下生成有意义的视频，这证明了 DiT 架构在视频模态上的参数效率。理解 Wan 的推理路径是完成 video reference inference 的关键技术准备。
+Wan2.1 是阿里开源的视频生成模型，公开了完整的 3D VAE 和 DiT 推理代码。它的 **Wan2.1-T2V-1.3B** 变体（仅 1.3B 参数）是 中等显存配置 上可以跑通的实用视频模型之一——官方报告 480p 视频在 8.19GB 显存即可运行。对比 SD3 Medium 的 2B 文生图模型，1.3B 视频 DiT 能在相近参数规模下生成有意义的视频，这证明了 DiT 架构在视频模态上的参数效率。理解 Wan 的推理路径是完成 video reference inference 的关键技术准备。
 
 ---
 
@@ -19,7 +19,7 @@ Wan2.1 是阿里开源的视频生成模型，公开了完整的 3D VAE 和 DiT 
 
 **文生视频（text-to-video）+ image-to-video**。Wan2.1 系列包含：
 
-| 变体 | 参数量 | 定位 | 12GB 可行性 |
+| 变体 | 参数量 | 定位 | 资源档位 |
 |------|--------|------|-----------|
 | **Wan2.1-T2V-1.3B** | 1.3B | 轻量快速，480p 可跑 | 🟢 适合（~8.2 GB） |
 | **Wan2.1-T2V-14B** | 14B | 高质量大模型 | 🔴 不适合（权重就 ~28GB fp16） |
@@ -57,7 +57,7 @@ Wan2.1 使用 **T5 作为 text encoder**（推测为 T5-XXL，即 11B 参数版�
 - Text tokens 通过 cross-attention 注入每层 DiT block（text tokens 作为 K/V，image tokens 作为 Q）
 - 此外，T5 的 pooled output（或特殊设计的全局条件向量）通过 adaLN 注入
 
-**对 12GB 的影响**：T5-XXL 约占 5GB fp16，在 1.3B DiT + T5 组合下总显存约 8.2GB——这意味着即使全加载，12GB 也是舒适的。
+**对受限显存配置的影响**：T5-XXL 约占 5GB fp16，在 1.3B DiT + T5 组合下总显存约 8.2GB——这意味着即使全加载，中等显存配置 也是舒适的。
 
 ### 3.4 Timestep / Sigma Conditioning
 
@@ -112,7 +112,7 @@ denoising loop: t = 1 → 0（通常 50 步）
 - Full attention 矩阵：32,760² ≈ 1.07B 元素 → fp16 约 2.1 GB per attention layer
 - 对于 1.3B 模型（~30 层 DiT），attention 中间激活的内存需求非常大
 
-**这就是为什么 1.3B 模型在 480p 上"刚好"能跑**——32K tokens 的 full attention 已经接近了 12GB 的上限。如果升到 720p，token 数再翻倍（~131K），attention 就完全不可行了。
+**这就是为什么 1.3B 模型在 480p 上"刚好"能跑**——32K tokens 的 full attention 已经接近了 中等显存配置的上限。如果升到 720p，token 数再翻倍（~131K），attention 就完全不可行了。
 
 ---
 
@@ -134,7 +134,7 @@ denoising loop: t = 1 → 0（通常 50 步）
 | 1280 tokens | 1,280 | ~3.3 MB | ~4 GB |
 | 14,040 tokens | 14,040 | ~394 MB | ~6 GB |
 | 32,760 tokens | 32,760 | ~2.1 GB | ~8.2 GB |
-| 75,600 tokens | 75,600 | ~11.4 GB | ~16 GB（超 12GB） |
+| 75,600 tokens | 75,600 | ~11.4 GB | ~16 GB（超 中等显存配置） |
 
 ### 5.3 Text Embedding Shape
 
@@ -169,7 +169,7 @@ denoising loop: t = 1 → 0（通常 50 步）
 - **Denoiser K/V**：每步 latent 全刷新（diffusion 本质特征）
 - **Attention activation**：每步 attention pattern 随 latent 变化而变化
 
-### 6.4 12GB RTX 5070 Ti 可行性判断
+### 6.4 资源档位与运行边界
 
 | 变体 + 规格 | 判断 | VRAM 估算 | 备注 |
 |-------------|------|----------|------|
@@ -178,7 +178,7 @@ denoising loop: t = 1 → 0（通常 50 步）
 | Wan2.1-1.3B, 81f×720p | 🔴 不适合 | ~14-16 GB | attention 显存爆炸 |
 | Wan2.1-14B | 🔴 不适合 | ~30+ GB | 权重就超了 |
 
-**推荐 12GB fallback 命令**：
+**一个受限显存示例命令**：
 
 ```bash
 # 最稳妥：1.3B + 33 帧 + 480p + offload
@@ -217,7 +217,7 @@ pipe.enable_sequential_cpu_offload()
 - 3D patchify：当前只支持 2D `(B,C,H,W) → (B,N,D)`。Wan 的 3D patchify（时间 patch=1，空间 patch=2）是实际的工业方案。需扩展 `patchify` 支持 5D 输入 `(B,C,T,H,W)`。
 
 ### 7.2 `attention.py`
-- Wan 的 full attention over all spacetime tokens 展现了视频 attention 的真实压力：32K tokens 的 O(n²) attention 在 12GB 上已接近极限。这验证了 linear attention 或 sparse attention 的必要性。
+- Wan 的 full attention over all spacetime tokens 展现了视频 attention 的真实压力：32K tokens 的 O(n²) attention 在中等显存配置上已接近极限。这验证了 linear attention 或 sparse attention 的必要性。
 - 当前 `SelfAttention` 使用 `F.scaled_dot_product_attention`，本身就支持 FlashAttention——这是能跑 32K tokens 的原因。
 
 ### 7.3 `vae_stub.py`
@@ -251,7 +251,7 @@ pipe.enable_sequential_cpu_offload()
 - DiT 的 patchify 实现（确认时间 patch 是否为 1）
 
 **输出**：
-- 本文档：`learning/papers/05_wan_video.md`（8 字段完整 + 不同规格 token 数对比表 + 12GB 判断）
+- 本文档：`learning/papers/05_wan_video.md`（8 字段完整 + 不同规格 token 数对比表 + 资源档位判断）
 
 ---
 

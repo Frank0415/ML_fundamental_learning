@@ -120,7 +120,7 @@ v_cfg = v_uncond + s × (v_cond − v_uncond)
 
 Rectified Flow 不仅是文生图模型（SD3、FLUX、Sana）的基础框架，也是现代文生视频模型的核心推理范式。以下视频模型全部使用 rectified flow / flow matching 框架：
 
-| 模型 | 框架 | 推理步数 | Video Latent Shape 示例 | 12GB 可行性 |
+| 模型 | 框架 | 推理步数 | Video Latent Shape 示例 | 资源档位 |
 |------|------|---------|------------------------|------------|
 | **Wan2.1-1.3B** | Flow Matching | 50 步 | `(1, 16, 21, 60, 104)` @ 81f×480p | 🟡 极限可跑 (~8.2 GB) |
 | **CogVideoX-2B** | DDPM / Flow Matching | 50 步 | `(1, 4, 13, 90, 60)` @ 49f×720×480 | 🟢 舒适 (~8-9 GB) |
@@ -132,7 +132,7 @@ Rectified Flow 不仅是文生图模型（SD3、FLUX、Sana）的基础框架，
 - **Latent 维度**：图像 latent 是 4D `(B,C,H,W)`，视频 latent 是 5D `(B,C,T,H,W)`。多出的时间轴使 token 数乘上了 T_latent 因子。
 - **Attention 规模**：图像 DiT 在 1024px 下的 token 数约 4096，视频 DiT 在 720p×49f 下的 token 数可达 17,550（CogVideoX）甚至 32,760（Wan 1.3B）。O(n²) attention 在视频中压力极大。
 - **CFG Scale**：视频模型通常使用更高的 CFG（5.0~7.0 vs 图像的 3.5~5.0），意味着 text guidance 在视频中更重要——但也意味着每步 cond+uncond 双 forward 更"贵"。
-- **Few-step 蒸馏**：LTX-Video 和 HunyuanVideo 1.5 的蒸馏版本证明，视频模型也可以从 50 步降到 4-20 步。这对 12GB 场景是决定性利好。
+- **Few-step 蒸馏**：LTX-Video 和 HunyuanVideo 1.5 的蒸馏版本证明，视频模型也可以从 50 步降到 4-20 步。这对 受限显存场景是决定性利好。
 
 ## 10. 延伸阅读
 

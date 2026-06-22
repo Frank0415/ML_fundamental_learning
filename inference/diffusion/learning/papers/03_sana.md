@@ -12,7 +12,7 @@
 
 ## 1. 为什么对现代 diffusion 推理重要
 
-Sana 代表 **"把 DiT 推向高效率极限"** 的路线。它用三个激进设计换取了消费级 GPU 友好的推理：① 用 **Gemma-2B 小 LLM** 替代 CLIP/T5 做 text encoder，② 用 **linear attention** 替代 O(n²) full attention，③ 用 **4-bit SVDQuant** 量化将模型压缩到 < 4GB 权重。结论：Sana 是 12GB RTX 5070 Ti 上**最现实的高质量文生图模型**，甚至能在 4096×4096 超高分辨率下运行。对于本项目 `diffusion_engine` 来说，Sana 验证了"text encoder 不一定是 CLIP"和"attention 不一定是 O(n²) softmax"两个重要偏离，这影响 T11 attention 接口设计和 T12 text conditioning 的架构选择。
+Sana 代表 **"把 DiT 推向高效率极限"** 的路线。它用三个激进设计换取了消费级 GPU 友好的推理：① 用 **Gemma-2B 小 LLM** 替代 CLIP/T5 做 text encoder，② 用 **linear attention** 替代 O(n²) full attention，③ 用 **4-bit SVDQuant** 量化将模型压缩到 < 4GB 权重。结论：Sana 是 可用的 CUDA GPU 上**最现实的高质量文生图模型**，甚至能在 4096×4096 超高分辨率下运行。对于本项目 `diffusion_engine` 来说，Sana 验证了"text encoder 不一定是 CLIP"和"attention 不一定是 O(n²) softmax"两个重要偏离，这影响 T11 attention 接口设计和 T12 text conditioning 的架构选择。
 
 ---
 
@@ -20,13 +20,13 @@ Sana 代表 **"把 DiT 推向高效率极限"** 的路线。它用三个激进�
 
 **文生图（text-to-image）**，支持最高 4096×4096 分辨率。Sana 系列有三个参数规模：
 
-| 变体 | 参数量 | 定位 | 12GB 可行性 |
+| 变体 | 参数量 | 定位 | 资源档位 |
 |------|--------|------|-----------|
 | **Sana-0.6B** | 0.6B | 最小最快 | 🟢 非常舒适 (~7-9 GB) |
 | **Sana-1.6B** | 1.6B | 质量优先（主流） | 🟢 舒适 (~10-12 GB fp16) |
 | **Sana-Sprint-0.6B** | 0.6B（蒸馏） | 2 步推理，极速 | 🟢 最舒适 (~7 GB) |
 
-**SVDQuant 4-bit 量化版本**（`SVDQuant-int4-Sana-1.6B`）：将 1.6B 模型压缩到 < 4GB 权重，全精度推理只需 < 8GB VRAM。这是 12GB 场景的**首选路径**。
+**SVDQuant 4-bit 量化版本**（`SVDQuant-int4-Sana-1.6B`）：将 1.6B 模型压缩到 < 4GB 权重，全精度推理只需 < 8GB VRAM。这是 受限显存场景的**首选路径**。
 
 ---
 
@@ -140,7 +140,7 @@ Sana-Sprint 是 0.6B 的**蒸馏版本**，仅需 **2 步**推理：
 noise z₁ ──→ 第1步 Denoising ──→ z_mid ──→ 第2步 Denoising ──→ z₀
 ```
 
-两步之间没有中间 CFG 调节（guidance 已蒸馏内化），这意味着每步仅需一次 forward（不需要 cond+uncond 双 forward）。对于 12GB 场景，这是最快的出图路径。
+两步之间没有中间 CFG 调节（guidance 已蒸馏内化），这意味着每步仅需一次 forward（不需要 cond+uncond 双 forward）。对于 受限显存场景，这是最快的出图路径。
 
 ---
 
@@ -208,7 +208,7 @@ noise z₁ ──→ 第1步 Denoising ──→ z_mid ──→ 第2步 Denoisi
 
 但 linear attention 的"不能 cache"影响更小：因为 linear attention 本身就不需要存储完整的 O(n²) attention 矩阵，每步重算的 overhead 本来就少。
 
-### 6.4 12GB RTX 5070 Ti 可行性判断
+### 6.4 资源档位与运行边界
 
 | 变体 | 判断 | VRAM | 推荐配置 |
 |------|------|------|---------|
@@ -218,7 +218,7 @@ noise z₁ ──→ 第1步 Denoising ──→ z_mid ──→ 第2步 Denoisi
 | **SVDQuant-int4-Sana-1.6B** | 🟢 首选 | **< 8 GB** | 质量损失 < 1%（SVDQuant 官方数据） |
 | Sana-1.6B + 4096×4096 | 🟡 边界可跑 | ~15 GB | 极限分辨率需 AE tiling + CPU offload |
 
-**推荐 12GB fallback 命令**：
+**一个受限显存示例命令**：
 
 ```bash
 # 首选路径：SVDQuant int4 Sana-1.6B（质量+速度+VRAM 三赢）
@@ -230,7 +230,7 @@ pipe = SanaPipeline.from_pretrained(
     torch_dtype=torch.float16
 )
 pipe = pipe.to('cuda')
-# 不需要 offload！fp16 1.6B + Gemma-2B 在 12GB 上完全可跑
+# 不需要 offload！fp16 1.6B + Gemma-2B 在中等显存配置上完全可跑
 image = pipe('一只柴犬在樱花树下', num_inference_steps=20, guidance_scale=4.5).images[0]
 image.save('output.png')
 "
@@ -311,7 +311,7 @@ image = pipe('一只柴犬在樱花树下', num_inference_steps=2, guidance_scal
 - Diffusers pipeline 源码：`diffusers/pipelines/sana/pipeline_sana.py` 的 `__call__` 方法
 
 **输出**：
-- 本文档：`learning/papers/03_sana.md`（8 字段完整 + linear attention 细节 + SVDQuant 量化路径 + 12GB 判断）
+- 本文档：`learning/papers/03_sana.md`（8 字段完整 + linear attention 细节 + SVDQuant 量化路径 + 资源档位判断）
 - 不要求产出 HTML（HTML 留给 T8）
 
 ---

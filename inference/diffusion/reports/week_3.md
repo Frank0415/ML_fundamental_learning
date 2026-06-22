@@ -104,7 +104,7 @@ CFG 发生在 scheduler step **之前**：先得到 conditional 和 unconditiona
 ## 5. 下周预览（Week 4 / T13-T14）
 
 - T13：reference image inference 脚手架（3 个模型脚本 + memory profiler）
-- T14：真实 reference 文生图尝试（需要远程 RTX 5070 Ti + HF token + 模型下载）
+- T14：真实 reference 文生图尝试（需要远程 CUDA GPU + HF token + 模型下载）
 - 关键前置：T1（环境）、T4（骨架）、T7（图像论文卡片）、T12（pipeline 接口参考）
 
 ---

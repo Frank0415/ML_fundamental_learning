@@ -2,7 +2,7 @@
 
 > **优先级**：P1（视频是小规格尝试，失败也接受，但必须留 attempt trace 或 blocker）
 > **负责任务**：T15 — 视频 reference 脚手架、尝试、blocker 与 Week 5 报告
-> **执行环境**：远程 RTX 5070 Ti（12GB VRAM），Mac M5 不支持 CUDA
+> **执行环境**：远程 CUDA GPU（中等显存配置），Mac M5 不支持 CUDA
 > **最后更新**：2026-06-07
 
 ---
@@ -14,7 +14,7 @@
 本实验属于 **bonus 性质**。项目核心交付是文生图 reference inference（T14），视频方向不强求成功。但本项目要求**系统的现代 diffusion 推理理解**，因此视频模型的以下部分必须覆盖：
 
 1. **架构理解**：深入理解视频 DiT 与图像 DiT 的结构差异（temporal attention、spacetime patch、视频 VAE）。
-2. **显存策略**：验证 12GB VRAM 下视频推理的现实可行性，测试 cpu_offload / vae_tiling / frame_chunk 等策略。
+2. **显存策略**：验证 受限显存配置下视频推理的现实可行性，测试 cpu_offload / vae_tiling / frame_chunk 等策略。
 3. **Blocker 文化**：如实记录每一个失败点，不美化、不伪造、不跳过。
 
 **一句话总结**：只要留下了完整的 attempt trace 或 blocker 记录，T15 就是成功交付。
@@ -23,7 +23,7 @@
 
 | 下游任务 | 依赖方式 |
 |---------|---------|
-| T18（最终报告） | 无论成功或失败，T15 的实验记录是最终报告中"视频推理 12GB 可行性"章节的核心输入 |
+| T18（最终报告） | 无论成功或失败，T15 的实验记录是最终报告中"视频推理 资源档位"章节的核心输入 |
 | T16（系统优化） | 视频 latent buffer 的 memory 估算对 T16 的 latent_buffer_manager 有交叉参考价值 |
 | 不阻塞 | 任何 diffusion_engine 核心开发 |
 
@@ -31,7 +31,7 @@
 
 ## 2. 模型优先级与决策树
 
-### 2.1 优先级排序（按 12GB 可行性从高到低）
+### 2.1 优先级排序（按 资源档位从高到低）
 
 | 优先级 | 模型 | HF ID | 参数量 | 默认小规格 | 预计 VRAM | 授权要求 |
 |--------|------|-------|--------|----------|----------|---------|
@@ -63,9 +63,9 @@
 
 | 模型 | 排除原因 |
 |------|---------|
-| HunyuanVideo (13B+) | 权重 >26GB，12GB 连加载都做不到。仅在 README 中做架构对比参考（docs/10）。 |
-| Wan2.1-14B | 权重 ~28GB，远超 12GB。 |
-| CogVideoX-5B | 权重 ~10GB + 中间激活可能超 12GB，不强制尝试。 |
+| HunyuanVideo (13B+) | 权重 >26GB，中等显存配置 连加载都做不到。仅在 README 中做架构对比参考（docs/10）。 |
+| Wan2.1-14B | 权重 ~28GB，远超 中等显存配置。 |
+| CogVideoX-5B | 权重 ~10GB + 中间激活可能超 中等显存配置，不强制尝试。 |
 | Sora | 未开源，无可用权重。 |
 
 ---
@@ -84,7 +84,7 @@ uv python install 3.13
 cd /path/to/diffusion/
 uv sync
 
-# 3. 验证 CUDA 可用（远程 RTX 5070 Ti）
+# 3. 验证 CUDA 可用（远程 CUDA GPU）
 python -c "import torch; print('CUDA:', torch.cuda.is_available()); print('Device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'N/A')"
 
 # 4. 验证 diffusers 可用
@@ -110,7 +110,7 @@ python -c "from huggingface_hub import list_repo_files; print(list_repo_files('T
 ### 3.3 显存预检
 
 ```bash
-# 远程 RTX 5070 Ti 上运行
+# 远程 CUDA GPU 上运行
 nvidia-smi --query-gpu=memory.free --format=csv,noheader
 # 预期：> 10 GB 空闲
 ```
@@ -130,7 +130,7 @@ nvidia-smi --query-gpu=memory.free --format=csv,noheader
 **预下载建议**（避免首次推理时的等待）：
 
 ```bash
-# 在远程 RTX 5070 Ti 上提前下载（只需一次）
+# 在远程 CUDA GPU 上提前下载（只需一次）
 python -c "
 from diffusers import CogVideoXPipeline
 pipe = CogVideoXPipeline.from_pretrained('THUDM/CogVideoX-2b', torch_dtype=torch.float16)
@@ -286,7 +286,7 @@ experiments/reference_video_inference/
 
 **日期**：YYYY-MM-DD
 **模型**：<HF model ID>
-**设备**：RTX 5070 Ti（12GB VRAM）
+**设备**：可用的 CUDA GPU（中等显存配置）
 **执行者**：T15 系统尝试
 
 ## 尝试配置
@@ -307,10 +307,10 @@ experiments/reference_video_inference/
 （`nvidia-smi` 或 PyTorch `torch.cuda.max_memory_allocated()` 读数，标注发生在哪个阶段：文本编码/去噪循环/VAE 解码）
 
 ## 结论
-[12GB 不可行 / 需 >16GB VRAM / 依赖缺失 / 授权未通过 / ...]
+[中等显存配置 不可行 / 需 >16GB VRAM / 依赖缺失 / 授权未通过 / ...]
 
 ## 对后续的建议
-[如果本项目继续，建议在什么硬件上尝试视频；12GB 下是否有替代路径]
+[如果本项目继续，建议在什么硬件上尝试视频；在中等显存配置下是否有替代路径]
 ```
 
 ---

@@ -52,6 +52,15 @@ DiffusionGemma 颠覆了这一推理范式。它不是每次前向传播预测�
 ## 3. 网络架构：Encoder-Denoiser 动态模式切换
 
 <figure style="margin: 1rem 0 1.5rem;">
+  <img src="../../docs/assets/architecture/diffusiongemma_technical_report_architecture.png" alt="DiffusionGemma technical report 的简化架构图" style="width: 100%; max-width: 860px; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
+    来源：arXiv 技术报告《How Transparent is DiffusionGemma?》Figure 1。它比开发者指南那张图更强调 step-to-step 的信息瓶颈：每一轮去噪之间真正被传下去的只有 canvas token <code>o^t</code> 和 self-conditioning 向量 <code>S^t</code>，而 prompt 侧 KV 在整个去噪循环里保持静态。
+  </figcaption>
+</figure>
+
+这张 technical report 图有两个价值。第一，它把 DiffusionGemma 的数据流拆成了非常明确的三部分：**prefill prompt**、**当前 canvas**、**跨 step 传递的 self-conditioning**。第二，它揭示了一个工程上最重要的事实：**Gemma 主干并没有被整套推倒重做，真正被改的是“输入如何组织、attention 如何开关、step 与 step 之间传什么状态”**。
+
+<figure style="margin: 1rem 0 1.5rem;">
   <img src="../../docs/assets/architecture/diffusiongemma_architecture.png" alt="DiffusionGemma 的 encoder-denoiser 架构图" style="width: 100%; max-width: 820px; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
   <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
     来源：Google Developers Blog《DiffusionGemma: The Developer Guide》中的 `diffusion_architecture` 图。我已在浏览器中打开原图后截图保存。它把 input query 走 causal encoder、noisy canvas 走 bidirectional denoiser、KV-cache 复用以及 self-conditioning 回路直接画了出来。
@@ -104,6 +113,38 @@ DiffusionGemma 并未重新设计一套复杂的网络，而是巧妙地在底�
 3. 概率分布与模型的**词嵌入表（Embedding Matrix）**相乘，为画布每个位置生成一个加权的融合特征向量（融合特征包含了上一步预测的概率分布信息）。
 4. 该融合特征向量通过一个轻量级的前馈网络（FFNN）进行映射，并直接**加到第 $t+1$ 步的输入 Token Embedding 中**。
 5. 这为模型提供了清晰的“预测历史记忆”，稳定了画布在不同去噪步之间的收敛轨迹。
+
+### D. 如果我已经有一个大语言模型，怎么改造成 diffusion text？
+
+最短答案是：**backbone 不是先推翻再重建，而是尽量保留；真正要改的是“解码范式”**。以一个标准 decoder-only LLM 为例，所谓 backbone，通常就是下面这些真正承载参数规模和表达能力的部分：
+
+* **词嵌入 / 输出头**：`embed_tokens`、`lm_head`。
+* **位置编码**：RoPE、位置索引逻辑。
+* **Transformer block 主干**：attention、MLP/FFN、MoE、残差、RMSNorm。
+* **多模态前端**（如果原模型本来就有）：vision encoder / projector / image token 接口。
+
+DiffusionGemma 的思路不是把这些主干全部换掉，而是在**保留 Gemma 主干权重**的前提下，给它包上一层新的离散扩散推理壳。可以把“最少需要改哪里”概括成 6 件事：
+
+1. **把单 token decode 改成固定长度 canvas**：不再输入“上一步生成的 1 个 token”，而是输入长度为 `C=256` 的 noisy canvas。
+2. **把 causal mask 改成双向可见**：AR LLM 的核心约束是 strictly causal；text diffusion 的核心约束是 canvas 内所有位置能互相看，所以 denoiser 路径必须支持 bidirectional attention。
+3. **把 prompt 路径和 canvas 路径拆开**：prompt 先走一次 prefill，形成静态 KV；之后每个 diffusion step 都拿 canvas 去读取这份上下文，而不是重新做整段 AR decode。
+4. **加入 self-conditioning 通道**：上一轮 logits 不能直接丢掉，要经过 softmax 和 embedding table 回投成 `S^t`，再并回下一步输入。
+5. **把训练目标从 next-token prediction 改成 denoising**：AR 是“预测下一个 token”；diffusion text 是“给你一段被破坏的 canvas，恢复真实 token 分布”。这会连带改掉数据构造、loss 定义、采样器。
+6. **加入 diffusion sampler / scheduler**：推理不再是 greedy/sample 一次结束，而是 `T` 轮“前向 + 采样 + renoise + early stop”循环。
+
+### E. 哪些地方是“主干基本不动”，哪些地方是“必须大改”
+
+| 模块 | 是否保留 LLM backbone | 要改什么 |
+| :--- | :--- | :--- |
+| Embedding / lm_head | 大体保留 | 继续复用词表与 embedding 空间，但要支持 canvas token 和 self-conditioning 回投。 |
+| FFN / MoE / Norm | 基本保留 | 这些是语言能力主干，通常不想动；DiffusionGemma 正是复用了 Gemma 4 的 MoE 主体。 |
+| Attention | 结构可复用，行为要改 | 必须支持从 causal 到 bidirectional 的切换，并让 canvas 在每一步读取 prompt 侧上下文。 |
+| KV cache | 语义变化最大 | AR 里 KV 是随 token 逐步追加；这里 prompt KV 基本静态，step-to-step 传的是 `o^t` 和 `S^t`。 |
+| Forward API | 必须改 | 输入不再只是 `input_ids`，而是 prompt context + noisy canvas + diffusion step + optional self-conditioning。 |
+| Generate loop | 必须重写 | 从单步 token sampling 改成多步 denoising loop，再加 multi-canvas 外循环。 |
+
+> **一句话抓重点**  
+> 如果你已经有一个 LLM，**不是把 backbone 换成另一个网络才叫 diffusion text**；更像是保留原来的 Transformer/MoE 语言主干，把它从“严格因果的单 token 解码器”改造成“读 prompt、并行修 256 个位置、还能跨 step 自我修正的去噪器”。因此最大改动通常不在 FFN，而在 **attention mask、状态传递、训练目标、采样循环**。
 
 ---
 
@@ -267,6 +308,7 @@ print(text)
 ## 9. 参考资源与链接
 
 本章内容主要整理并参考自以下 DiffusionGemma 官方发布的技术资料与社区指引：
+1. **技术报告（架构图与 step-to-step 信息瓶颈）**：[How Transparent is DiffusionGemma?](https://arxiv.org/html/2606.20560v1)
 1. **Google 官方开发者指南**：[DiffusionGemma: The Developer Guide](https://developers.google.com/en/diffusiongemma-the-developer-guide)
 2. **可视化原理解析**：[A Visual Guide to DiffusionGemma](https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-diffusiongemma)
 3. **Hugging Face 模型卡片**：[google/diffusiongemma-26B-A4B-it](https://huggingface.co/google/diffusiongemma-26B-A4B-it)

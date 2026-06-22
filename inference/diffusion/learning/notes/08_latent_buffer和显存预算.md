@@ -123,7 +123,7 @@ Step k+1: [x_next] ← f(x_t)    x_t ← [读 buffer B（原 A 的内容）]
 
 ---
 
-## 4. 12GB 显存分账 — 真实推理预算
+## 4. 中等显存配置分账 — 真实推理预算
 
 ### 假设：SD3 Medium @ 1024×1024, fp16, 28 steps
 
@@ -156,22 +156,22 @@ Step k+1: [x_next] ← f(x_t)    x_t ← [读 buffer B（原 A 的内容）]
 | 系统保留 | ~0.5 GB | NVIDIA driver 占用 |
 | **小计** | **~1 GB** | |
 | | | |
-| **总计** | **~10–12 GB** | 非常接近 12GB 上限！ |
+| **总计** | **~10–12 GB** | 非常接近 在中档显存卡的上限！ |
 
 ### 关键发现
 
 1. **Latent buffer 占用 < 1 MB** — 不是显存瓶颈。Ping-pong buffer 机制主要解决 malloc 碎片化，而非显存节省。
 
-2. **Model weights 占大头（~7.6 GB）** — 这也是为什么 CPU offload（把 text encoder 或 VAE offload 到 CPU）是 12GB 推理的必要策略。
+2. **Model weights 占大头（~7.6 GB）** — 这也是为什么 CPU offload（把 text encoder 或 VAE offload 到 CPU）是 受限显存推理的必要策略。
 
 3. **Attention activations 是第二大开销（~1.5–3 GB）** — N² attention 在高分辨率下爆炸。1024² latent 有 4096 patches，self-attention = (4096²) × head_dim × num_heads × num_layers。
 
 4. **T5-XXL（22GB）根本放不下** — SD3 Medium 的 optional T5 必须完全跳过，或使用 CPU offload。
 
-### 12GB 策略
+### 受限显存策略
 
 ```
-总预算: 12GB × 0.85 = 10.2 GB（留 15% 给驱动和碎片）
+总预算: 中等显存配置 × 0.85 = 10.2 GB（留 15% 给驱动和碎片）
 
 优先级 1: 确保 model weights 不超
   → fp16 存储所有模型
@@ -217,7 +217,7 @@ class MemoryStats:
 
 **MPS 的困境**：Apple MPS 后端不提供显存统计 API。在 Mac 上开发时，MemoryStats 返回 0 或 fallback 到 tracemalloc（跟踪 Python 分配而非 GPU 分配）。
 
-这导致了 M5 开发 + RTX 5070 Ti 远程推理的双轨策略的必要性。
+这导致了 M5 开发 + 可用的 CUDA GPU 远程推理的双轨策略的必要性。
 
 ---
 

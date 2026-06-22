@@ -11,7 +11,7 @@
 
 ## 1. 为什么对现代 diffusion 推理重要
 
-FLUX 是目前最强的 **open-weight flow transformer**，并且提供 **schnell（4 步推理）** 变体。它在 SD3 的 rectified flow + MMDiT 范式上做了关键工程改进：parallel attention block 减少 kernel launch、RoPE 替代 2D sin/cos 位置编码、以及蒸馏训练实现 few-step 推理。理解 FLUX 等于在 SD3 基线上验证 rectified flow 范式的实际落地效果，并观察 engineering 层面如何把推理门槛降到 12GB 消费级 GPU 可达。
+FLUX 是目前最强的 **open-weight flow transformer**，并且提供 **schnell（4 步推理）** 变体。它在 SD3 的 rectified flow + MMDiT 范式上做了关键工程改进：parallel attention block 减少 kernel launch、RoPE 替代 2D sin/cos 位置编码、以及蒸馏训练实现 few-step 推理。理解 FLUX 等于在 SD3 基线上验证 rectified flow 范式的实际落地效果，并观察 engineering 层面如何把推理门槛降到 消费级 GPU 可达。
 
 ---
 
@@ -19,7 +19,7 @@ FLUX 是目前最强的 **open-weight flow transformer**，并且提供 **schnel
 
 **文生图（text-to-image）**。FLUX.1 系列三个变体：
 
-| 变体 | 步数 | 许可 | 定位 | 12GB 可行性 |
+| 变体 | 步数 | 许可 | 定位 | 资源档位 |
 |------|------|------|------|-----------|
 | **schnell** | 4 步 | Apache 2.0 | 开源最快，distilled few-step | 🟢 适合 |
 | **dev** | 50 步 | 非商用 | 开发/研究，质量最高 | 🟡 极限可跑 |
@@ -151,7 +151,7 @@ z₀ → VAE decoder → pixel image
 | Denoising 步数 | **4 步** | 50 步 |
 | CFG scale | 0~1.5（guidance 内化） | 3.5~7.0 |
 | 加载 T5 | 可选（omit 可节省 ~5GB） | 强烈建议 |
-| 单次推理 latency | ~2-5 秒（RTX 5070 Ti） | ~30-60 秒 |
+| 单次推理 latency | ~2-5 秒（可用的 CUDA GPU） | ~30-60 秒 |
 | Peak VRAM | ~6-8 GB | ~12-14 GB |
 
 ---
@@ -205,7 +205,7 @@ FLUX 的 2D RoPE 对 image token 的 (x, y) 坐标分别编码。对 128×128 la
 
 与 SD3 完全相同：denoiser 每步 K/V 不能 cache（latent 每步刷新）。
 
-### 6.4 12GB RTX 5070 Ti 可行性判断
+### 6.4 资源档位与运行边界
 
 | 变体 | 判断 | VRAM | 推荐配置 |
 |------|------|------|---------|
@@ -214,7 +214,7 @@ FLUX 的 2D RoPE 对 image token 的 (x, y) 坐标分别编码。对 128×128 la
 | **FLUX.1-dev** | 🔴 不适合（默认） | ~14 GB+ | 50 步 + 4-5B 参数 + T5 已超预算 |
 | FLUX.1-dev（Q4 量化 + offload） | 🟡 极限可跑 | ~8-10 GB | GGUF/NF4 量化，但质量有损 |
 
-**推荐 12GB fallback 命令**：
+**一个受限显存示例命令**：
 
 ```bash
 # schnell + 去 T5：最舒适
@@ -245,7 +245,7 @@ pipe.enable_sequential_cpu_offload()  # 比 model_cpu_offload 更激进
 - FLUX.1-schnell：`https://huggingface.co/black-forest-labs/FLUX.1-schnell`
 - FLUX.1-dev：`https://huggingface.co/black-forest-labs/FLUX.1-dev`
 
-**社区量化版本**（更友好的 12GB 路径）：
+**社区量化版本**（更友好的 中等显存配置 路径）：
 - `https://huggingface.co/city96/FLUX.1-schnell-gguf`（GGUF Q4 量化，schnell ~3GB 权重）
 - `https://huggingface.co/Kijai/flux-fp8`（FP8 量化，社区维护）
 
@@ -273,8 +273,8 @@ pipe.enable_sequential_cpu_offload()  # 比 model_cpu_offload 更激进
 - T5 可选的概念需在接口设计中体现：`TextConditioning` 应支持"加载 T5 / 不加载 T5"两种路径
 
 ### 7.5 `pipeline.py`（T12 待实现）
-- FLUX schnell 的 few-step loop（4 步出图）是我们在 12GB 场景下的**目标 benchmark**
-- Schnell 的 CFG=0（guidance 蒸馏内化）意味着只需一次 forward per step（不需要 cond+uncond 双 forward），这对 12GB 场景极其友好
+- FLUX schnell 的 few-step loop（4 步出图）是我们在 受限显存场景下的**目标 benchmark**
+- Schnell 的 CFG=0（guidance 蒸馏内化）意味着只需一次 forward per step（不需要 cond+uncond 双 forward），这对 受限显存场景极其友好
 - Dev 的 50 步 + CFG>3 → 双 forward → VRAM 和时间压力——这反过来证明蒸馏对推理的重要性
 
 ### 7.6 `memory_manager.py`（T12 待实现）
@@ -295,11 +295,11 @@ pipe.enable_sequential_cpu_offload()  # 比 model_cpu_offload 更激进
 **读**：
 - 官方 blog 的 architecture 部分：了解 parallel attention、QK-norm、RoPE 的设计决策
 - Diffusers pipeline 源码的 `__call__` 方法：重点看 schnell vs dev 的分支差异（CFG 处理、T5 加载、scheduler step）
-- 社区 benchmark：FLUX schnell vs SD3 Medium vs Sana 在 12GB GPU 上的 latency/VRAM 对比
+- 社区 benchmark：FLUX schnell vs SD3 Medium vs Sana 在 中低显存 GPU 上的 latency/VRAM 对比
 - 社区量化报告：GGUF Q4 / NF4 / FP8 量化后的 VRAM 降低和质量损失
 
 **输出**：
-- 本文档：`learning/papers/02_flux_architecture_notes.md`（8 字段完整 + schnell/dev 对比 + 12GB 判断）
+- 本文档：`learning/papers/02_flux_architecture_notes.md`（8 字段完整 + schnell/dev 对比 + 资源档位判断）
 - 不要求产出 HTML（HTML 留给 T8）
 
 ---

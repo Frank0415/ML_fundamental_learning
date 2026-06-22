@@ -9,7 +9,7 @@
 
 ## 1. 为什么对现代 diffusion 推理重要
 
-在 12GB VRAM 预算下，**每减少一步 denoiser forward，就是 1-3 秒延迟和数百 MB 显存峰值时间的节省**。全步长扩散推理（28-50 步）在 12GB 上只勉强可用，但 few-step 推理（1-8 步）将 diffusion 从"耐心等待"变成"即时生成"。本章覆盖了从 Consistency Model 到 FLUX schnell 的各类 few-step 方法，它们是理解"蒸馏如何改变扩散推理的可行性"的关键。
+在 在受限显存配置下，**每减少一步 denoiser forward，就是 1-3 秒延迟和数百 MB 显存峰值时间的节省**。全步长扩散推理（28-50 步）在中等显存配置上只勉强可用，但 few-step 推理（1-8 步）将 diffusion 从"耐心等待"变成"即时生成"。本章覆盖了从 Consistency Model 到 FLUX schnell 的各类 few-step 方法，它们是理解"蒸馏如何改变扩散推理的可行性"的关键。
 
 ---
 
@@ -51,7 +51,7 @@ LCM 将一致性模型的思想应用到 **latent diffusion** 框架中（即 St
 
 Turbo 变体通过 **对抗训练 + 蒸馏** 的混合策略将原模型压缩为 1-4 步推理：
 
-| Turbo 变体 | 原模型 | 蒸馏步数 | 12GB 可行性 |
+| Turbo 变体 | 原模型 | 蒸馏步数 | 资源档位 |
 |-----------|--------|---------|-----------|
 | SD Turbo | SD 2.1 | 1 步 | 🟢 非常舒适 |
 | SDXL Turbo | SDXL | 1-4 步 | 🟢 舒适 |
@@ -72,7 +72,7 @@ FLUX schnell 是 **guided distillation** 的结果——不是简单的 step red
 
 这意味着 schnell 的每步计算量比 dev 的一半还少（因为 dev 每步需要 cond+uncond 两次 forward）。总计算量：`4 步 × 1 forward = 4` vs `50 步 × 2 forward = 100` → **25× 加速**。
 
-**schnell 的启示**：蒸馏不仅可以减少步数，还可以**消除 CFG 的双 forward 开销**。对于 12GB 场景，这至关重要（因为 CFG 的双 forward 是每步的显存峰值）。
+**schnell 的启示**：蒸馏不仅可以减少步数，还可以**消除 CFG 的双 forward 开销**。对于 受限显存场景，这至关重要（因为 CFG 的双 forward 是每步的显存峰值）。
 
 ### 3.5 Progressive Distillation（渐进蒸馏）
 
@@ -145,7 +145,7 @@ Consistency Model 的关键数学性质是 **self-consistency**（自一致性�
 
 ### 6.1 Few-Step 推理的显存和延迟影响
 
-| 步数 | Denoiser Forward 次数 | Peak VRAM | Wall Time（估, 2B DiT） | 12GB 适用性 |
+| 步数 | Denoiser Forward 次数 | Peak VRAM | Wall Time（估, 2B DiT） | 资源档位适用性 |
 |------|---------------------|-----------|----------------------|-----------|
 | 50 步（全步长） | 50 × 2 = 100（cond+uncond） | ~10 GB | 3-5 min | 🟡 边界 |
 | 28 步（SD3 默认） | 28 × 2 = 56 | ~10 GB | 1-2 min | 🟡 边界 |
@@ -164,11 +164,11 @@ FLUX schnell 和 SD3 Turbo 的 CFG 内化（蒸馏后 cfg≈0）意味着每步�
 - 每步时间减半
 - 每步显存峰值减半（因为不需要同时存储 cond 和 uncond 的中间激活）
 
-### 6.3 12GB RTX 5070 Ti 可行性
+### 6.3 可用的 CUDA GPU 可行性
 
-> 🟢 **Few-step sampling 是 12GB 场景的最大利好**。它不降低每步 peak VRAM，但大幅缩短 wall time，同时使本来需要 28+ 步的模型可以在超时前完成。结合 offload，1-4 步推理确保了 12GB 上能完成文生图。
+> 🟢 **Few-step sampling 是 受限显存场景的最大利好**。它不降低每步 peak VRAM，但大幅缩短 wall time，同时使本来需要 28+ 步的模型可以在超时前完成。结合 offload，1-4 步推理确保了 在中等显存配置上能完成文生图。
 
-**推荐 few-step 模型列表**（12GB 优先）：
+**推荐 few-step 模型列表**（优先考虑受限显存配置）：
 
 | 模型 | 步数 | VRAM | Wall Time | 推荐度 |
 |------|------|------|----------|--------|
@@ -215,7 +215,7 @@ FLUX schnell 和 SD3 Turbo 的 CFG 内化（蒸馏后 cfg≈0）意味着每步�
 - FLUX schnell vs dev 的 diffusers pipeline 源码（理解 CFG 内化的实现）
 
 **输出**：
-- 本文档：`learning/papers/10_consistency_distillation_fast_sampling.md`（8 字段完整 + 各方法对比 + 12GB few-step 推荐路线）
+- 本文档：`learning/papers/10_consistency_distillation_fast_sampling.md`（8 字段完整 + 各方法对比 + 受限显存 few-step 推荐路线）
 
 ---
 

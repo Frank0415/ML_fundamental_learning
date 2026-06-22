@@ -196,7 +196,7 @@
   <tr><td>15.0</td><td>9.00</td><td>8.92</td><td>1.01×</td><td>1.5 MB</td><td>2.0 MB</td></tr>
 </table>
 
-<p>数值差异 <span class="highlight-num">0.00e+00</span>（理论上完全一致，微小差异仅来自浮点 accumulate order）。12GB VRAM 策略：剩余 &gt; 6GB → Batched CFG；3-6GB → 视具体情况；&lt; 3GB → Sequential CFG。</p>
+<p>数值差异 <span class="highlight-num">0.00e+00</span>（理论上完全一致，微小差异仅来自浮点 accumulate order）。中等显存配置 策略：剩余 &gt; 6GB → Batched CFG；3-6GB → 视具体情况；&lt; 3GB → Sequential CFG。</p>
 
 <h2>5. Attention Memory（注意力显存估算）</h2>
 
@@ -229,7 +229,7 @@
   <tr><td>2048²</td><td>Tiled 32×32</td><td>64</td><td>198.94</td><td>97.4</td><td>1.69×</td><td>1.35×</td></tr>
 </table>
 
-<p>典型开销：overlap=4 latent pixels → 额外 10-20% 计算量。12GB VRAM 下 VAE tiling <strong>几乎总是必要的</strong>。推荐 tile 大小：1024² → 64×64 latent tile；2048² → 32×32 latent tile。</p>
+<p>典型开销：overlap=4 latent pixels → 额外 10-20% 计算量。受限显存配置下 VAE tiling <strong>几乎总是必要的</strong>。推荐 tile 大小：1024² → 64×64 latent tile；2048² → 32×32 latent tile。</p>
 
 <h2>7. 与 LLM KV Cache 的根本差异</h2>
 

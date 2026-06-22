@@ -19,7 +19,7 @@ latent_buffer_manager.py — Latent Buffer 预分配管理器实验
   - A. in-place reset：每次 step 在预分配 buffer 上直接覆盖——零额外分配
   - B. out-of-place reset：每次 step 分配新 buffer → 旧 buffer 被 GC——大量 malloc/free
 
-12GB 预算下的真实占比（1024² latent, fp16, 16ch）：
+在受限显存配置下的真实占比（1024² latent, fp16, 16ch）：
   - 5 buffers × 4MB = 20MB — 可忽略
   - 真正瓶颈在 attention activations：4096² × 16 heads × 4B ≈ 1 GB/layer
 

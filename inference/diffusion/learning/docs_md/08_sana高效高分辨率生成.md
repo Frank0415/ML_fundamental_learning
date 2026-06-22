@@ -1,6 +1,6 @@
 # 08 · Sana 高效高分辨率生成
 
-本文解释 Sana 如何通过三个激进设计（LLM text encoder、linear attention、SVDQuant 量化）把 DiT 推向高效率极限，实现 12GB 消费级 GPU 上的高分辨率（甚至 4K）文生图。
+本文解释 Sana 如何通过三个激进设计（LLM text encoder、linear attention、SVDQuant 量化）把 DiT 推向高效率极限，实现 消费级 GPU 上的高分辨率（甚至 4K）文生图。
 
 ## 1. 高效高分辨率问题的本质
 
@@ -110,7 +110,7 @@ denoising loop: t = 1 → 0 (20~40 步, Sprint 仅 2 步)
 AE decoder → pixel image
 ```
 
-## 4. 12GB 友好路径
+## 4. 显存友好路径
 
 | 配置 | VRAM | 分辨率 | 步数 | Wall Time | 推荐度 |
 |------|------|--------|------|-----------|--------|
@@ -144,8 +144,8 @@ image = pipe('一只柴犬在樱花树下', num_inference_steps=20, guidance_sca
 
 ## 本页结论
 
-Sana 通过三个激进设计打破了"高分辨率 = 超大显存"的瓶颈：① 用 Gemma-2B 小 LLM 替代 CLIP+T5（text encoder VRAM 从 16GB→4GB）；② 用 linear attention 替代 O(n²) softmax attention（4096px 下内存从 8.6GB→4.7MB）；③ 用 SVDQuant 4-bit 量化将 DiT 权重压缩 4×。Sana-Sprint 的 2 步蒸馏推理更是在 12GB 上实现了 < 1 秒出图。对于 diffusion_engine，Sana 证明了：text encoder 不一定是 CLIP，attention 不一定是 O(n²) softmax，权重量化是 12GB 视频推理的必然路径。
+Sana 通过三个激进设计打破了"高分辨率 = 超大显存"的瓶颈：① 用 Gemma-2B 小 LLM 替代 CLIP+T5（text encoder VRAM 从 16GB→4GB）；② 用 linear attention 替代 O(n²) softmax attention（4096px 下内存从 8.6GB→4.7MB）；③ 用 SVDQuant 4-bit 量化将 DiT 权重压缩 4×。Sana-Sprint 的 2 步蒸馏推理甚至把高质量出图推进到了中档显存卡也能碰的范围。对于 diffusion_engine，Sana 证明了：text encoder 不一定是 CLIP，attention 不一定是 O(n²) softmax，而权重量化在受限显存的生成模型里往往非常关键。
 
 ## 和我的 diffusion_engine 的关系
 
-`diffusion_engine/core/attention.py` 需要从当前 softmax full attention 扩展出 `LinearAttention` 类作为替代实现（接口：接收 kernel_fn 参数，中间矩阵为 d×d 而非 n×n）。`text_conditioning.py` 的接口不应写死为 CLIP，而应接受任意 encoder 的 hidden states（支持 CLIP、T5、Gemma 等）。`memory_manager.py` 需要"attention type aware"的显存预估——linear attention 不能用 n² 公式估算。Sana 是 12GB 场景下 image reference inference 的首选。
+`diffusion_engine/core/attention.py` 需要从当前 softmax full attention 扩展出 `LinearAttention` 类作为替代实现（接口：接收 kernel_fn 参数，中间矩阵为 d×d 而非 n×n）。`text_conditioning.py` 的接口不应写死为 CLIP，而应接受任意 encoder 的 hidden states（支持 CLIP、T5、Gemma 等）。`memory_manager.py` 需要"attention type aware"的显存预估——linear attention 不能用 n² 公式估算。Sana 是 受限显存场景下 image reference inference 的首选。

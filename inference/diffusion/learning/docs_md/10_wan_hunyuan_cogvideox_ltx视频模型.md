@@ -1,6 +1,6 @@
 # 10 · Wan / Hunyuan / CogVideoX / LTX 开源视频模型对比
 
-> 本文系统对比四个开源文本到视频（T2V）模型的架构、推理路径、latent shape、12GB VRAM 可行性。HunyuanVideo 不在 12GB 主线，仅作架构参考。
+> 本文系统对比四个开源文本到视频（T2V）模型的架构、推理路径、latent shape，以及它们在不同资源档位下的现实边界。HunyuanVideo 不属于低资源优先路线，主要作为架构参考。
 
 ## 1. 一表纵览
 
@@ -11,7 +11,7 @@
 | **协议** | 需接受许可 | 需申请访问 | Apache 2.0 | 需接受许可 |
 | **HF ID** | `Wan-AI/Wan2.1-T2V-1.3B` | `tencent/HunyuanVideo` | `THUDM/CogVideoX-2b` | `Lightricks/LTX-Video` |
 | **权重大小** | ~5 GB | ~26 GB | ~10 GB | ~9 GB |
-| **12GB 可行性** | ⚠️ 极限（10GB，需全部 offload） | ❌ 不可行（权重即超 12GB） | ✅ 可行（官方 min 4GB，12GB 充裕） | ✅ 可行（2B distilled，最快路径） |
+| **资源档位** | ⚠️ 极限（10GB，需全部 offload） | ❌ 不可行（权重即超 中等显存配置） | ✅ 可行（官方 min 4GB，中等显存配置下仍较从容） | ✅ 可行（2B distilled，最快路径） |
 
 ## 2. 架构对比
 
@@ -58,12 +58,12 @@
 
 ### 2.3 Text Encoder
 
-| 模型 | Text Encoder | 额外显存 | 对 12GB 的影响 |
+| 模型 | Text Encoder | 额外显存 | 对受限显存配置的影响 |
 |------|-------------|---------|--------------|
 | Wan2.1 | T5-XXL（~1.5B） | ~3 GB (fp16) | ⚠️ 大 text encoder 是主显存压力之一 |
-| HunyuanVideo | CLIP-L + T5-XXL（双编码器） | ~5 GB | ❌ 对 12GB 雪上加霜 |
+| HunyuanVideo | CLIP-L + T5-XXL（双编码器） | ~5 GB | ❌ 对中档显存卡会进一步放大压力 |
 | CogVideoX | T5-XXL | ~3 GB (fp16) | ✅ cpu_offload 可转移 text encoder 到 CPU |
-| LTX-Video | T5-small（~300M） | ~0.6 GB | ✅ 极小 text encoder，对 12GB 几乎无压力 |
+| LTX-Video | T5-small（~300M） | ~0.6 GB | ✅ 极小 text encoder，对中等显存配置几乎无压力 |
 
 ## 3. 推理路径对比
 
@@ -106,27 +106,27 @@ export_to_video(video_frames, "output.mp4", fps=8)
 | 默认帧数 | 81 | 129 | 49 | 121 |
 | 默认分辨率 | 832×480 | 720×720 | 720×480 | 768×512 |
 | CFG Scale | 5.0 | 6.0 | 6.0 | 1.0（蒸馏模型通常不需要 CFG） |
-| 12GB 推理耗时 | ~10-15 min | 无法运行 | ~5-10 min | **~1-3 min** |
+| 受限显存示例耗时 | ~10-15 min | 无法运行 | ~5-10 min | **~1-3 min** |
 
-## 4. 12GB VRAM 下的现实路径
+## 4. 受限显存配置下的现实路径
 
-### 4.1 各模型的 12GB 可行性分析
+### 4.1 各模型的 资源档位分析
 
-| 模型 | 权重 VRAM | Text Enc VRAM | Latent VRAM | Attn 激活 | 总计（估计） | 12GB 结论 |
+| 模型 | 权重 VRAM | Text Enc VRAM | Latent VRAM | Attn 激活 | 总计（估计） | 资源档位结论 |
 |------|----------|---------------|------------|----------|-------------|-----------|
 | LTX-Video 2B | ~3.7 GB | ~0.6 GB | ~0.5 GB | ~1.5 GB | ~6-8 GB | ✅ 最可能首次跑通 |
-| CogVideoX-2B | ~3.7 GB | ~3.0 GB | ~0.1 GB | ~1.0 GB | ~6-9 GB | ✅ 官方 min 4GB，12GB 充裕 |
+| CogVideoX-2B | ~3.7 GB | ~3.0 GB | ~0.1 GB | ~1.0 GB | ~6-9 GB | ✅ 官方 min 4GB，中等显存配置下仍较从容 |
 | Wan2.1-1.3B | ~2.4 GB | ~3.0 GB | ~0.1 GB | ~1.5 GB | ~8-10 GB | ⚠️ 极限，需所有 offload + 小规格 |
 | HunyuanVideo | ~26 GB | ~5.0 GB | — | — | >30 GB | ❌ 完全不可行 |
 
 ### 4.2 推荐执行顺序
 
-1. **LTX-Video 2B distilled**：2B 参数 + T5-small（~300M）+ 蒸馏 4-8 步 + 无 VAE 时间压缩。这是 12GB 下最可能首次就跑通的视频模型。RTX 4060 8GB 上实测 720×480×121 帧 < 1 分钟。
+1. **LTX-Video 2B distilled**：2B 参数 + T5-small（~300M）+ 蒸馏 4-8 步 + 无 VAE 时间压缩。这是 在中等显存配置下最可能首次就跑通的视频模型。RTX 4060 8GB 上实测 720×480×121 帧 < 1 分钟。
 2. **CogVideoX-2B**：Apache 2.0 协议无授权障碍。官方标注 min 4GB VRAM。49 帧 720×480 在 fp16 + offload 下约 9GB。小规格 (16f×256²) 更安全。
-3. **Wan2.1-T2V-1.3B**：参数最小 (1.3B)，但 T5-XXL text encoder 额外占 ~3GB。12GB 下需极限操作（全部 offload + 降级规格）。
-4. **HunyuanVideo**：不在 12GB 主线。仅做架构参考（docs/10 本页）和未来更大 GPU 的评估。
+3. **Wan2.1-T2V-1.3B**：参数最小 (1.3B)，但 T5-XXL text encoder 额外占 ~3GB。在中等显存配置下需极限操作（全部 offload + 降级规格）。
+4. **HunyuanVideo**：不属于低资源优先路线。这里主要拿它做架构参考，并为以后在更大显存机器上的评估打底。
 
-### 4.3 小规格推荐配置（12GB 安全起跑）
+### 4.3 小规格推荐配置（在中等显存配置下较安全起跑）
 
 | 模型 | 帧数 | 分辨率 | 步数 | dtype | offload | 预计 VRAM |
 |------|------|--------|------|-------|---------|----------|
@@ -140,27 +140,27 @@ export_to_video(video_frames, "output.mp4", fps=8)
 
 - **设计哲学**：在 video DiT 中保持工程化的克制——分离式 spatial + temporal attention、causal temporal mask、标准 16ch VAE。
 - **适合场景**：需要精细控制时间生成（causal mask 避免未来信息泄漏），且愿意为"正确性"付出 double attention 的成本。
-- **12GB 友好度**：⭐⭐⭐⭐（4GB min，12GB 充裕）
+- **显存友好度**：⭐⭐⭐⭐（4GB min，中等显存配置下仍较从容）
 
 ### 5.2 LTX-Video — "速度优先"
 
 - **设计哲学**：通过蒸馏 + 高通道 VAE（128ch，不压缩时间）+ joint attention 实现 real-time 推理。牺牲"精细度"换"速度"。
 - **适合场景**：实时视频生成（如直播、交互式应用），或小显存设备。
-- **12GB 友好度**：⭐⭐⭐⭐⭐（RTX 4060 8GB 实测可行）
+- **显存友好度**：⭐⭐⭐⭐⭐（RTX 4060 8GB 实测可行）
 
 ### 5.3 Wan2.1 — "小而全"
 
 - **设计哲学**：用小参数 (1.3B) + 大 text encoder (T5-XXL) 实现"小模型也能理解复杂语义"。参数打散在 DiT（小）和 text encoder（大）之间。
 - **适合场景**：对 prompt 质量要求高、愿意接受慢推理（T5 大但 DiT 小，总延迟偏大）。
-- **12GB 友好度**：⭐⭐⭐（极限操作，需全面降级）
+- **显存友好度**：⭐⭐⭐（极限操作，需全面降级）
 
 ### 5.4 HunyuanVideo — "旗舰架构"
 
 - **设计哲学**：MMDiT 双流 + 3D RoPE + 大模型参数，追求最高质量。不是为消费者 GPU 设计的。
-- **适合场景**：A100/H100 级计算，不适用于 12GB 场景。
-- **12GB 友好度**：⭐（不可用）
+- **适合场景**：A100/H100 级计算，不适用于 受限显存场景。
+- **显存友好度**：⭐（不可用）
 
-> **本页结论**：四个开源视频模型覆盖了从"实时速度优先"（LTX-Video）到"工程精致"（CogVideoX）到"小而全"（Wan2.1）到"旗舰架构"（HunyuanVideo）的完整频谱。在 12GB VRAM 下，**LTX-Video 2B distilled 和 CogVideoX-2B 是唯二可行的模型**，其中 LTX-Video 因蒸馏 + 小 text encoder 最可能在首次尝试就跑通。Wan2.1-1.3B 需要极限操作（全部 offload + 降级规格），是 12GB 的"最高难度挑战"。HunyuanVideo 在 12GB 下完全不可行，仅作架构学习参考。
+> **本页结论**：四个开源视频模型覆盖了从"实时速度优先"（LTX-Video）到"工程精致"（CogVideoX）到"小而全"（Wan2.1）再到"旗舰架构"（HunyuanVideo）的完整频谱。若你走的是低资源优先路线，LTX-Video 2B distilled 和 CogVideoX-2B 最值得先试；Wan2.1-1.3B 还能通过更激进的 offload 和降规格去碰一碰；HunyuanVideo 则更适合放在架构学习和高配机器评估里看。
 
 ## 6. 和我的 diffusion_engine 的关系
 
@@ -169,7 +169,7 @@ export_to_video(video_frames, "output.mp4", fps=8)
 | 视频概念 | diffusion_engine 模块 | 启发 |
 |---------|----------------------|------|
 | CogVideoX 分离式 attention | `core/attention.py` | 若未来扩展视频支持，应参考分离式 spatial + temporal attention（分开两个 Attention 实例，先 spatial 后 temporal）而非一个 monolithic full attention。这比 joint attention 的显存需求低。 |
-| LTX-Video 蒸馏 + CFG=1.0 | `core/pipeline.py` | 蒸馏模型不需要 CFG（cfg_scale=1.0），意味着 pipeline 的 CFG 双 forward 可以关闭。这对 12GB 推理是巨大优势（省掉 50% memory）。 |
+| LTX-Video 蒸馏 + CFG=1.0 | `core/pipeline.py` | 蒸馏模型不需要 CFG（cfg_scale=1.0），意味着 pipeline 的 CFG 双 forward 可以关闭。这对受限显存推理是巨大优势（省掉 50% memory）。 |
 | Wan2.1 T5-XXL text encoder | `core/text_conditioning.py` | text encoder 可能是显存瓶颈（T5-XXL ~3GB）。在 ToyTextConditioner 中很小，但在 HFCachedTextConditioner 中需考虑 encoder 的 offload 策略。 |
 | HunyuanVideo MMDiT 双流 | `core/dit.py` | TinyDiT 的拼接式 joint attention 是 toy 简化。真实的 MMDiT 视频扩展（HunyuanVideo）使用双流架构——文本和视频 token 分别走独立的 adaLN 调制路径后在 attention 中合并。这是 T11 TinyDiT 简化清单中应记录的差异。 |
 | Latent shape 约定差异 | `core/pipeline.py` | pipeline 入口应显式处理 `(B,C,T,H,W)` 和 `(B,T,C,H,W)` 两种格式，避免未来接入真实模型时的 shape 错误。 |
@@ -182,6 +182,6 @@ export_to_video(video_frames, "output.mp4", fps=8)
 - **HunyuanVideo 论文**：Tencent HunyuanVideo，MMDiT 视频扩展 + 3D RoPE。
 - **CogVideoX 论文**：THUDM 的因果视频生成模型，分离式 temporal attention + causal mask。
 - **LTX-Video 论文**：Lightricks 的 real-time DiT 视频模型，蒸馏 + 128ch VAE。
-- **学习笔记**：`learning/notes/09_视频latent和spacetime_patch.md` — 视频 latent shape 与 12GB 策略。
+- **学习笔记**：`learning/notes/09_视频latent和spacetime_patch.md` — 视频 latent shape 与 受限显存策略。
 - **Sora 架构**：`docs/09_sora_style视频生成架构.html` — spacetime patch 与 video VAE 概念。
 - **实验脚本**：`experiments/reference_video_inference/` — T15 三个视频推理脚本与 VRAM profile 工具。

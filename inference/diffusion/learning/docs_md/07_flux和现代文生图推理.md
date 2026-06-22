@@ -6,7 +6,7 @@
 
 > **FLUX = SD3 的 MMDiT 范式 × 工程优化 × few-step 蒸馏**
 > 
-> FLUX 由原 Stability AI 核心团队（Black Forest Labs）开发，是目前最强的 open-weight flow transformer。它的 schnell 变体（4 步推理，Apache 2.0 许可）是 12GB 场景下质量最高的文生图模型之一。
+> FLUX 由原 Stability AI 核心团队（Black Forest Labs）开发，是目前最强的 open-weight flow transformer。它的 schnell 变体（4 步推理，Apache 2.0 许可）是 受限显存场景下质量最高的文生图模型之一。
 
 ## 2. FLUX vs SD3：架构层面对比
 
@@ -54,7 +54,7 @@ FLUX 使用 **2D RoPE**（而非 SD3 的 2D sin/cos position encoding）不是�
 | CLIP-L (ViT-L/14) | 768 | 77 | ~0.9 GB | 必须 |
 | T5-XXL | 4096 | 256~512 | ~5 GB | **可选**（omit 可节省 ~5GB） |
 
-**12GB 策略**：schnell 去 T5 是最舒适的配置——CLIP-L 单独 ~0.9GB，剩余 VRAM 留给 DiT 权重和 attention。
+**受限显存策略**：schnell 去 T5 是最舒适的配置——CLIP-L 单独 ~0.9GB，剩余 VRAM 留给 DiT 权重和 attention。
 
 ### Latent 管线
 
@@ -89,13 +89,13 @@ VAE decoder: (1, 16, 128, 128) → (1, 3, 1024, 1024)
 | CFG Scale | 0 ~ 1.5（guidance 蒸馏内化） | 3.5 ~ 7.0 |
 | 每步 Forward | 1 次（不需要 uncond） | 2 次（cond + uncond） |
 | Total DiT Forward | **4 次** | 100 次 |
-| Wall Time（RTX 5070 Ti） | ~2-5 秒 | ~30-60 秒 |
+| Wall Time（可用的 CUDA GPU） | ~2-5 秒 | ~30-60 秒 |
 | Peak VRAM（1024px, fp16） | ~6-8 GB | ~12-14 GB |
 | 许可 | Apache 2.0 | 非商用 |
 
 **schnell 的 CFG 内化是什么**：
 
-在标准扩散中，CFG 需要每步做两次 forward（cond 有文本 + uncond 空文本），然后按公式 `v_cfg = v_uncond + s * (v_cond - v_uncond)` 合并。schnell 的蒸馏过程把这个"条件引导"能力内化到了模型权重中——模型在单次 forward 中就能产生相当于 "文本引导 + 无引导混合" 的结果。对 12GB 意味着：**每步仅需一次 forward，时间和显存都减半。**
+在标准扩散中，CFG 需要每步做两次 forward（cond 有文本 + uncond 空文本），然后按公式 `v_cfg = v_uncond + s * (v_cond - v_uncond)` 合并。schnell 的蒸馏过程把这个"条件引导"能力内化到了模型权重中——模型在单次 forward 中就能产生相当于 "文本引导 + 无引导混合" 的结果。对中档显存卡来说，这意味着：**每步仅需一次 forward，时间和显存都能明显减半。**
 
 ## 5. 与 SD3 主线模型的对比
 
@@ -105,10 +105,10 @@ VAE decoder: (1, 16, 128, 128) → (1, 3, 1024, 1024)
 | 步数 | 28 | **4** | 50 |
 | CFG | 3.5~7.0（双 forward） | ~0（单 forward） | 3.5~7.0（双 forward） |
 | Text Encoder VRAM | CLIP (~2GB) + 可选 T5 | CLIP (~1GB) + 可选 T5 | CLIP + T5 (~6GB) |
-| Total VRAM（12GB 配置） | ~5 GB（无 T5） | ~6-7 GB（无 T5） | ~12-14 GB |
+| Total VRAM（中等显存配置 配置） | ~5 GB（无 T5） | ~6-7 GB（无 T5） | ~12-14 GB |
 | 质量 | 中等（2B 模型限制） | 高（4-5B + 4步 = 出奇的好） | 最高 |
 
-## 6. 12GB 友好路径
+## 6. 显存友好路径
 
 ### 推荐配置（由稳到优）
 
@@ -131,7 +131,7 @@ pipe.enable_sequential_cpu_offload()
 # VRAM ≈ 4-5 GB
 ```
 
-### 为什么 schnell 比 SD3 Medium 更适合 12GB
+### 为什么 schnell 比 SD3 Medium 更适合中等显存配置
 
 - 虽然 schnell 参数量（4-5B）比 SD3 Medium（2B）更大，但 **4 步推理 + CFG 内化** 使每步计算量极少，总 wall time 更短
 - De-noising 仅 4 步意味着 offload 的上下文切换仅 4 次（vs SD3 Medium 的 28 次或 56 次如果算上 uncond forward）
@@ -139,7 +139,7 @@ pipe.enable_sequential_cpu_offload()
 
 ## 本页结论
 
-FLUX 在 SD3 的 rectified flow + DiT 范式上做了关键工程改进：单流架构简化了 text-image 交互，parallel attention block 减少了 kernel launch，RoPE 利用 FlashAttention 原生加速。schnell 变体通过 guided distillation 将 50 步压缩到 4 步且内化了 CFG guidance——这是 12GB 场景下质量/速度/VRAM 均衡的最佳文生图方案。对 diffusion_engine 的启发：few-step scheduler 需要非均匀 timestep，CFG 内化可消除双 forward 瓶颈。
+FLUX 在 SD3 的 rectified flow + DiT 范式上做了关键工程改进：单流架构简化了 text-image 交互，parallel attention block 减少了 kernel launch，RoPE 利用 FlashAttention 原生加速。schnell 变体通过 guided distillation 将 50 步压缩到 4 步且内化了 CFG guidance——这是 受限显存场景下质量/速度/VRAM 均衡的最佳文生图方案。对 diffusion_engine 的启发：few-step scheduler 需要非均匀 timestep，CFG 内化可消除双 forward 瓶颈。
 
 ## 和我的 diffusion_engine 的关系
 

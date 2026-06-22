@@ -71,7 +71,7 @@
 
 ### 论文精读（按需）
 
-`../learning/papers/01-10_*.md` 是每篇论文的"中文摘要 + 12GB 评估 + 对 diffusion_engine 的启发"，已纳入版本控制。建议先读这些卡片，再决定是否精读原 PDF（PDF 在 `../paper/` 下，**不**纳入版本控制，需要从 arXiv 自行下载）。
+`../learning/papers/01-10_*.md` 是每篇论文的"中文摘要 + 中等显存配置 评估 + 对 diffusion_engine 的启发"，已纳入版本控制。建议先读这些卡片，再决定是否精读原 PDF（PDF 在 `../paper/` 下，**不**纳入版本控制，需要从 arXiv 自行下载）。
 
 ## 与 docs/HTML 的差异
 

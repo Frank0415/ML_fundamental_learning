@@ -1,16 +1,16 @@
 # 真实文生图 Reference Inference 实验
 
-> **目标**：在 12GB VRAM 约束下，用 HuggingFace Diffusers 跑通至少一个真实文生图推理。
+> **目标**：在 中等显存配置 约束下，用 HuggingFace Diffusers 跑通至少一个真实文生图推理。
 > **最低标准**：**只要跑通一个 image reference 即满足最低要求。**
 > **负责任务**：T13（脚手架+前置下载说明）+ T14（真实推理尝试）
-> **执行环境**：远程 RTX 5070 Ti（12GB VRAM）— dev host Mac M5 不支持 CUDA
+> **执行环境**：远程 CUDA GPU（中等显存配置）— dev host Mac M5 不支持 CUDA
 
 ---
 
 ## 1. 目标与最低标准
 
 ### 核心目标
-1. 验证至少一个现代文生图模型在 12GB RTX 5070 Ti 上能否完成推理。
+1. 验证至少一个现代文生图模型在一块可用的 CUDA GPU 上能否完成推理。
 2. 记录成功/失败参数（resolution、steps、dtype、offload、peak VRAM、latency）。
 3. 为 `diffusion_engine/`（自研引擎）提供真实对照——对比 diffusers pipeline 与我们的 toy pipeline 在数据流与显存上的差异。
 4. 失败时如实记录 blocker（OOM、gated、下载失败、CUDA 不支持），不伪造成功。
@@ -38,10 +38,10 @@
       │
       是否在 CUDA 设备上？
       ├── 否（MPS / CPU）→ 记录 blocker：MPS 不支持 diffusers real pipeline，
-      │                          切换到远程 RTX 5070 Ti
-      └── 是（RTX 5070 Ti）
+      │                          切换到远程 CUDA GPU
+      └── 是（可用的 CUDA GPU）
            │
-           尝试 Sana（首选，开放模型，12GB 友好）
+           尝试 Sana（首选，开放模型，显存友好）
            ├── 成功 → 🎉 记录结果，任务完成
            └── 失败
                 │
@@ -54,7 +54,7 @@
                      └── 失败 → 📋 三模型都失败？记录详细 blocker
 ```
 
-### 2.1 首选：Sana（开放模型，12GB 最友好）
+### 2.1 首选：Sana（开放模型，对中低显存更友好）
 
 | 属性 | 值 |
 |------|-----|
@@ -63,7 +63,7 @@
 | **License** | Apache 2.0 |
 | **是否需要 HF token / 接受协议** | **否**（完全开放，无 gated） |
 | **是否需要 Python 3.13+** | 是 |
-| **12GB 可行性** | ✅ 非常适合（<6 GB VRAM） |
+| **资源档位** | ✅ 非常适合（<6 GB VRAM） |
 | **推荐 resolution** | 1024×1024（默认），降级 512×512 |
 | **推荐 steps** | 20（默认），降级 10 |
 | **推荐 dtype** | bf16（CUDA），fp32（MPS/CPU fallback） |
@@ -79,7 +79,7 @@
 | **License** | Stability AI Community License |
 | **是否需要 HF token** | **是**：需注册 HF 账号 → 创建 access token → 访问 model card 页面 accept license |
 | **是否需要 Python 3.13+** | 是 |
-| **12GB 可行性** | ✅ 可行（no-T5 约 4.3GB，含 T5 约 15GB+ 不可行） |
+| **资源档位** | ✅ 可行（no-T5 约 4.3GB，含 T5 约 15GB+ 不可行） |
 | **推荐 resolution** | 1024×1024（默认），降级 768×768 |
 | **推荐 steps** | 28（默认），降级 15 |
 | **推荐 dtype** | fp16（默认） |
@@ -95,7 +95,7 @@
 | **License** | Apache 2.0 |
 | **是否需要 HF token** | **是**：需注册 HF 账号 → 创建 access token → 访问 model card 页面 accept license |
 | **是否需要 Python 3.13+** | 是 |
-| **12GB 可行性** | ⚠️ 偏紧（约 10GB，需 sequential offload） |
+| **资源档位** | ⚠️ 偏紧（约 10GB，需 sequential offload） |
 | **推荐 resolution** | 1024×1024（默认），降级 768×768 |
 | **推荐 steps** | 4（schnell 推荐只用 4 步） |
 | **推荐 cfg_scale** | 1.0（schnell 不使用 CFG 或很低） |
@@ -278,15 +278,15 @@ Level 4: 切更小模型
 处理：
   - MPS (Mac M5)：diffusers 真实 pipeline 在 MPS 上可能部分算子缺失或报错。
     不要尝试在 Mac 上跑真实 diffusers 模型——只跑 toy 实验。
-  - 远程 RTX 5070 Ti：SSH 过去执行。
+  - 远程 CUDA GPU：SSH 过去执行。
   - 记录 blocker：当前设备不支持 CUDA，需远程执行。
 ```
 
 ---
 
-## 7. Dev Host vs 远程 RTX 5070 Ti 双轨策略
+## 7. Dev Host vs 远程 CUDA GPU 双轨策略
 
-| 维度 | Dev Host (Mac M5) | 远程 RTX 5070 Ti |
+| 维度 | Dev Host (Mac M5) | 远程 CUDA GPU |
 |------|-------------------|-----------------|
 | **用途** | 开发、写代码、跑 toy 实验 | 跑真实 diffusers reference inference |
 | **Python** | 3.13+ via uv | 3.13+ via uv |
@@ -320,14 +320,14 @@ experiments/reference_image_inference/
 
 ## 9. 失败 / Blocker 记录模板
 
-如果任何模型在 12GB 约束下无法完成推理，在 `results/blocker_<model>.md` 中记录：
+如果任何模型在 中等显存配置 约束下无法完成推理，在 `results/blocker_<model>.md` 中记录：
 
 ```markdown
 # Reference Image Inference — Blocker: <模型名>
 
 **日期**：YYYY-MM-DD
 **模型**：<HF model ID>
-**设备**：RTX 5070 Ti（12GB VRAM）
+**设备**：可用的 CUDA GPU（中等显存配置）
 
 ## 尝试配置
 - dtype: fp16 / fp32 / bf16
@@ -373,7 +373,7 @@ experiments/reference_image_inference/
 | **模型** | 官方预训练权重 | Toy 规模（TinyDiT） |
 | **文本编码器** | CLIP / T5 / Gemma（预训练） | ToyTextConditioner（随机映射） |
 | **VAE** | 官方 SDXL/AE VAE | ToyVAE（3 层 Conv2d） |
-| **用途** | 验证 12GB 可行性、记录真实参数 | 理解原理、学习架构 |
+| **用途** | 验证 资源档位、记录真实参数 | 理解原理、学习架构 |
 
 ---
 

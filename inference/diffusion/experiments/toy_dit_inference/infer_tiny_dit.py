@@ -385,7 +385,7 @@ def _record_blocker(args, message: str) -> None:
         f.write("- 阻塞 T12 demo 运行\n\n")
         f.write("## 建议\n\n")
         f.write("- 在 `.venv` 中安装 torch: `uv pip install torch`\n")
-        f.write("- 或在远程 RTX 5070 Ti 上运行\n")
+        f.write("- 或在远程 CUDA GPU 上运行\n")
     print(f"  Blocker 记录已保存到: {blocker_path}")
 
 
