@@ -1,0 +1,2651 @@
+arXiv:2506.13497v1  [cs.DC]  16 Jun 2025
+
+DDiT: Dynamic Resource Allocation for Diffusion
+Transformer Model Serving
+
+Heyang Huang∗1,2 Cunchen Hu∗1,2, Jiaqi Zhu1,2, Ziyuan Gao1,2, Liangliang Xu3, Yizhou Shan4,
+Yungang Bao1,2, Sun Ninghui1,2, Tianwei Zhang5, Sa Wang1,2
+
+1University of Chinese Academy of Sciences 2State Key Lab of Processors, Institute of Computing
+Technology, Chinese Academy of Sciences 3Institute of Mathematics and Interdisciplinary Sciences,
+Xidian University 4Huawei Cloud 5Nanyang Technological University
+
+Abstract
+The Text-to-Video (T2V) model aims to generate dynamic
+and expressive videos from textual prompts. The generation
+pipeline typically involves multiple modules, such as lan-
+guage encoder, Diffusion Transformer (DiT), and Variational
+Autoencoders (VAE). Existing serving systems often rely on
+monolithic model deployment, while overlooking the distinct
+characteristics of each module, leading to inefficient GPU
+utilization. In addition, DiT exhibits varying performance
+gains across different resolutions and degrees of parallelism,
+and significant optimization potential remains unexplored.
+To address these problems, we present DDiT, a flexible
+system that integrates both inter-phase and intra-phase opti-
+mizations. DDiT focuses on two key metrics: optimal degree
+of parallelism, which prevents excessive parallelism for spe-
+cific resolutions, and starvation time, which quantifies the
+sacrifice of each request. To this end, DDiT introduces a de-
+coupled control mechanism to minimize the computational
+inefficiency caused by imbalances in the degree of paral-
+lelism between the DiT and VAE phases. It also designs a
+greedy resource allocation algorithm with a novel schedul-
+ing mechanism that operates at the single-step granularity,
+enabling dynamic and timely resource scaling. Our evalua-
+tion on the T5 encoder, OpenSora SDDiT, and OpenSora VAE
+models across diverse datasets reveals that DDiT significantly
+outperforms state-of-the-art baselines by up to 1.44× in p99
+latency and 1.43× in average latency.
+
+1
+Introduction
+Since the advent of Sora from OpenAI [55], text-to-video
+(T2V) generation becomes prevalent and progresses rapidly.
+Modern T2V solutions are normally based on the Diffusion
+Transformer (DiT) architecture, which outperforms conven-
+tional CNN-based methods [2] in generating high-quality
+images and videos. Despite their excellent performance, a
+significant challenge with DiT lies in their high computa-
+tional demands, especially when generating high-resolution
+content. This is primarily due to the attention mechanism in
+the transformer, which has an 𝑂(𝐿2) complexity relative to
+
+∗Equal contribution.
+
+DiT
+
+GPU
+
+VAE
+DiT
+
+GPU
+
+VAE
+DiT
+
+GPU
+GPU
+
+DiT
+
+GPU
+
+DiT
+VAE
+
+GPU
+
+(c) Heter. Deployment
+(a) Homo. Deployment
+(b) Immut. Deployment
+
+VAE
+DiT
+
+GPU
+
+VAE
+
+Figure 1. The deploy architecture of a T2V serving system.
+
+the input token length 𝐿, while DiT needs to process a large
+number of tokens in each denoising step [4, 51].
+It is important but challenging to develop an efficient T2V
+serving system with low latency and high resource utiliza-
+tion [20, 22]. A number of techniques have been proposed
+to accelerate the video generation process, including distilla-
+tion [51], post-training [52], and caching [47]. Unfortunately,
+these methods exhibit some limitations, such as requiring ad-
+ditional training or compromising the output quality. A more
+promising solution, sequence parallelism [24, 26], accelerates
+T2V serving by efficiently processing the rich spatial and
+temporal information. However, due to the distinct compu-
+tational characteristics of different modules in T2V, as well
+as different serving requests, existing T2V systems suffer
+from large resource utilization inefficiency. We perform an
+in-depth investigation to disclose the following limitations.
+First, the monolithic model results in inefficient re-
+source utilization, as it does not account for distinct
+computational requirements of the DiT and VAE com-
+ponents. Specifically, as illustrated in Figure 1 (a), existing
+systems employ a homogeneous sequence parallelism strat-
+egy across both DiT and VAE, with the same degree of paral-
+lelism (DoP). However, DiT and VAE exhibit heterogeneous
+sequence parallelism due to their different computational de-
+mands, even when processing the same request. For instance,
+as shown in Figure 5, the computation time of VAE does
+not decrease per GPU as the DoP increases. Consequently,
+existing deployment fails to account for their distinct char-
+acteristics, leading to inefficient resource utilization. One
+potential solution, similar as the optimization of large lan-
+guage model (LLM) serving [15, 16, 32, 57], is to disaggregate
+the DiT and VAE phases and deploy them on independent
+GPU groups. As shown in Figure 1 (b), each group deploys
+a DiT or VAE instance, tailoring the quantity to meet the
+specific requirements of the respective module. However,
+1
+
+
+this immutable grouping strategy often struggles to adapt
+to the dynamic resource demands of different phases. The
+isolation among groups prevents elastic utilization of GPU
+computation, leading to large GPU wastage.
+Second, existing T2V serving systems adopt the fixed
+deployment configuration to handle dynamical serv-
+ing requests, leading to either huge resource wastage or
+prolonged latency. DiT is the most time-consuming stage
+in T2V, involving multiple denoising steps. Its execution
+time depends on numerous factors including the resource
+allocation (e.g., number of GPUs), output format (e.g., video
+resolution, number of video frames), and model hyperparam-
+eters (e.g, number of denoising steps). Specifically, as shown
+in Figure 5, to generate higher-resolution videos, a longer ex-
+ecution time is required, and it does not always decrease lin-
+early as the DoP increases. Therefore, it is crucial to precisely
+configure the DoP for different resolutions. Unfortunately,
+existing solutions adopt the static DoP on a fixed amount
+of GPUs, failing to adapt to the distinct computational de-
+mands of different requests. A straightforward approach is to
+schedule requests based on their resolutions to optimize the
+GPU usage. While it can reduce the computational gap and
+improve the resource utilization, it fails to achieve precise
+alignment due to the fixed model configuration and diverse
+request loads. Moreover, existing scheduling algorithms op-
+erate at the request granularity, preventing adaptive resource
+reallocation during execution, as shown in Figure 6 (a). It
+remains an open question to identify the appropriate DoP
+for each specific resolution to achieve efficient scheduling.
+To address the above limitations, we propose DDiT, an
+efficient T2V model serving system that decouples the model
+serving from the DoP of instance, enabling coordinated exe-
+cution of DiT and VAE. It employs heterogeneous sequence
+parallelism and elastic resource allocation tailored to model
+characteristics, scheduling the execution of DiT at the gran-
+ularity of steps instead of requests. The novelty of DDiT is
+reflected from the following two aspects.
+❶Heterogeneous deployment. We decouple DiT and
+VAE into independent modules and coordinate them hetero-
+geneously as demands. Unlike existing homogeneous deploy-
+ment or immutable grouping strategies, we propose a unified
+management mechanism that independently loads model
+weights and establishes connections. Thus, DDiT can effec-
+tively eliminate the resource isolation between immutable
+groups and dynamically adjust the number of GPUs allo-
+cated to each phase during execution. As shown in Figure 1
+(c), DDiT initially loads the model weights into each instance
+without pre-defined grouping. During the DiT phase, DDiT
+dynamically allocates two GPUs on demand to establish con-
+nections and execute the computationally intensive diffusion
+process. Upon completion of the DiT phase and transitioning
+to the VAE phase, DDiT reduces GPU usage to a single unit,
+effectively minimizing the resource redundancy.
+
+❷Stepwise on-demand scheduling. We conduct per-
+formance profiling to identify the optimal DoP for each res-
+olution, aiming to balance the resource utilization efficiency
+and latency. Accordingly, we schedule DiT execution at the
+granularity of a single step rather than an entire request, as
+shown in Figure 6 (b). This enables the serving system to
+process one model step at each time, resolving static alloca-
+tion caused by engine initialization during processing. To
+this end, we design an engine controller to coordinate GPU
+resources and dynamically reschedule per step.
+We perform extensive experiments to validate the effec-
+tiveness of DDiT. In particular, we compare DDiT with the
+state-of-the-art VideoSys [43] when running the OpenSora
+model [55]. Our evaluation results show that by dynamically
+adjusting the inter-phase and intra-phase GPU resources,
+DDiT could reduce the p99 latency by 30.4% and average
+latency by 30% over heterogeneous deployment approaches.
+The key contributions of this paper are as follows:
+• We conduct an in-depth empirical analysis of existing T2V
+serving systems in terms of resource utilization and per-
+formance characteristics, to disclose two key limitations.
+• To address the resource inefficiency between DiT and
+VAE caused by their distinct computational capacity, we
+develop an engine controller, enabling dynamic model
+weights loading and adaptive connections across various
+DoP configurations, optimizing the resource utilization.
+• To strike a balance between the optimal DoP of each re-
+quest and reducing resource wastes caused by static de-
+ployment, we design a unified GPU mechanism to manage
+resources for model serving. We further propose a greedy
+algorithm for scheduling requests at the granularity of
+step instead of request, to maximize the GPU utilization.
+
+2
+Background
+
+2.1
+Diffusion Models
+Diffusion models have emerged as the dominant solution
+for image and video generation tasks, due to their excep-
+tional ability to produce high-quality output [33]. In re-
+verse diffusion, the process starts with pure Gaussian noise
+𝑥𝑇∼N (0, 𝐼), which is progressively denoised over 𝑇itera-
+tive steps using the model 𝜖𝜃, ultimately generating the final
+result 𝑥0. Specifically, given the noisy 𝑥𝑡at each step 𝑡, 𝜖𝜃
+predicts the noise 𝜖𝑡based on the noisy input 𝑥𝑡, step 𝑡and
+an additional input 𝑡(e.g., text). The solver Φ calculates the
+output for the previous step using the following equation:
+
+𝑥𝑡−1 = Φ(𝑥𝑡,𝑡,𝜖𝑡),𝜖𝑡= 𝜖𝜃(𝑥𝑡,𝑡,𝑐)
+(1)
+
+Diffusion models typically leverage a deep neural network,
+with U-Net [11] or DiT as common backbones. Compared to
+U-Net, DiT is a more scalable transformer-based architecture,
+enabling greater model capacity [8, 54]. The quality of the
+image or video, closely tied to its resolution, is critical for
+
+2
+
+
+“Sunset over the sea”
+
+Diffusion Transformer
+
+Spaital-Attn
+
+Cross-Attn
+
+FFN
+
+Temporal-Attn
+
+Cross-Attn
+
+FFN
+
+Text-Encoder
+
+Self-Attn
+
+FFN
+
+Embedding
+
+Self-Attn
+
+FFN
+
+Variational AutoEncoder
+
+Text Embeded
+
+Temporal-VAE
+
+Spaital-VAE
+
+Figure 2. The architecture of T2V systems.
+
+users [18, 31, 37]. However, higher resolutions lead to a qua-
+dratic increase in computational complexity, significantly
+affecting the generation latency [51].
+
+2.2
+Text-to-Video Generation
+Text-to-Video (T2V) [49, 55, 56] is a multimodal generation
+task that produces videos from text descriptions, often re-
+quiring integrating multiple collaborative modules. We use
+one of the most popular open-source T2V model, OpenSora
+[25], to illustrate the common architecture of this task.
+As shown in Figure 2, OpenSora comprises three critical
+modules. (1) The text encoder [28, 42] transforms the in-
+put text into semantic feature representations, capturing the
+contextual and relational information to guide video genera-
+tion effectively. (2) The DiT [33] generates the latent repre-
+sentations through a sequence of iterative denoising steps.
+The video denoising process reconstructs data from noise
+using three types of Transformer blocks: spatial, temporal,
+and cross-attention. Spatial blocks capture the relationships
+among tokens within the same temporal index; temporal
+blocks manage interactions across time; and cross-attention
+integrates the conditioning input to ensure coherence and
+alignment with the context. (3) The VAE [34] decompresses
+latent representations into video frames, reducing the com-
+plexity while preserving the essential spatial and temporal
+features for efficient video generation. The primary oper-
+ators in VAE include convolution, upsampling, and activa-
+tion functions, with convolution contributing the most to
+the computational density. The convolution kernel involves
+generating high-resolution outputs, and its computational
+complexity is directly related to the resolution of the in-
+put feature map, the size of the convolution kernel, and the
+number of output channels [23].
+
+2.3
+Model Serving Optimization
+Driven by the growing demand for AI applications, espe-
+cially generative AI, model serving has become an important
+category of workloads in modern data centers, which are typ-
+ically equipped with specialized accelerators such as GPUs
+or TPUs [29]. The response latency is a critical indicator
+for the performance of model serving. In T2V systems, the
+latency could be extremely long, especially for generating
+
+1
+2
+4
+8
+Batch Size
+
+0
+
+50
+
+100
+
+150
+
+Latency (s)
+
+(a) T2V Charac.
+
+1
+2
+4
+8
+Batch Size
+
+0
+
+10
+
+20
+
+Latency (s)
+
+3.01
+
+5.50
+
+10.43
+
+20.08
+
+0.16
+
+0.30
+
+0.59
+
+1.17
+
+(b) DiT & VAE Performance
+
+0.0
+
+0.2
+
+0.4
+
+Thpt. (Req/s)
+
+Lat. 144p
+Thpt. 144p
+
+Lat. 240p
+Thpt. 240p
+
+Lat. 360p
+Thpt. 360p
+
+DiT 144p
+VAE 144p
+
+Figure 3. The impact of changing the batch size on the
+performance of T2V serving.
+
+high-resolution videos. For instance, the generation time of
+one video by OpenAI Sora [55] can reach several minutes
+due to the time-intensive attention mechanism. Therefore, it
+is urgent to accelerate the model serving systems for better
+user experience and economic benefits.
+Numerous system-level optimization solutions have been
+designed targeting different types of AI tasks. Unfortunately,
+it is non-trivial to directly apply them to T2V systems. Specif-
+ically, batching is a critical technique in serving systems to
+achieve high resource utilization, particularly with GPUs,
+as it enables parallel processing of multiple inputs while
+minimizing the idle time [19, 50]. However, this approach is
+less effective in T2V models due to its high computational
+demands, as shown in Figure 4. Some studies leverage the
+similarities between consecutive steps to reduce the com-
+putational requirements, thereby optimizing the denoising
+process more efficiently [27, 38, 47]. However, cache reusing
+often compromises the quality of generated videos.
+On the other way, many parallelism strategies have been
+designed to accelerate the inference of Transformer-based
+models, including Pipeline Parallelism (PP), Tensor Paral-
+lelism (TP), and Sequence Parallelism (SP) [1, 21, 39]. TP is
+particularly effective for LLMs due to the large model sizes
+and relatively small activation sizes. The communication
+overhead introduced by TP is negligible compared to the
+latency reduction achieved through the increased memory
+bandwidth. LLMs utilize embedded SP by sharding along a
+single sequence dimension proposed in Ring-Attention [26].
+In contrast, parallelism in diffusion models presents different
+challenges. These models are generally smaller than LLMs
+but often encounter bottlenecks due to large activation sizes,
+primarily caused by spatial dimensions, especially when gen-
+erating high-resolution outputs. TP is unsuitable for DiT
+due to the substantial communication overhead during in-
+ference, while PP is ineffective because of the small model
+size. SP can benefit DiT in video generation, particularly in
+multi-dimensional Transformer-based models. However, the
+degree of SP must be carefully determined before deployment
+to achieve optimal performance and resource utilization.
+
+3
+
+
+0
+200
+400
+600
+Sample Times
+
+0
+
+50
+
+100
+
+GPU Utilization(%)
+
+(a) GPU Utilization
+
+0
+200
+400
+600
+Sample Times
+
+13.00
+
+13.25
+
+13.50
+
+13.75
+
+Memory (GB)
+
+(b) Memory Size
+DiT
+VAE
+
+Figure 4. GPU Utilization of DiT and VAE (resolution: 144p).
+3
+An Empirical Study
+We perform an in-depth investigation towards a represen-
+tative T2V model, OpenSora [25]. We discover some inter-
+esting findings, which can shed light on the design of new
+optimization approaches for T2V models.
+
+3.1
+Impact of Batch Size
+
+We first measure the impact of the batch size on the serving
+inference. Figure 3 shows the characterization results with
+the batch size ranging from 1 to 8 with the degree of sequence
+parallelism set to one. We observe the following pattern: in
+DiT, the throughput scales linearly with the batch size at
+smaller resolutions but plateaus as batch size increases. For
+larger resolutions, its remains nearly unchanged. In contrast,
+VAE maintains consistent system throughput across different
+resolutions and batch sizes.
+We further evaluate the GPU utilization at runtime. As
+shown in Figure 4, both DiT and VAE saturate GPU resources
+with a batch size of 1, which is consistent with the behavior
+of attention and convolution operations. Batching can not
+improve the throughput of the T2V system but instead in-
+creasing the latency of requests within a single batch. Based
+on these observations, we have the following insight:
+
+Insight 1: The optimal scheduling policy in T2V is to
+process requests sequentially, one at each time, because
+the GPU computational capacity is always limited.
+
+3.2
+Impact of DoP
+Online video generation is a time-consuming process, and
+typically involves model deployment with multi-GPU paral-
+lelism. This approach distributes the computational work-
+load to reduce the generation latency and improve the user
+experience. We evaluate the impact of the DoP (i.e., number
+of GPUs) on the T2V system. We set the DoP from 1 to 8 in
+our generation tests.
+As shown in Figure 5, requests with larger resolutions
+demonstrate distinct characteristics across two phases under
+varying degrees of parallelism: in DiT, higher-resolution re-
+quests distribute the computational load across more GPUs
+as the DoP increases, resulting in an initial linear reduction
+in execution time, followed by a slower rate of decrease.
+
+1
+2
+4
+8
+Parallel Size
+
+0
+
+5
+
+10
+
+15
+
+20
+
+Latency (s)
+
+(a) DiT Charac.
+
+1
+2
+4
+8
+Parallel Size
+
+0.00
+
+0.25
+
+0.50
+
+0.75
+
+1.00
+
+Latency (s)
+
+(b) VAE Charac.
+
+144p
+240p
+360p
+
+Figure 5. Latency of DiT and VAE under various DoPs.
+
+However, VAE maintains stable execution time regardless
+of GPU parallelization. As the DoP increases, the latency
+of VAE accounts for a larger proportion of the total serv-
+ing time, leading to greater resource inefficiency with more
+GPUs. For example, as shown in Figure 5, the VAE execu-
+tion time accounts for 14.3% of the total inference time with
+four GPUs, compared to 4.5% with a single GPU under the
+request with 360p resolution. We find that the key issue lies
+in all GPUs within the VAE processing the same input tensor
+from DiT, despite utilizing the same number of GPUs as DiT
+during generation. Therefore, with DoP=4, VAE wastes the
+computational time of three GPUs. This redundancy high-
+lights inefficiencies in the current homogeneous-deployment
+manner. Furthermore, VAE cannot achieve acceleration, even
+when using parallelized versions such as DistVAE [8].
+According to the above discussion, the monolithic T2V
+serving performs DiT and VAE sequentially, ignoring the
+inconsistent hardware resource allocation between phases,
+resulting in redundant computation during inference. This
+gives us the following design insight:
+
+Insight 2: We need to decouple DiT and VAE from model
+deployment and dynamically allocate resources to each
+phase for improved efficiency.
+
+In Appendix, Figure 17 further demonstrates the effects
+of batch size and DoP on the T2V models are orthogonal.
+
+3.3
+Impact of Video Resolution
+Most T2V serving systems allow users to define the resolu-
+tion through a configurable parameter, as seen in Kling [18],
+Video Ocean [31], and Runway [37]. Therefore, T2V serving
+systems must handle workloads consisting of requests with
+varying resolutions. The latency of a request increases with
+higher resolutions, and DiT acts as a significant contributing
+factor. To handle the specific resolution efficiently, a optimal
+number of GPUs should be allocated to ensure acceptable
+latency for users and maximize resource utilization.
+We evaluate the impact of varying resolutions, ranging
+from 144p to 360p, on the DiT performance across paral-
+lel sizes from 1 to 8. The results are shown in Figure 5.
+During the DiT phase, we observe two key patterns: (1) for
+lower-resolution requests, the performance remains stable
+
+4
+
+
+time
+
+1
+
+2
+
+R2
+
+R2
+
+3
+
+4
+
+R2
+
+R1
+
+time
+
+1
+
+2
+
+R2
+
+R1
+
+R2
+
+3
+
+4
+
+R2
+
+GPU
+GPU
+
+Scale Up
+
+(b) Step-Sched of DiT
+(a) Req-Sched of DiT
+
+R1
+R1
+
+R1-240p
+R2-360p
+R1-240p
+R2-360p
+
+Figure 6. The idle GPU under the fixed deployment.
+
+across varying DoP configurations, with slight degradation
+at higher DoP; (2) for higher-resolution requests, the perfor-
+mance improves significantly as DoP increases. For instance,
+a request with 144p resolution performs better on a single
+GPU than on multiple GPUs. Similarly, deploying a 240p res-
+olution request on two GPUs can halve the latency compared
+to one, but it cannot get enough earnings for more than two
+GPUs because of Amdahl’s law. As shown in Figure 8, when
+doubling the DoP, the reduction ratio in DiT execution time
+is different under different initial DoP values. It highlights
+that performance gains do not scale linearly with the GPU
+count. This inspires us as follows:
+
+Insight 3: Larger DoP does not always lead to better
+performance. It is necessary to determine an optimal
+configuration, enabling efficient request scheduling to
+maximize the performance gain for each resolution.
+
+3.4
+Impact of Static Deployment
+
+In existing T2V serving systems, model deployment remains
+static on a fixed amount of resources throughout the entire
+process, and each request runs continuously until completion.
+This is inefficient and leads to significant computational
+waste due to the mismatch between resource allocation and
+optimal requirements. For example, Figure 6 illustrates the
+idle resource time in a static scenario with four GPUs serving
+two requests with resolutions of 240p and 360p. When a
+240p request is followed by a 360p request, the scheduler
+allocates two GPUs to the first request, leaving another two
+idle. This does not satisfy the optimal DoP requirement for
+the subsequent request. The scheduler then faces two choices:
+(1) waiting for the 240p request to finish and release its GPU,
+leading to wasted idle resources, (2) allocating the two idle
+GPUs to the 360p request, causing it to execute suboptimally
+with insufficient resources until completion, as it cannot
+utilize the additional two GPUs released by the 240p request
+due to the static allocation at initialization.
+According to the above analysis, static model deployment
+and coarse-grained request scheduling lead to inefficient re-
+source utilization and substantial wastage. This observation
+provides the following design motivation:
+
+Global
+Scheduler
+
+Engine
+Controller
+
+GPU IDs: (1, 3, 8)
+
+Elastic Units
+
+GPU
+
+GPU
+
+GPU
+
+Control Message
+
+Centralized Control Plane
+
+RIB
+
+res. op = 1
+
+Resource Manager
+
+Offline Profiler
+
+Figure 7. Architecture overview of DDiT.
+
+Insight 4: It is necessary to design a fine-grained, step-
+aware scheduling mechanism and flexible model manage-
+ment for dynamic resource scaling. These enable elastic
+parallelism deployment for DiT, dynamically adjusting
+based on available resources during request execution.
+
+4
+DDiT Design
+
+Inspired by the insights from our empirical study, we design
+DDiT, a novel T2V serving system that can efficiently allocate
+GPU resources at each phase, and flexibly scale the resources
+for running requests at a fine-grained step level.
+
+4.1
+Overview
+The design of DDiT encompasses the following ideas. First,
+we decouple the DiT and VAE phases for deployment and
+execution independently. Second, we decouple the model
+weights loading and the establishment of communication
+groups for parallelism in itialization. The model weights are
+loaded into each GPU instance, and communication groups
+are established on demand, eliminating the need to prede-
+fine the number of GPUs. Third, we determine the optimal
+DoP for various resolutions in the offline manner, which
+are used to guide the online resource allocation. Fourth, we
+implement a greedy resource allocation algorithm with a
+step-wise scheduling strategy to minimize the idle GPU time
+and efficiently change DoP for handling requests. Figure
+7 shows the architectural overview of DDiT, consisting of
+three main components: Offline Profiler, Centralized Control
+Plane, and Engine Units.
+Offline Profiler. This module automatically analyzes the
+characteristics across various request resolutions and applies
+the predefined policies to determine the optimal DoP. It is
+executed only once for each unique resolution. The pair
+of resolution and optimal DoP value is stored in a request
+information database (RIB). The resolution must be profiled
+first if its portrayal is not available.
+
+5
+
+
+Centralized Control Plane. It consists of a global sched-
+uler, a cluster monitor, and a resource allocator. The global
+scheduler distributes requests to DiT instances and retrieves
+outputs from VAE instances. The cluster monitor tracks the
+GPU status and collects request statistics from Engine Units.
+The resource allocator manages GPU allocation, treating
+each GPU as a fundamental unit that contains a full replica
+of the model weights, enabling a heterogeneous model paral-
+lelism strategy. The global manager dynamically determines
+the DoP for requests based on available resources and their
+optimal DoP before each step of the DiT and VAE phases.
+Engine Units. The Engine Units consist of an engine con-
+troller and a model engine. The engine controller receives
+control messages from the global scheduler, manages con-
+nections between instances using GPU IDs, and triggers the
+model engine to execute step by step. It adjusts the commu-
+nication groups based on updated DoP, broadcasting latent
+representation tensors to newly assigned instances. It also
+periodically reports the request phase, number of steps, and
+resource usage to the cluster monitor to aid GPU allocation.
+Below we elaborate two core approaches in DDiT.
+
+4.2
+Global Scheduler
+
+DDiT features a scheduler designed for efficient request dis-
+patching to the DiT phase in an online serving system. Tra-
+ditional scheduling focuses only on the instance load, which
+is unsuitable for T2V serving as it overlooks the unique char-
+acteristics of T2V serving. We propose a new scheduling
+algorithm that accounts for the computational requirements
+of requests in DiT, enabling efficient handling of varying res-
+olutions. To maximize GPU utilization, we design a step-wise
+mechanism for the DiT engine to avoid waiting time.
+
+4.2.1
+Problem Formulation. The objective of the global
+scheduler is to minimize the overall processing time of pend-
+ing requests given their volume and available resource capac-
+ity, which is also equivalent to minimizing the cumulative
+resource occupancy time, defined as:
+
+𝑂=
+∑︁
+
+𝐺𝑃𝑈𝑗∈𝑐𝑙𝑢𝑠𝑡𝑒𝑟
+𝑜𝑐𝑐𝑢𝑝𝑖𝑒𝑑_𝑡𝑖𝑚𝑒(𝐺𝑃𝑈𝑗)
+(2)
+
+In addition to the scheduling method, the characteristics
+of requests, such as resolution distribution, also play a key
+role in influencing this metric, as analyzed in Section 3.3.
+We first define the resolution distribution of a request batch
+comprising 𝑁resolution types, with each type having a
+corresponding proportion 𝑥𝑖, where 1 ≤𝑖≤𝑁. Then we
+present a scheduling algorithm below that derives the the-
+oretical minimum of this metric under the fixed resolution
+distribution and request volume constraints.
+
+4.2.2
+Theoretical Optimal Scheduling Algorithm. The
+optimal scheduling algorithm can theoretically be achieved
+if the resolution distribution is already known. Under this
+assumption, we use dynamic programming to determine the
+
+optimal resource allocation for requests of each resolution
+type. We present the details of scheduling in Algorithm 1.
+
+Algorithm 1 Theoretical Optimal Scheduling Algorithm
+
+1: 𝑚, 𝑛←numbers of instances and GPUs per instance, 𝑀= 𝑚× 𝑛
+2: 𝑁←numbers of resolution types
+3: 𝑑𝑝[𝑀+ 1][𝑁+ 1] ←[[0, 0, ...], [0, 0, ...], ...]
+4: 𝑑𝑝[𝑖][0]1≤𝑖≤𝑀= 0, 𝑑𝑝[0][𝑗]1≤𝑗≤𝑁= ∞
+5: 𝑥1 : 𝑥2 : 𝑥3...𝑥𝑁←the proportion of each resolution type
+6: 𝑝𝑠= {1, 2, 4, ...} ←𝑃𝑟𝑜𝑐𝑒𝑠𝑠_𝐺𝑟𝑜𝑢𝑝_𝑆𝑖𝑧𝑒_𝐿𝑖𝑠𝑡
+7: 𝐺[𝑚][𝑛] ←𝐴𝑙𝑙𝑜𝑐𝑎𝑡𝑒𝑑_𝐺𝑃𝑈_𝐿𝑖𝑠𝑡
+8: for 𝑖= 1 to 𝑀do
+9:
+for 𝑗= 1 to 𝑁do
+10:
+FIND_OPTIMAL_TIME(𝐺, 𝑑𝑝, 𝑝𝑠, 𝑖, 𝑗, 𝑥𝑗)
+
+11: Return 𝑑𝑝[𝑀][𝑁]
+12: function FIND_OPTIMAL_TIME(𝐺, 𝑑𝑝, 𝑝𝑠, 𝑖, 𝑗, 𝑥𝑗)
+13:
+for 𝑘= 1 to 𝑖do
+14:
+for 𝑝in 𝑝𝑠do
+15:
+𝛼←BandwidthAwarePartition(
+𝐺(𝑛𝑒𝑡.)
+(𝑖−𝑘+1)𝑡ℎ∼𝑖𝑡ℎ
+,𝑘, 𝑝)
+
+16:
+if 𝛼== 0 then
+17:
+Continue
+18:
+𝑑←EstimateExecutionTime(𝑝, 𝑗)
+19:
+𝑑𝑝[𝑖][𝑗] = min(𝑑𝑝[𝑖−𝑘][𝑗−1] +𝑘× Occupy(𝑥𝑗,𝑑, 𝛼))
+
+The objective is to find the minimum cumulative resource
+occupancy time of assigning total 𝑀GPUs to total 𝑁resolu-
+tion types of requests. We assume that there are 𝑚instances
+and each instance contains 𝑛GPUs (line 1). We adopt dy-
+namic programming, where 𝑑𝑝[𝑖][𝑗] is used to represent
+the optimal result of assigning the first 𝑖GPUs to the first
+𝑗request types (line 3) and initializing it (line 4). Since the
+request execution time varies across different DoP values,
+we also enumerate all the values (line 6) and use 𝐺[𝑖][𝑗]
+to represent whether the 𝑗-th GPU in the 𝑖-th instance is
+allocated or not (line 7).
+Subsequently, the algorithm calculates each 𝑑𝑝[𝑖][𝑗] us-
+ing a double loop (line 8 ∼10). The function starts at line
+12 is the core logic for calculating 𝑑𝑝[𝑖][𝑗]. It enumerates
+the number of GPUs and the DoP used to execute the 𝑗-th
+request type (line 13 ∼14). Line 15 calculates the number
+of model instances (𝛼) based on network bandwidth condi-
+tions between the (𝑖−𝑘+ 1)-th ∼𝑖-th GPUs and DoP (𝑝).
+Since SP requires high-speed inter-GPU connectivity, the
+allocation strategy varies depending on the cluster configu-
+ration. For example, considering a cluster of two machines,
+each is equipped with eight GPUs, where NVLink enables
+high-speed bandwidth within machines but only low-speed
+bandwidth exists between machines. If the first machine
+and the first GPU of the second machine are already occu-
+pied, allocating an additional seven GPUs yields different
+outcomes based on the DoP. With the DoP of one, seven
+model instances can be created if each GPU hosts the full
+model weights. However, if the DoP is four, only one model
+instance can be created.
+
+6
+
+
+Since the execution time of the T2V model is deterministic
+once parameters such as denoising steps, DoP (𝑝) and reso-
+lution (𝑗) are fixed, we pre-profile across various scenarios
+and leverage these data to estimate the execution time (𝑑)
+for a single request with the given resolution type 𝑗in line
+18. Line 19 calculates 𝑑𝑝[𝑖][𝑗] by the minimal sum of the
+two parts: (1) the cumulative resource occupancy time for
+assigning the first (𝑖−𝑘) GPUs to the first (𝑗−1) request
+types, and (2) the cumulative resource occupancy time for
+assigning the (𝑖−𝑘+ 1)-th ∼𝑖-th GPUs to the 𝑗𝑡ℎrequest
+type.
+The first part is already calculated by dynamic program-
+ming, and the second part can be modeled as a batch model
+or a queue model, depending on the assumptions:
+• Batch Model: If there are already 𝑆requests pending
+in the system before it starts processing and no more
+new requests will arrive. Given that the number of model
+instances 𝛼≥1 and the execution time 𝑑is fixed, we can
+model the scenario using a batch model. Assuming that
+the request is evenly distributed across 𝛼model instances,
+the number of type 𝑗requests executed by each instance
+is ⌈𝑆·𝑥𝑗
+
+𝛼⌉. The execution time of request type 𝑗is 𝑑, so
+the average resource occupancy time for a single GPU is
+computed as follows:
+
+𝑊𝐵𝑎𝑡𝑐ℎ(𝑡𝑦𝑝𝑒𝑗) = ⌈𝑆· 𝑥𝑗
+
+𝛼
+⌉𝑑
+(3)
+
+Therefore, the cumulative resource occupancy time for
+assigning the (𝑖−𝑘+ 1)-th ∼𝑖-th GPUs to the 𝑗𝑡ℎrequest
+type is obtained by 𝑘× e.q. 3.
+• Queue Model: This model characterizes a dynamic equi-
+librium scenario where the system maintains a constant
+pending requests count 𝑆, balancing continuous request
+arrivals with concurrent processing throughput. Due to
+space constraints, the detailed specification of the queue
+model is provided in Appendix A.
+In practical scenarios, the resolution distribution is not
+known in advance. Previous works[35, 48] attempt to predict
+the request loads and their characteristics based on historical
+data patterns. However, these works exhibit limited robust-
+ness to high load fluctuations, and the runtime overhead
+induced by frequent resource re-allocations in response to
+load variations remains a critical under-addressed challenge.
+Therefore, to reduce the cumulative resource occupancy time
+in the real world, we introduce the greedy scheduling algo-
+rithm of DDiT.
+
+4.2.3
+Greedy Scheduling in DDiT. DDiT schedules each
+request sequentially in a First-Come-First-Serve (FCFS) man-
+ner, since the batching technique is not suitable for T2V
+models as shown in Section 3.1. More specific, it employs a
+greedy approach to set the DoP of each request before the
+DiT phase and automatically choose whether to promote the
+
+DoP at a step granularity during the DiT phase, in order to
+minimize the cumulative resource occupancy time as well.
+According to Amdahl’s Law [10], the optimal DoP for
+any resolution constant at one if we aim to minimize the
+cumulative resource occupancy time at a single request level.
+However, this configuration of parallelism severely degrades
+the performance for high-resolution requests and blocks
+subsequent ones. Therefore, we need to reassess the optimal
+DoP for each resolution, balancing the resource efficiency
+and performance.
+As the DoP of the request increases, the proportional of
+time reduction in DiT phase afforded by each doubling of
+DoP is variable. In Figure 8, we present the change rate of
+the per-step DiT execution time between two adjacent DoP
+across various resolutions. We define this metric below:
+
+𝑧= 1 −𝐷𝑖𝑇𝑠𝑡𝑒𝑝_𝑡𝑖𝑚𝑒(𝑝𝑎𝑟𝑎𝑙𝑙𝑒𝑙_𝑠𝑖𝑧𝑒= 𝑖, 𝑟)
+
+𝐷𝑖𝑇𝑠𝑡𝑒𝑝_𝑡𝑖𝑚𝑒(𝑝𝑎𝑟𝑎𝑙𝑙𝑒𝑙_𝑠𝑖𝑧𝑒= 𝑖/2, 𝑟)
+(4)
+
+The 𝑟means the resolution (144p, 240p, 360p) of the request
+and𝑖= 2, 4, 8 in Figure 8. For each request type we denote the
+value of 𝑖as 𝐵when the corresponding 𝑧is largest. Therefore,
+for requests with resolutions of 144p, 240p, and 360p, their
+corresponding 𝐵values are 1, 2, and 4, respectively. Notably,
+we only treat 𝐵of each request type as its optimal DoP for
+the DiT phase, while the optimal DoP is much smaller during
+the VAE phase, as analyzed in Section 3.2. Next, we introduce
+how DDiT specifically applies the greedy strategy and the 𝐵
+values to schedule requests,
+The first greedy scheduling occurs when a request ar-
+rives in DDiT and attempts to acquire 𝐵GPUs, but only 𝐺
+free GPUs are available (𝐺< 𝐵). In this case, DDiT greed-
+ily assigns these 𝐺GPUs to the request, allowing it to start
+DiT execution. The second greedy scheduling happens dur-
+ing the DiT phase if newly released GPUs become available
+from completed requests. If so, DDiT greedily assigns these
+GPUs to the request, allowing it to reach 𝐵GPUs. This reas-
+signment occurs only if the request has the highest priority
+among those requests whose current DoP is lower than its
+corresponding 𝐵. The definition of the priority lies below:
+
+𝑟𝑠𝑡𝑎𝑟𝑣.+ = (𝑟𝑐𝑢𝑟_𝑠𝑡𝑒𝑝−𝑟𝑙𝑎𝑠𝑡_𝑠𝑡𝑒𝑝)×(𝑟𝑐𝑢𝑟_𝑠𝑡𝑒𝑝_𝑡𝑖𝑚𝑒−𝑟𝑜𝑝𝑡_𝑠𝑡𝑒𝑝_𝑡𝑖𝑚𝑒)
+(5)
+It represents the theoretical additional DiT execution time
+that a request experiences from its most recent GPU assign-
+ment event until the current scheduling event, due to an
+insufficient number of GPUs (i.e., fewer than 𝐵). We refer
+to this measure as the starvation time, and the longer the
+starvation time, the higher the scheduling priority. More
+details are presented in Appendix B due to space constraint.
+
+4.3
+Efficient Decoupling
+
+DDiT introduce two decouple mechanisms: inter-phase and
+intra-phase designs in the T2V system. The inter-phase de-
+coupling is necessary because the coupling module overlooks
+
+7
+
+
+144p
+240p
+360p
+Resolutions
+
+0.2
+
+0.0
+
+0.2
+
+0.4
+
+0.5
+
+Latency Change Rate
+
+0.00
+0.00
+0.00
+
+-0.14
+
+0.45
+0.46
+
+-0.07
+
+0.20
+
+0.47
+
+-0.02
+
+-0.07
+
+0.34
+
+SP=1
+SP=2
+SP=4
+SP=8
+
+Figure 8. Per-step DiT time change rate between adjacent
+parallel sizes.
+
+the different resource requirements of components like the
+DiT and VAE modules. DDiT decouples DiT and VAE into
+two independent components, enabling them to execute se-
+quentially within the same instance at any time, as long as
+the VAE phase can utilize the latent representations tensor
+generated by the DiT phase.
+To optimize resource usage, DDiT employs an engine con-
+troller to scale down the DoP of the Engine Unit after com-
+pleting the DiT phase. Specifically, for an Engine Unit 𝑅with
+a DoP 𝑑, the elastic scale-down mechanism adjusts it to a
+new parallel group ´𝑅with a reduced DoP ´𝑑, determined by
+the resource requirements of the VAE model, where ´𝑑< 𝑑
+in DDiT. The mechanism designates the GPUs with the low-
+est IDs as master units within Engine Unit 𝑅, which remain
+in ´𝑅during the VAE phase. The latent representations ten-
+sors are retained in these master units after the DiT phase
+completion.
+Moreover, the scale-down mechanism involves two over-
+lapping Engine Units, each with different GPUs. They should
+use separate communication handlers to ensure message con-
+sistency. However, the coupling model necessitates reloading
+the model weights and rebuilding the communication do-
+main. To address this, DDiT separates model weights loading
+and parallelism communication construction in model serv-
+ing. Model weights are loaded initially on all GPUs, while
+parallelism communication domain construction is deferred
+until the beginning of the DiT or VAE phase.
+DDiT proposes the intra-phase decoupling because the
+DoP configuration for the DiT phase is predefined and can-
+not change across multiple denoising steps. DDiT employs
+an engine controller to track each step of the engine units
+through inter-process messaging. It is aware of the DoP con-
+figuration at each step and receives updated DoP messages
+from the global scheduler, enabling flexible DoP reconfigu-
+ration, as discussed in §4.2.3.
+Figure 9 illustrates the execution lifecycle of a request in
+the DDiT, emphasizing resource scaling and step scheduling.
+We still assume that when the request 𝑏arrives, the available
+resource 𝐺in DDiT does not meet its optimal requirement
+
+…
+
+GPU
+GPU
+
+GPU
+GPU
+Data Plane
+
+GPU
+
+GPU
+
+DiT-Step1
+
+① Control
+Message
+
+DiT-Step2
+
+ Check
+
+DiT-StepM
+
+DiT-StepN
+
+GPU
+
+Controller Plane
+
+VAE
+
+③ Sacling
+
+H.Req Pri
+
+Scheduler
+
+W.Req
+
+R.Req
+
+⑤/⑦ Release
+
+④ DiT-Finish
+⑥ VAE-Finish
+
+Engine Controller
+
+Control
+
+Plane
+
+…
+
+sched. step
+
+conn. table
+
+Step Line
+
+② Init
+
+Figure 9. The lifecycle of a request in DDiT.
+
+𝐵𝑏:𝑟𝑒𝑠., as the request 𝑎is still running. The scheduler re-
+trieves 𝑏from the waiting queue and attempts to allocate
+𝐵𝑏:𝑟𝑒𝑠. GPUs through the resource manager, but only 𝐺is
+allocated. Request 𝑏is labeled as "hungry" and forwarded
+to the engine controller with a control message containing
+GPU IDs and request metadata.
+The engine controller searches the torch distribute han-
+dler using the hash value of the GPU IDs in the connection
+table. If no handler exists, it first triggers the workers (a
+worker represents a process executing T2V generation on
+a GPU) associated with the 𝐺GPUs to establish the con-
+nection for parallelism and execute the DiT model by using
+the request metadata. When 𝑎completes, its resources 𝐺𝑎
+are released. The scheduler can reassign these resources to
+𝑏, and send an updated message with the new GPU IDs to
+the engine controller. The engine controller employs a back-
+ground thread to monitor notifications. Upon detecting the
+available resources, it promotes the parallelism group to in-
+clude the newly assigned GPUs and uses NCCL to transmit
+intermediate tensors to the new GPU workers. This scaling
+mechanism continues until DiT completes or the optimal
+number of GPUs is reached.
+The engine controller communicates with workers at each
+step. Once the DiT phase finishes, it promptly receives the
+completion information. It stores the handler, releases par-
+tial GPUs, and notifies the scheduler. It also rebuilds the
+parallelism group for the VAE module. The remaining GPUs
+continue to execute until the the request is completed.
+Discussion: We now discuss two auxiliary components
+in the T2V system: the text encoder and the tensor-to-video
+converter. (1) The text encoder currently requires negligi-
+ble processing time, but it can be deployed on dedicated
+hardware for longer texts or multiple inputs. We leave this
+optimization for future work. (2) The tensor-to-video con-
+verter runs synchronously on the CPU in VideoSys [43],
+preventing GPU task blockage on the same machine. How-
+ever, since it can be designed as an asynchronous process,
+we exclude this component from the experiment to ensure
+that all optimizations focus on GPU-executed tasks.
+
+8
+
+
+Name
+Model
+Param
+Text Encoder
+T5v1.1-xxl
+4.8B
+Diffusion Model
+STDiT3
+1.1B
+Var. Encoder
+OpenSoraVAE
+384M
+Table 1. Detailed module parameters in our T2V system.
+
+5
+Implementation
+We implement the Offline Profiler and DDiT ’s Centralized
+Control Plane from scratch in Python. We adopt DiT and VAE
+instances based on Videosys [54] and provide a FastAPI front
+end of DDiT for user convenience, allowing users to submit
+requests with customizable parameters such as resolution
+and aspect ratio. Each GPU runs a dedicated Python process
+to handle a portion of the sequence parallelism. We use RPC
+[41] for the communication in the control plane of DDiT,
+while NCCL [30] is used in the data plane between Engine
+Units.
+The Offline Profiler automatically conducts tests for spe-
+cific resolutions with the increasing parallelism size to de-
+termine the optimal GPU count, storing the profiled data
+in MySQL [7]. The Centralized Control Plane comprises a
+resource allocator and a global scheduler. The resource al-
+locator employs multi-level lists to organize GPUs into a
+buddy system, which manages GPU pairs for various DoP
+by automatically merging and splitting them as needed. The
+global scheduler retrieves profiling data from MySQL [7] dur-
+ing initialization, records the status of GPUs using a bitmap,
+manages communicator handlers in a hash table, and mon-
+itors the execution phase of requests. It uses RPC [41] to
+communicate with the elastic units to notify the scheduling
+information. The master unit employs NCCL [30] to broad-
+cast the DiT tensors to news, dynamically scaling sequence
+parallelism as needed. A DiT or VAE instance is a fundamen-
+tal deployable unit, which has three coroutines in a Python
+process that runs the local scheduler, the reporter, and the
+main engine.
+
+6
+Evaluation
+
+We evaluate DDiT using multiple real-world solutions across
+different workloads, quantify the effectiveness of its compo-
+nents, and further analyze its scalability against the theoret-
+ical optimal scheduling algorithm.
+
+6.1
+Setup
+Model. We adopt the T5v1.1-xxl Encoder [9] as the text
+encoder, STDiT-v3 [13] as the DiT model, and OpenSoraVAE
+[14] as the VAE model in our evaluation. These models are
+widely used in practice, with their parameters are detailed
+in Table 1.
+Testbed. We evaluate DDiT on a single server equipped with
+an Intel Xeon Gold 5218R CPU (192 cores and 2 TB of mem-
+ory) and eight NVIDIA H800 GPUs (each with 80 GB of HBM),
+
+interconnected via a 400 GB/s NVLink [46]. The server runs
+Ubuntu 20.04, CUDA 12.1, Python 3.8, and PyTorch 2.2.1. For
+scalability experiments, we emulate DDiT and the baselines
+on a GPU cluster of eight servers, interconnected via 200
+Gbps RDMA links.
+Workloads. We evaluate the effectiveness of the greedy
+scheduling algorithm and resource allocation strategies in
+DDiT for T2V inference by varying the resolution while keep-
+ing the number of frames constant at 51 and denoising steps
+set to 30 as discussed in Section 1. Since no open-source
+real-world T2V workload trace was available, we selected
+144p, 240p and 360p to represent low, medium and high
+resolutions, respectively, and adjusted their proportions to
+emulate a realistic workload. The requests arrive randomly
+as 𝐴(𝑡) ∼𝜆𝑒−𝜆, where the arrival rate (𝜆) ranges from 0.25
+and 1 to simulate varying load intensities. The burst in Figure
+10 represents requests arriving simultaneously, simulating
+an extreme load.
+Baselines. We use VideoSys [43] as our baseline, the most
+popular open-source T2V system. We enhance it to support
+the following four real-world scenarios and the theoretical
+optimum scheduling algorithm in §4.2.2.
+• Static DoP(SDoP): The DoP for the model instance is
+pre-configured and remains fixed to serve requests with
+varying patterns in practical environments, ensuring ease
+of deployment. We set the DoP range from one to four.
+• Static Partition & Cluster Isolation(SPCI): T2V infer-
+ence services involve multiple types of requests, with their
+ratios varying dynamically. To effectively serve specific
+request types, GPU resources are typically partitioned
+into clusters based on the historical patterns of request
+types, each with a fixed DoP. In the experiment, we allo-
+cate GPUs into three clusters based on predefined ratios
+of request types to optimize performance, assuming prior
+knowledge of the request distribution.
+• Dynamic Partition & Cluster Isolation(DPCI): The
+dynamic partition prioritizes service quality compared
+to the static partition, as each request type has different
+computational demands. Specifically, we configure the
+DoP of clusters corresponding to each request type, as
+introduced in 4.2.3. In the experiment, we allocate an equal
+number of engine units for the three request types in their
+respective clusters, limited by the available hardware.
+• Dynamic Partition(DP): It removes the strict routing
+constraint to enhance the flexibility of dynamic partition-
+ing in handling workload distribution shifts. For example,
+a 𝐵= 4 request facing resource saturation in its native
+cluster can be adaptively downgraded to a 𝐵= 2 clus-
+ter, minimizing resource idle time and ensuring service
+continuity.
+The 𝐵values we used in DDiT are introduced in Section
+4.2.3 and the DoP for the VAE phase is set to one according
+to Figure 5.
+
+9
+
+
+0.25
+0.5
+0.75
+1.0
+Burst
+
+0.25
+
+0.50
+
+0.75
+
+1.00
+
+Norm. P99 Latency
+
+0.25
+0.5
+0.75
+1.0
+Burst
+0.25
+0.5
+0.75
+1.0
+Burst
+0.25
+0.5
+0.75
+1.0
+Burst
+
+0.25
+0.5
+0.75
+1.0
+Burst
+Arrival Rate
+
+0.25
+
+0.50
+
+0.75
+
+1.00
+
+Norm. Avg. Latency
+
+Low: Medium: High = 1: 1: 1
+
+0.25
+0.5
+0.75
+1.0
+Burst
+Arrival Rate
+
+Low: Medium: High = 6: 1: 3
+
+0.25
+0.5
+0.75
+1.0
+Burst
+Arrival Rate
+
+Low: Medium: High = 4: 4: 2
+
+0.25
+0.5
+0.75
+1.0
+Burst
+Arrival Rate
+
+Low: Medium: High = 2: 2: 6
+
+DDiT
+Static DoP = 1
+
+Static DoP = 2
+Static DoP = 4
+
+Static Part. & Cluster Isol.
+Dynamic Part. & Cluster Isol.
+
+Dynamic Part.
+
+Figure 10. Single-node end-to-end performance (Lower latency indicates better performance). Part is an abbreviation for
+Partition, and Isol is isolation for short.
+
+Metrics. We focus on the average latency, the p99 latency,
+and the monetary cost of a T2V inference system. For each ar-
+rival rate, we compare different systems by normalizing their
+metrics. For example, at a given arrival rate, the normalized
+p99 latency for each system is calculated through dividing
+its p99 latency by the maximum p99 latency observed among
+all systems. The same normalization applies to the average
+latency and the monetary cost as well. Moreover, we treat
+the monetray cost numerically the same as the cumulative
+resource occupancy time in the T2V system, as described in
+Algorithm 1, under the assumption of a constant charge of
+one unit per second per GPU.
+
+6.2
+End-to-End Performance
+Single-Node Performance. We compare DDiT with four
+baselines across ten pattern workloads using two key met-
+rics. DDiT outperforms all other systems in every scenario.
+Results for five groups are shown in Figure 10, while the
+remaining results are provided in Appendix C due to space
+limitations.
+When the arrival rate is low (e.g., 0.25 or 0.5), the lifetimes
+of two consecutive requests do not overlap in underutilized
+systems, and allocating more GPUs enhances performance.
+As a result, the static DoP approach achieves the better per-
+formance across all four baselines with different DoP values.
+At an arrival rate of 0.25, the optimal static DoP value is 4,
+while DDiT further reduces p99 latency by 12.88%. When the
+arrival rate increases to 0.5, the optimal DoP value decreases
+to 2. DDiT can also achieve a 10.71% reduction in p99 latency.
+This improvement is attributed to the DiT-VAE decouple
+mechanism, which accelerates resource release and enables
+subsequent requests to start execution earlier. The average
+
+latency increases by 9.43% or remains similar to the optimal
+static DoP at each arrival rate, as the limited number of GPUs
+in a single node constrains the ability of DDiT to promote
+DoP values. However, a fixed static DoP is not optimal for all
+arrival rates and can not dynamically adjust in online serving.
+For example, at an arrival rate of 0.5, DDiT reduces p99 by
+up to 36.6% and average latency by up to 44.4% compared to
+a static DoP of 4, which is optimal at an arrival rate of 0.25.
+For higher arrival rates (eg., 0.75 or 1.0), the optimal static
+DoP value remains 2. DDiT reduces p99 latency by up to
+19.23% and average latency by up to 29.5% across different
+request distributions. As the arrival rate increases, the DiT-
+VAE decoupling and demotion launch mechanisms of DDiT
+effectively reduce resource contention among consecutive
+requests. Additionally, DoP promotion during execution en-
+sures that each request maintains a reasonable execution
+time. Finally, in the burst scenario, where requests arrive
+simultaneously and the system load is extremely high, a
+lower DoP enhances system-level concurrency under heavy
+load. As a result, setting the static DoP to 1 delivers the best
+performance. In this case, DDiT reduces p99 latency by up to
+20.7% and average latency by 21.7%.
+Both SPCI and DPCI cause resource wastage due to clus-
+ter isolation. As shown in Figure 10, this inefficiency can
+worsen the performance as the arrival rate increases. Com-
+pared with SPCI, DDiT achieves a p99 latency reduction of
+approximately 27.6% to 48.6% across arrival rates from 0.25
+to burst for different request resolution distributions. For
+DPCI, the reduction is around 14.5% to 75.1%. This difference
+arises because the DoP within each cluster in the dynamic
+partition is set based on the 𝐵value, resulting in fewer model
+instances per cluster compared to the static partition. For
+
+10
+
+
+1: 1: 1
+0
+
+20
+
+40
+
+60
+
+80
+
+100
+
+P99 Latency (s)
+
+2: 2: 6
+2: 6: 2
+6: 2: 2
+2: 4: 4
+4: 2: 4
+4: 4: 2
+1: 3: 6
+6: 1: 3
+3: 6: 1
+
+1: 1: 1
+Low: Medium: High
+
+0
+
+10
+
+20
+
+30
+
+40
+
+Avg. Latency (s)
+
+2: 2: 6
+2: 6: 2
+6: 2: 2
+Low: Medium: High
+
+2: 4: 4
+4: 2: 4
+4: 4: 2
+Low: Medium: High
+
+1: 3: 6
+6: 1: 3
+3: 6: 1
+Low: Medium: High
+
+DDiT
+Static DoP
+Static Part. & Cluster Isol.
+Dynamic Part. & Cluster Isol.
+Dynamic Part.
+
+Figure 11. Multi-node end-to-end performance.
+
+1: 1: 1
+
+2: 2: 6
+
+2: 6: 2
+
+6: 2: 2
+
+2: 4: 4
+
+4: 2: 4
+
+4: 4: 2
+
+1: 3: 6
+
+6: 1: 3
+
+3: 6: 1
+
+Low: Medium: High
+
+0.2
+
+0.4
+
+0.6
+
+0.8
+
+1.0
+
+Normalized Cost
+
+Theoretical Optimum
+DDiT
+Static DoP
+
+Static Part. & Cluster Isol.
+Dynamic Part. & Cluster Isol.
+Dynamic Part.
+
+Figure 12. Multi-node monetary cost (Lower Cost indicates
+a better solution).
+
+DP, cross-cluster resource sharing completely compensates
+for the shortage of model instances. At lower arrival rates
+(0.25 and 0.5), DDiT achieves a 4.9% reduction in p99 latency.
+This improvement increases to 22%–24% when the arrival
+rate reaches 1.0 or under burst conditions. The impact of
+DDiT on average latency follows the same trend as its effect
+on p99 latency compared to these two baselines.
+Multi-Node Performance. We evaluate the scalability of
+DDiT and the baselines in an emulated 8-node, 64-GPU clus-
+ter. Our single-node experiments reveal that DDiT becomes
+increasingly effective as the system load increases. Therefore,
+in our multi-node experiments, we focus on burst scenarios
+and use the monetary cost metric as described in §6.1.
+In Figure 11, we first present the average and p99 laten-
+cies with the static DoP fixed at 4. DDiT achieves at least a
+30.4% reduction in p99 latency and 30% in average latency
+across four baselines. We observe that the SPCI method per-
+forms the worst, while the DPCI approach shows a slight
+
+0.7
+
+0.8
+
+0.9
+
+1.0
+
+Norm. P99 Lat.
+
+0.7
+
+0.8
+
+0.9
+
+1.0
+
+2: 6: 2
+
+4: 4: 2
+
+6: 1: 3
+
+1: 1: 1
+
+L: M: H (Burst)
+
+0.7
+
+0.8
+
+0.9
+
+1.0
+
+Norm. Avg. Lat.
+
+2: 6: 2
+
+4: 4: 2
+
+6: 1: 3
+
+1: 1: 1
+
+L: M: H (Arrival Rate = 0.5)
+
+0.90
+
+0.95
+
+1.00
+
+1.05
+
+DiT-VAE-Decouple & Static DoP
+Static DoP
+
+Figure 13. Breakdown of DiT-VAE Decoupling Performance,
+including normalized P99 and Average Latency across Differ-
+ent Resolution Proportions (Lower Latency indicates Better
+Performance)
+
+improvement. This improvement is due to dynamic partition-
+ing, which sets the DoP of each cluster based on the 𝐵value,
+increasing concurrency for low-resolution requests. How-
+ever, both SPCI and DPCI lead to resource wastage due to
+isolated clusters dedicated to different request types. Among
+the two methods without cluster isolation, DP demonstrates
+superior overall performance due to the suitable parallelism
+from DoP values.
+Furthermore, we compare the monetary cost of DDiT with
+the four baselines across different request distributions. As
+shown in Figure 12, DDiT reduces cost by up to 30.4% relative
+to four baselines, using only 1.39× the theoretical optimum,
+whereas the best-performing baseline reaches 2.08× the op-
+timum.
+
+11
+
+
+0.90
+
+0.95
+
+1.00
+
+Norm. P99 Lat.
+
+0.6
+
+0.7
+
+0.8
+
+0.9
+
+1.0
+
+2: 2: 6
+
+2: 4: 4
+
+1: 3: 6
+
+1: 1: 1
+
+L: M: H (Burst)
+
+0.90
+
+0.95
+
+1.00
+
+Norm. Avg. Lat.
+
+2: 2: 6
+
+2: 4: 4
+
+1: 3: 6
+
+1: 1: 1
+
+L: M: H (Arrival Rate = 0.5)
+
+0.80
+
+0.85
+
+0.90
+
+0.95
+
+1.00
+
+Enable DoP Promotion
+Disable DoP Promotion
+
+Figure 14. Breakdown DoP promotion.
+
+6.3
+Breakdown
+
+Effectiveness of DiT-VAE-Decouple. We conduct an abla-
+tion study to evaluate the effectiveness of decoupling DiT-
+VAE by integrating this mechanism into static DoP. We set
+the DoP value to two on a single node in the experiment.
+As shown in Figure 13, decoupling DiT-VAE reduces the
+p99 latency by up to 20%, while maintaining a similar av-
+erage latency under an arrival rate of 0.5. We find that it
+can be attributed to the GPU release mechanism, where an
+odd number of GPUs are released after the DiT phase, while
+subsequent requests require an even number of GPUs in
+all scenarios except for one GPU. Under burst conditions,
+it improves the p99 latency by up to 26.1% and the average
+latency by up to 23.2% . This results in greater improvements
+under higher system loads, consistent with the end-to-end
+experiments.
+DoP Promotion. To evaluate the effectiveness of DoP pro-
+motion in DDiT, we conduct an experiment by enabling and
+disabling it. As shown in Figure 14, DoP promotion improves
+the p99 latency by up to 35.2% and the average latency by
+up to 13.5%. However, it has minimal effect on accelerating
+requests under burst workload. We find that DoP promo-
+tion extends the waiting time for subsequent requests in an
+overutilized system, negating the benefits of acceleration. In
+contrast, it effectively leverages newly released resources in
+an underutilized system.
+Transfer & Scale up Overhead. We evaluate the overhead
+of transferring and scaling up from DoP promotion under
+different DoP values and request resolutions. As shown in
+Figure 15, it introduces less than 1 millisecond of delay. Com-
+pared to the several seconds to tens of seconds required for
+DiT execution, these overheads are negligible.
+
+7
+Related Work
+
+Efficient Transformer Serving. Existing transformer serv-
+ing systems utilize efficient GPU operators for attention
+mechanisms, such as Flash Attention [6] and Flash-Decoding
+
+240p
+360p
+240p
+360p
+
+Transfer
+Scale
+
+0
+
+0.1
+
+0.2
+
+0.3
+
+Time (ms)
+
+1->2
+1->4
+1->8
+
+Figure 15. Transfer & scale up time overhead.
+
+[12], which are orthogonal to our work and have been inte-
+grated into DDiT. More recently, some works [19, 50] intro-
+duced batching techniques to enhance the system through-
+put. However, batching is incompatible with T2V generation
+due to its high computational demands.
+Sequence Parallelism. SP is a specialized technique for
+distributing long sequences and activations across multiple
+devices, initially proposed to accelerate the training of long-
+context LLMs [1, 17]. RingAttention [21] introduces a novel
+approach to partitioning the sequence dimension using a
+ring-style peer-to-peer (P2P) communication pattern, facili-
+tating the transfer of keys and values across GPUs. Striped
+Attention [3] enhances this by optimizing token distribution
+to achieve balanced attention computation. DSP [53] further
+advances the field by proposing an adaptive sequence paral-
+lelism abstraction for multi-dimensional transformers, dy-
+namically switching the parallel dimension among sequences
+based on the computation stage. However, the serving sys-
+tem must determine the DoP of sequence parallelism before
+model deployment, which poses challenges for handling se-
+quences of varying lengths efficiently.
+Caching. Caching reuses the intermediate results during
+the inference to reduce computation, optimize GPU utiliza-
+tion, and lower latency without additional training. Unlike
+caching in LLMs, which reuses the same data without sacri-
+ficing accuracy, T2V leverages similarity features between
+data for efficiency. DeepCache [27] utilizes high-level con-
+volutional features in consecutive denoising steps. PAB [54],
+FORD [38] and Δ-DiT [5] extend a similar strategy in the
+attention mechanism. Some works utilize caching to overlap
+data transfer and computation, enabling efficient distributed
+inference [20, 45]. However, leveraging the similarity be-
+tween outputs of adjacent steps may compromise the quality
+of the generated images or videos.
+
+8
+Conclusion
+To efficiently serve DiT-based T2V models, DDiT proposes
+DiT-VAE decoupling, DoP promotion, and a complementary
+efficient scheduling algorithm. To further validate the ef-
+fectiveness of DDiT, we also propose an optimal scheduling
+algorithm under ideal conditions. Our experiments show that
+
+12
+
+
+DDiT can significantly reduce both p99 and average latencies
+for T2V tasks across various workloads.
+
+References
+
+[1] Reza Yazdani Aminabadi, Samyam Rajbhandari, Ammar Ahmad Awan,
+Cheng Li, Du Li, Elton Zheng, Olatunji Ruwase, Shaden Smith, Minjia
+Zhang, Jeff Rasley, et al. Deepspeed-inference: enabling efficient
+inference of transformer models at unprecedented scale. In SC22:
+International Conference for High Performance Computing, Networking,
+Storage and Analysis, 2022.
+[2] Andreas Blattmann, Tim Dockhorn, Sumith Kulal, Daniel Mendele-
+vitch, Maciej Kilian, Dominik Lorenz, Yam Levi, Zion English, Vikram
+Voleti, Adam Letts, et al. Stable video diffusion: Scaling latent video
+diffusion models to large datasets. arXiv preprint arXiv:2311.15127,
+2023.
+[3] William Brandon, Aniruddha Nrusimha, Kevin Qian, Zachary Ankner,
+Tian Jin, Zhiye Song, and Jonathan Ragan-Kelley.
+Striped atten-
+tion: Faster ring attention for causal transformers. arXiv preprint
+arXiv:2311.09431, 2023.
+[4] Junsong Chen, Chongjian Ge, Enze Xie, Yue Wu, Lewei Yao, Xiaozhe
+Ren, Zhongdao Wang, Ping Luo, Huchuan Lu, and Zhenguo Li. Pixart-
+𝑠𝑖𝑔𝑚𝑎: Weak-to-strong training of diffusion transformer for 4k text-
+to-image generation. In European Conference on Computer Vision,
+pages 74–91. Springer, 2025.
+[5] Pengtao Chen, Mingzhu Shen, Peng Ye, Jianjian Cao, Chongjun Tu,
+Christos-Savvas Bouganis, Yiren Zhao, and Tao Chen. 𝑑𝑒𝑙𝑡𝑎-dit: A
+training-free acceleration method tailored for diffusion transformers.
+arXiv preprint arXiv:2406.01125, 2024.
+[6] Tri Dao, Dan Fu, Stefano Ermon, Atri Rudra, and Christopher Ré.
+Flashattention: Fast and memory-efficient exact attention with io-
+awareness. Advances in Neural Information Processing Systems, 2022.
+[7] Paul DuBois. MySQL. Addison-Wesley, 2013.
+[8] Jiarui Fang, Jinzhe Pan, Xibo Sun, Aoyu Li, and Jiannan Wang. xdit:
+an inference engine for diffusion transformers (dits) with massive
+parallelism. arXiv preprint arXiv:2411.01738, 2024.
+[9] Google. https://huggingface.co/google/t5-v1_1-xxl.
+[10] John L Gustafson. Reevaluating amdahl’s law. Communications of the
+ACM, 31(5):532–533, 1988.
+[11] Jonathan Ho, Ajay Jain, and Pieter Abbeel. Denoising diffusion prob-
+abilistic models. Advances in neural information processing systems,
+33:6840–6851, 2020.
+[12] Ke Hong, Guohao Dai, Jiaming Xu, Qiuli Mao, Xiuhong Li, Jun
+Liu, Kangdi Chen, Hanyu Dong, and Yu Wang. Flashdecoding++:
+Faster large language model inference on gpus.
+arXiv preprint
+arXiv:2311.01282, 2023.
+[13] Hpcai Tech. https://huggingface.co/hpcai-tech/OpenSora-STDiT-v3.
+[14] Hpcai Tech. https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.2.
+[15] Cunchen Hu, Heyang Huang, Junhao Hu, Jiang Xu, Xusheng Chen,
+Tao Xie, Chenxi Wang, Sa Wang, Yungang Bao, Ninghui Sun, et al.
+Memserve: Context caching for disaggregated llm serving with elastic
+memory pool. arXiv preprint arXiv:2406.17565, 2024.
+[16] Cunchen Hu, Heyang Huang, Liangliang Xu, Xusheng Chen, Jiang
+Xu, Shuang Chen, Hao Feng, Chenxi Wang, Sa Wang, Yungang Bao,
+et al. Inference without interference: Disaggregate llm inference for
+mixed downstream workloads. arXiv preprint arXiv:2401.11181, 2024.
+[17] Vijay Anand Korthikanti, Jared Casper, Sangkug Lym, Lawrence
+McAfee, Michael Andersch, Mohammad Shoeybi, and Bryan Catan-
+zaro. Reducing activation recomputation in large transformer models.
+Proceedings of Machine Learning and Systems, 5:341–353, 2023.
+[18] KuaiShou. https://kling.kuaishou.com/.
+[19] Woosuk Kwon, Zhuohan Li, Siyuan Zhuang, Ying Sheng, Lianmin
+Zheng, Cody Hao Yu, Joseph Gonzalez, Hao Zhang, and Ion Stoica.
+Efficient memory management for large language model serving with
+
+pagedattention. In Proceedings of the 29th Symposium on Operating
+Systems Principles, 2023.
+[20] Muyang Li, Tianle Cai, Jiaxin Cao, Qinsheng Zhang, Han Cai, Junjie
+Bai, Yangqing Jia, Kai Li, and Song Han. Distrifusion: Distributed
+parallel inference for high-resolution diffusion models. In Proceedings
+of the IEEE/CVF Conference on Computer Vision and Pattern Recognition,
+pages 7183–7193, 2024.
+[21] Shenggui Li, Fuzhao Xue, Chaitanya Baranwal, Yongbin Li, and Yang
+You. Sequence parallelism: Long sequence training from system per-
+spective. arXiv preprint arXiv:2105.13120, 2021.
+[22] Suyi Li, Lingyun Yang, Xiaoxiao Jiang, Hanfeng Lu, Zhipeng Di, Weiyi
+Lu, Jiawei Chen, Kan Liu, Yinghao Yu, Tao Lan, et al. Swiftdiffusion:
+Efficient diffusion model serving with add-on modules. arXiv preprint
+arXiv:2407.02031, 2024.
+[23] Zewen Li, Fan Liu, Wenjie Yang, Shouheng Peng, and Jun Zhou. A
+survey of convolutional neural networks: analysis, applications, and
+prospects. IEEE transactions on neural networks and learning systems,
+33(12):6999–7019, 2021.
+[24] Zhuohan Li, Eric Wallace, Sheng Shen, Kevin Lin, Kurt Keutzer, Dan
+Klein, and Joey Gonzalez. Train big, then compress: Rethinking model
+size for efficient training and inference of transformers. In Interna-
+tional Conference on machine learning, 2020.
+[25] Bin Lin, Yunyang Ge, Xinhua Cheng, Zongjian Li, Bin Zhu, Shaodong
+Wang, Xianyi He, Yang Ye, Shenghai Yuan, Liuhan Chen, et al. Open-
+sora plan: Open-source large video generation model. arXiv preprint
+arXiv:2412.00131, 2024.
+[26] Hao Liu, Matei Zaharia, and Pieter Abbeel.
+Ring attention with
+blockwise transformers for near-infinite context.
+arXiv preprint
+arXiv:2310.01889, 2023.
+[27] Xinyin Ma, Gongfan Fang, and Xinchao Wang. Deepcache: Accelerat-
+ing diffusion models for free. In Proceedings of the IEEE/CVF Conference
+on Computer Vision and Pattern Recognition, pages 15762–15772, 2024.
+[28] Jianmo Ni, Gustavo Hernandez Abrego, Noah Constant, Ji Ma,
+Keith B Hall, Daniel Cer, and Yinfei Yang. Sentence-t5: Scalable sen-
+tence encoders from pre-trained text-to-text models. arXiv preprint
+arXiv:2108.08877, 2021.
+[29] Thomas Norrie, Nishant Patil, Doe Hyun Yoon, George Kurian, Sheng
+Li, James Laudon, Cliff Young, Norman Jouppi, and David Patterson.
+The design process for google’s training chips: Tpuv2 and tpuv3. IEEE
+Micro, 41(2):56–63, 2021.
+[30] NVIDIA. NCCL. https://docs.nvidia.com/deeplearning/nccl/user-
+guide/docs/overview.html.
+[31] Ocean. https://video-ocean.com/en.
+[32] Pratyush Patel, Esha Choukse, Chaojie Zhang, Íñigo Goiri, Aashaka
+Shah, Saeed Maleki, and Ricardo Bianchini. Splitwise: Efficient genera-
+tive llm inference using phase splitting. arXiv preprint arXiv:2311.18677,
+2023.
+[33] William Peebles and Saining Xie. Scalable diffusion models with
+transformers. In Proceedings of the IEEE/CVF International Conference
+on Computer Vision, pages 4195–4205, 2023.
+[34] Lucas Pinheiro Cinelli, Matheus Araújo Marins, Eduardo Antúnio
+Barros da Silva, and Sérgio Lima Netto. Variational autoencoder. In
+Variational Methods for Machine Learning with Applications to Deep
+Networks, pages 111–149. Springer, 2021.
+[35] Olga Poppe, Tayo Amuneke, Dalitso Banda, Aritra De, Ari Green,
+Manon Knoertzer, Ehi Nosakhare, Karthik Rajendran, Deepak Shankar-
+gouda, Meina Wang, et al. Seagull: An infrastructure for load predic-
+tion and optimized resource allocation. arXiv preprint arXiv:2009.12922,
+2020.
+[36] Herbert Robbins. A remark on stirling’s formula. The American
+mathematical monthly, 62(1):26–29, 1955.
+[37] RunWay. https://runwayml.com/.
+[38] Pratheba Selvaraju, Tianyu Ding, Tianyi Chen, Ilya Zharkov, and
+Luming Liang. Fora: Fast-forward caching in diffusion transformer
+
+13
+
+
+acceleration. arXiv preprint arXiv:2407.01425, 2024.
+[39] Mohammad Shoeybi, Mostofa Patwary, Raul Puri, Patrick LeGresley,
+Jared Casper, and Bryan Catanzaro. Megatron-lm: Training multi-
+billion parameter language models using model parallelism. arXiv
+preprint arXiv:1909.08053, 2019.
+[40] John F Shortle, James M Thompson, Donald Gross, and Carl M Harris.
+Fundamentals of queueing theory, volume 399. John Wiley & Sons,
+2018.
+[41] Raj Srinivasan. Rpc: Remote procedure call protocol specification
+version 2. Technical report, 1995.
+[42] Hongjin Su, Weijia Shi, Jungo Kasai, Yizhong Wang, Yushi Hu, Mari
+Ostendorf, Wen-tau Yih, Noah A Smith, Luke Zettlemoyer, and Tao
+Yu. One embedder, any task: Instruction-finetuned text embeddings.
+arXiv preprint arXiv:2212.09741, 2022.
+[43] VideoSys Team. Videosys: An easy and efficient system for video
+generation, 2024.
+[44] Henk Tijms.
+New and old results for the m/d/c queue.
+AEU-
+International Journal of Electronics and Communications, 60(2):125–130,
+2006.
+[45] Jiannan Wang, Jiarui Fang, Aoyu Li, and PengCheng Yang. Pipefu-
+sion: Displaced patch pipeline parallelism for inference of diffusion
+transformer models. arXiv preprint arXiv:2405.14430, 2024.
+[46] Wikipedia. NVLink. https://en.wikipedia.org/wiki/NVLink.
+[47] Felix Wimbauer, Bichen Wu, Edgar Schoenfeld, Xiaoliang Dai, Ji Hou,
+Zijian He, Artsiom Sanakoyeu, Peizhao Zhang, Sam Tsai, Jonas Kohler,
+et al. Cache me if you can: Accelerating diffusion models through
+block caching. In Proceedings of the IEEE/CVF Conference on Computer
+Vision and Pattern Recognition, pages 6211–6220, 2024.
+[48] Dingyu Yang, Ziyang Xiao, Dongxiang Zhang, Shuhao Zhang, Jian
+Cao, and Gang Chen. Preact: Predictive resource allocation for bursty
+workloads in a co-located data center. In Proceedings of the 53rd
+International Conference on Parallel Processing, pages 722–731, 2024.
+[49] Zhuoyi Yang, Jiayan Teng, Wendi Zheng, Ming Ding, Shiyu Huang,
+Jiazheng Xu, Yuanming Yang, Wenyi Hong, Xiaohan Zhang, Guanyu
+Feng, et al. Cogvideox: Text-to-video diffusion models with an expert
+transformer. arXiv preprint arXiv:2408.06072, 2024.
+[50] Gyeong-In Yu, Joo Seong Jeong, Geon-Woo Kim, Soojeong Kim,
+and Byung-Gon Chun.
+Orca: A distributed serving system for
+{Transformer-Based} generative models. In 16th USENIX Sympo-
+sium on Operating Systems Design and Implementation (OSDI 22), 2022.
+[51] Zhihang Yuan, Hanling Zhang, Pu Lu, Xuefei Ning, Linfeng Zhang,
+Tianchen Zhao, Shengen Yan, Guohao Dai, and Yu Wang. Ditfas-
+tattn: Attention compression for diffusion transformer models. arXiv
+preprint arXiv:2406.08552, 2024.
+[52] Wentian Zhang, Haozhe Liu, Jinheng Xie, Francesco Faccio,
+Mike Zheng Shou, and Jürgen Schmidhuber. Cross-attention makes in-
+ference cumbersome in text-to-image diffusion models. arXiv preprint
+arXiv:2404.02747, 2024.
+[53] Xuanlei Zhao, Shenggan Cheng, Chang Chen, Zangwei Zheng, Ziming
+Liu, Zheming Yang, and Yang You. Dsp: Dynamic sequence parallelism
+for multi-dimensional transformers. arXiv preprint arXiv:2403.10266,
+2024.
+[54] Xuanlei Zhao, Xiaolong Jin, Kai Wang, and Yang You. Real-time
+video generation with pyramid attention broadcast. arXiv preprint
+arXiv:2408.12588, 2024.
+[55] Zangwei Zheng, Xiangyu Peng, Tianji Yang, Chenhui Shen, Shenggui
+Li, Hongxin Liu, Yukun Zhou, Tianyi Li, and Yang You. Open-sora:
+Democratizing efficient video production for all, March 2024.
+[56] Zangwei Zheng, Xiangyu Peng, Tianji Yang, Chenhui Shen, Sheng-
+gui Li, Hongxin Liu, Yukun Zhou, Tianyi Li, and Yang You. Open-
+sora: Democratizing efficient video production for all. arXiv preprint
+arXiv:2412.20404, 2024.
+[57] Yinmin Zhong, Shengyu Liu, Junda Chen, Jianbo Hu, Yibo Zhu, Xu-
+anzhe Liu, Xin Jin, and Hao Zhang. Distserve: Disaggregating prefill
+
+and decoding for goodput-optimized large language model serving.
+arXiv preprint arXiv:2401.09670, 2024.
+
+14
+
+
+A
+Queue Model
+
+We clarify the queue model in Algorithm 1 here. If the time
+interval between task arrivals follows a Poisson distribution.
+Given that the number of model instances (servers) 𝛼≥1,
+the arrival rate 𝜆and the execution time (service time) 𝑑
+is fixed for task type 𝑗, and assuming the utilization ratio
+𝜌< 1, we model the scenario using either the M/D/1 queue
+or M/D/c queue [40], as appropriate. The average resource
+occupancy time for a single GPU (Occupy(...)), which is
+also the average time spent in a queue system, is directly
+computed as it follows the M/D/1 (𝛼= 1) queue:
+
+𝑊𝑀/𝐷/1(𝑡𝑦𝑝𝑒𝑗) = 1
+
+𝜇+
+𝜌
+2𝜇(1 −𝜌)
+(6)
+
+where 𝜇= 1
+
+𝑑and 𝜌= 𝜆·𝑥𝑗
+
+𝜇. Conversely, computing the aver-
+age resource occupancy time for the M/D/c (𝛼> 1) queue is
+highly complex. Thus, we approximate it using M/M/c queue
+by Eq. 7 from [40, 44], where 𝜇= 1
+
+𝑑, 𝜌= 𝜆·𝑥𝑗
+
+𝛼𝜇, 𝑟= 𝜆·𝑥𝑗
+
+𝜇
+and
+
+𝑝0 = (
+𝑟𝛼
+𝛼!(1−𝜌) + �𝛼−1
+𝑠=0
+𝑟𝑠
+
+𝑠! )−1. To further reduce time complex-
+
+ity, we employ Stirling’s formula [36], 𝑛! ≈
+√
+
+2𝜋𝑛( 𝑛
+
+𝑒)𝑛, to
+efficiently compute integer factorials as follows:
+
+𝑊𝑀/𝐷/𝑐(𝑡𝑦𝑝𝑒𝑗) ≈𝑊𝑀/𝑀/𝑐(𝑡𝑦𝑝𝑒𝑗)
+
+2
+=
+
+1
+𝜇+ (
+𝑟𝛼
+𝛼!(𝛼𝜇) (1−𝜌)2 )𝑝0
+
+2
+(7)
+
+B
+Scheduling Algorithm of DDiT
+
+Algorithm 2 Greedy Scheduling Algorithm of DDiT
+
+1: 𝐺𝑆←𝐺𝑙𝑜𝑏𝑎𝑙_𝑆𝑐ℎ𝑒𝑑𝑢𝑙𝑒𝑟, 𝐺𝑆𝐺←𝐹𝑟𝑒𝑒_𝐺𝑃𝑈_𝐿𝑖𝑠𝑡
+2: 𝐺𝑆𝑃𝑇←𝑃𝑟𝑜𝑚𝑜𝑡𝑒_𝑇𝑎𝑏𝑙𝑒, 𝐺𝑆𝑁𝐺←𝑁𝑒𝑤_𝐺𝑃𝑈_𝐸𝑣𝑒𝑛𝑡
+3: 𝑅𝑄←𝑅𝑢𝑛𝑛𝑖𝑛𝑔_𝑄𝑢𝑒𝑢𝑒, 𝑊𝑄←𝑊𝑎𝑖𝑡𝑖𝑛𝑔_𝑄𝑢𝑒𝑢𝑒
+4: function Global_Schedule(𝐺𝑆)
+5:
+while 𝑇𝑟𝑢𝑒do
+6:
+if 𝐺𝑆𝑁𝐺.𝑖𝑠_𝑠𝑒𝑡() then
+7:
+𝑟𝑠𝑡𝑎𝑟𝑣.
+𝑟∈𝐺𝑆𝑃𝑇
+.𝑢𝑝𝑑𝑎𝑡𝑒(𝑟Meta.)
+
+8:
+Desc._Sort(𝐺𝑆𝑃𝑇, 𝑘𝑒𝑦= 𝑟𝑠𝑡𝑎𝑟𝑣.)
+9:
+𝑟𝑙𝑎𝑠𝑡_𝑠𝑡𝑒𝑝←𝑟𝑐𝑢𝑟_𝑠𝑡𝑒𝑝
+10:
+for 𝑟∈𝐺𝑆𝑃𝑇do
+11:
+𝑟𝐺𝑃𝑈_𝑖𝑑𝑠
+←
+async Try_Best_Alloc.(𝑟, 𝐺𝑆𝐺, 𝑟𝐺𝑃𝑈_𝑖𝑑𝑠)
+
+12:
+if len(𝑟𝐺𝑃𝑈_𝑖𝑑𝑠) == 𝑟𝑜𝑝𝑡_𝐺𝑃𝑈_𝑛𝑢𝑚then
+13:
+𝐺𝑆𝑃𝑇.𝑟𝑒𝑚𝑜𝑣𝑒(𝑟)
+14:
+𝐺𝑆𝑁𝐺.𝑐𝑙𝑒𝑎𝑟()
+15:
+for 𝑟∈𝑊𝑄do
+16:
+𝑟𝐺𝑃𝑈_𝑖𝑑𝑠←Try_Best_Alloc.(𝑟, 𝐺𝑆𝐺, ∅)
+17:
+if 𝑟𝐺𝑃𝑈_𝑖𝑑𝑠≠∅then
+18:
+𝑊.𝑟𝑒𝑚𝑜𝑣𝑒(𝑟) && 𝑅.𝑎𝑑𝑑(𝑟)
+19:
+if len(𝑟𝐺𝑃𝑈_𝑖𝑑𝑠) ≠𝑟𝑜𝑝𝑡_𝐺𝑃𝑈_𝑛𝑢𝑚then
+20:
+𝐺𝑆𝑃𝑇.𝑎𝑑𝑑()
+←
+async 𝑟
+
+We present the details of how DDiT schedules greedily in
+Algorithm 2. We first define running, hungry, and waiting as
+the statuses of requests in DDiT. Hungry refers to a running
+request whose allocated GPUs are fewer than the optimal
+
+number. We use a running queue (𝑅𝑄) or waiting queue
+(𝑊𝑄) to place the corresponding request, while the hungry
+request is stored in the priority table 𝐺𝑆𝑃𝑇. In DDiT, the
+hungry status is given higher priority than waiting requests,
+considering the arrival time. Therefore, the core idea of our
+scheduling policy is to supply additional GPUs to hungry
+requests as needed while promptly allocating GPUs to new
+incoming requests.
+The new incoming request is initially set to a waiting
+status and placed in 𝑊𝑄. The global scheduler manages
+the scheduling of the request and communicates with the
+resource allocator for GPU allocation. As described in lines
+15 to 20 of Algorithm 2, the process starts from the optimal
+GPU count and decreases incrementally to ensure timely
+execution. If the allocated GPU count matches the optimal
+value, the request is directly inserted into 𝑅𝑄and sent to the
+engine unit with a control message. Otherwise, an additional
+step is taken to mark the request as hungry and place it in
+𝐺𝑆𝑃𝑇.
+We continuously check 𝐺𝑆𝑃𝑇for hungry requests to ac-
+quire available resources. To prioritize DoP promotion, we
+define the starvation time of requests, giving priority to
+those with GPU allocations below the optimal number in e.q.
+5, therefore, the 𝑟Meta. in line 7 refers to 𝑟𝑐𝑢𝑟_𝑠𝑡𝑒𝑝, 𝑟𝑙𝑎𝑠𝑡_𝑠𝑡𝑒𝑝,
+𝑟𝑐𝑢𝑟_𝑠𝑡𝑒𝑝_𝑡𝑖𝑚𝑒and 𝑟𝑜𝑝𝑡_𝑠𝑡𝑒𝑝_𝑡𝑖𝑚𝑒. The 𝐺𝑆𝑁𝐺is triggered by the
+step 4○and 6○in Figure 9.
+
+C
+Single-Node Performance II
+
+This supplement to the single-node experiment in our evalu-
+ation reveals a trend consistent with our earlier observations:
+the higher the arrival rate, the more effective DDiT becomes.
+As shown in Figure 16, across these resolution distributions,
+DDiT achieves an average reduction of up to 30% in both p99
+and average latencies.
+
+15
+
+
+0.5
+
+1.0
+
+Norm. P99 Lat.
+
+0.25 0.5 0.75 1.0 Burst
+
+Arrival Rate
+
+0.5
+
+1.0
+
+Norm. Avg. Lat.
+
+L: M: H = 3: 6: 1
+
+0.25 0.5 0.75 1.0 Burst
+
+Arrival Rate
+L: M: H = 1: 3: 6
+
+0.25 0.5 0.75 1.0 Burst
+
+Arrival Rate
+L: M: H = 4: 2: 4
+
+0.25 0.5 0.75 1.0 Burst
+
+Arrival Rate
+L: M: H = 2: 4: 4
+
+0.25 0.5 0.75 1.0 Burst
+
+Arrival Rate
+L: M: H = 6: 2: 2
+
+0.25 0.5 0.75 1.0 Burst
+
+Arrival Rate
+L: M: H = 2: 6: 2
+
+DDiT
+Static DoP = 1
+
+Static DoP = 2
+Static DoP = 4
+
+Static Part. & Cluster Isol.
+Dynamic Part. & Cluster Isol.
+
+Dynamic Part.
+
+Figure 16. Single-node end-to-end performance II.
+
+Time (s)
+
+3.01
+5.50
+10.43
+
+20.08
+
+8.28
+
+15.87
+
+30.97
+
+61.31
+
+19.17
+
+37.52
+
+74.51
+
+148.40
+
+39.64
+
+78.69
+
+156.57
+
+00M
+
+DiT Latency (Parallel Size = 1)
+
+DiT_144p
+DiT_240p
+DiT_360p
+DiT_480p
+
+0.16
+0.30
+
+0.59
+
+1.17
+
+0.38
+
+0.75
+
+1.48
+
+2.93
+
+0.87
+
+1.68
+
+3.31
+
+6.58
+
+1.69
+
+3.31
+
+6.52
+
+00M
+
+VAE Latency (Parallel Size = 1)
+
+VAE_144p
+VAE_240p
+VAE_360p
+VAE_480p
+
+3.44
+3.67
+6.49
+12.22
+4.59
+8.54
+
+16.29
+
+31.44
+
+10.42
+
+19.78
+
+38.43
+
+75.98
+
+19.96
+
+38.75
+
+76.62
+
+151.76
+DiT Latency (Parallel Size = 2)
+
+DiT_144p
+DiT_240p
+DiT_360p
+DiT_480p
+
+0.16
+0.31
+0.60
+1.19
+0.38
+0.76
+
+1.49
+
+2.95
+
+0.87
+
+1.70
+
+3.33
+
+6.61
+
+1.72
+
+3.36
+
+6.61
+
+13.17
+VAE Latency (Parallel Size = 2)
+
+VAE_144p
+VAE_240p
+VAE_360p
+VAE_480p
+
+1
+2
+4
+8
+Batch Size
+
+Time (s)
+
+3.67
+3.78
+4.71
+8.83
+3.66
+5.24
+
+9.65
+
+18.29
+
+5.55
+
+10.34
+
+19.77
+
+38.69
+
+11.76
+
+22.27
+
+43.62
+
+85.84
+DiT Latency (Parallel Size = 4)
+
+DiT_144p
+DiT_240p
+DiT_360p
+DiT_480p
+
+1
+2
+4
+8
+Batch Size
+
+0.16
+0.31
+0.60
+1.19
+0.38
+0.76
+
+1.49
+
+2.96
+
+0.87
+
+1.69
+
+3.31
+
+6.60
+
+1.70
+
+3.33
+
+6.56
+
+13.05
+VAE Latency (Parallel Size = 4)
+
+VAE_144p
+VAE_240p
+VAE_360p
+VAE_480p
+
+1
+2
+4
+8
+Batch Size
+
+3.76
+4.06
+4.58
+7.05
+
+3.93
+
+4.28
+
+6.05
+
+11.15
+
+3.68
+
+5.91
+
+10.96
+
+20.69
+
+6.90
+
+12.73
+
+24.47
+
+47.46
+DiT Latency (Parallel Size = 8)
+
+DiT_144p
+DiT_240p
+DiT_360p
+DiT_480p
+
+1
+2
+4
+8
+Batch Size
+
+0.16
+0.31
+0.59
+1.19
+0.38
+0.76
+
+1.48
+
+2.95
+
+0.87
+
+1.69
+
+3.31
+
+6.59
+
+1.69
+
+3.31
+
+6.55
+
+13.17
+VAE Latency (Parallel Size = 8)
+
+VAE_144p
+VAE_240p
+VAE_360p
+VAE_480p
+
+Figure 17. Characterization of DiT and VAE under various DoPs and batch sizes.
+
+16
+
+

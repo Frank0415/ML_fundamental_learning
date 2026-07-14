@@ -96,12 +96,12 @@
 <main>
 
 <h1>Tianwei Zhang 2025-2026 非安全推理、调度与 GPU 系统论文导读</h1>
-<p class="intro">这版按用户最新口径重筛：不要安全、隐私、攻击、防御、水印、泄漏、red-teaming。保留的核心只覆盖非安全方向的 inference / serving / decoding / scheduling / GPU cluster / LLM training system / edge-cloud execution。筛选证据来自用户提供的 publication page pasted text、官网 HTML、已下载 PDF 和本地抽取文本。</p>
+<p class="intro">这版按“不要 security”的口径重筛，并在 2026-07-14 继续查了作者 arXiv 与 Google Scholar。核心只收非安全方向的 inference、serving、decoding、scheduling、GPU cluster、LLM training system 和 edge-cloud execution。安全、隐私、攻击、防御、水印、泄漏、red-teaming 仍留在标注页，不混进这里。</p>
 
 <div class="cards">
-  <div class="card"><div class="num">11</div><div class="label">非安全核心论文</div></div>
-  <div class="card"><div class="num">7</div><div class="label">推理/serving/decoding/input 系统</div></div>
-  <div class="card"><div class="num">4</div><div class="label">训练调度/GPU 集群/边云协同系统</div></div>
+  <div class="card"><div class="num">16</div><div class="label">非安全核心论文</div></div>
+  <div class="card"><div class="num">10</div><div class="label">推理/serving/decoding/input 系统</div></div>
+  <div class="card"><div class="num">6</div><div class="label">训练调度/GPU 集群/边云协同系统</div></div>
   <div class="card"><div class="num">0</div><div class="label">安全/隐私/攻击/水印核心条目</div></div>
 </div>
 
@@ -110,7 +110,7 @@
   <ol>
     <li><a href="#scope">筛选口径：这次什么算，什么不算</a></li>
     <li><a href="#map">技术地图</a></li>
-    <li><a href="#papers">11 篇逐篇详细导读</a></li>
+    <li><a href="#papers">16 篇逐篇详细导读</a></li>
     <li><a href="#excluded">明确剔除的旧 security/attack/watermark 条目</a></li>
     <li><a href="#downloads">本地 PDF 与抽取文本索引</a></li>
     <li><a href="#audit">完成度自查</a></li>
@@ -131,22 +131,23 @@
   </tbody>
 </table>
 
-<div class="callout warn"><strong>关键修正：</strong>旧版把 secure/private/verifiable inference、水印、攻击类都纳入了。按“不要 security”的新要求，这些全部从核心导读中移除，新增的是 SPPO、Di-PS、ICEFROG 和 Edge SLM-Cloud LLM collaborative inference survey。</div>
+<div class="callout warn"><strong>这轮补漏：</strong>官网不是完整边界。arXiv 与 Google Scholar 交叉后，补进 DAWN、SIA、SchedMate、DDiT 和 PromptTuner；官网里的 PACE 已正式改名为 CONCUR，按同一篇处理。安全方向的新预印本只放在彩色标注页。</div>
 
 <h2 id="map">2. 技术地图</h2>
 <table>
   <thead><tr><th>主线</th><th>论文</th><th>核心瓶颈</th></tr></thead>
   <tbody>
-    <tr><td>LLM serving 现实性</td><td>Rethinking KV Cache Compression, PACE/CONCUR</td><td>KV cache 占用、agent 生命周期、batch 中段 thrashing、真实 serving throughput</td></tr>
+    <tr><td>LLM serving 现实性</td><td>Rethinking KV Cache Compression, CONCUR, PromptTuner</td><td>KV cache 占用、agent 生命周期、SLO、warm GPU pool、真实服务成本</td></tr>
     <tr><td>Speculative decoding 系统化</td><td>SpecForge, ReSpec</td><td>draft model 训练、target/draft 解耦、RL rollout 中 actor 漂移和 batch 负收益</td></tr>
-    <tr><td>Diffusion / video / dLLM inference</td><td>DSB, DSA</td><td>非自回归 block 解码顺序、video DiT 长序列 attention、分布式通信</td></tr>
+    <tr><td>Diffusion / video / dLLM inference</td><td>DSB, DAWN, DSA, DDiT</td><td>非自回归解码顺序、token 依赖、video DiT 长序列 attention、按 step 调整 GPU 并行度</td></tr>
+    <tr><td>Inference-time control</td><td>SIA</td><td>value model 不必每个 token 都跑，只在高熵决策点做稀疏 steering</td></tr>
     <tr><td>输入侧推理效率</td><td>CodeFilter</td><td>RAG context 不只是长短问题，负上下文会改变生成分布</td></tr>
-    <tr><td>长序列和集群训练系统</td><td>SPPO, Di-PS, ICEFROG</td><td>百万 token activation memory、跨集群异步训练、GPU 集群 layer-elastic scheduling</td></tr>
+    <tr><td>长序列和集群训练系统</td><td>SPPO, Di-PS, ICEFROG, SchedMate</td><td>百万 token activation memory、跨集群异步训练、layer elasticity、从代码和日志提取调度语义</td></tr>
     <tr><td>边云协同执行</td><td>Collaborative Inference and Learning between Edge SLMs and Cloud LLMs</td><td>任务分配、任务切分、offloading、routing、speculative collaboration、边缘延迟/云端能力折中</td></tr>
   </tbody>
 </table>
 
-<h2 id="papers">3. 11 篇逐篇详细导读</h2>
+<h2 id="papers">3. 16 篇逐篇详细导读</h2>
 
 <article id="kv">
   <h3>01. Rethinking Key-Value Cache Compression Techniques for Large Language Model Serving</h3>
@@ -369,6 +370,97 @@
   <p>这篇适合作为“边云推理系统”的索引论文。读完 DSA/PACE 这类专门系统后，再读它能把 serving、offloading、routing、speculative collaboration 放进边缘设备和云端 LLM 的大框架。</p>
 </article>
 
+<article id="dawn">
+  <h3>12. DAWN: Dependency-Aware Fast Inference for Diffusion LLMs</h3>
+  <div class="meta">arXiv 2602.06953 · <a href="papers/2026_arxiv_dawn_diffusion_llm_inference.pdf">PDF</a> · <a href="extracted_text/2026_arxiv_dawn_diffusion_llm_inference.txt">TXT</a> <span class="tag">diffusion LLM</span><span class="tag">parallel decoding</span></div>
+  <p><strong>一句话：</strong>DSB 调整 block 边界，DAWN 则直接问哪些 token 能在同一轮安全解开。它从 attention map 估计 token 依赖，再把低置信但已有可靠前因的 token 提前放出来。</p>
+  <h4>它补了什么空缺</h4>
+  <p>现有 dLLM 加速常用 confidence threshold：置信度高就并行 unmask，低就继续等。这个判断忽略了 token 之间的依赖。同样是 0.8 置信度，一个位置可能已经有可靠 anchor，另一个却和几个未确定位置互相牵制。把两者按同一阈值处理，要么太慢，要么一起解错。</p>
+  <h4>方法拆解</h4>
+  <ul>
+    <li><strong>Dependency Graph Construction：</strong>每轮从最后几层的 attention map 构建稀疏有向图，并过滤 attention sink，避免把结构性高注意力误当成语义依赖。</li>
+    <li><strong>Anchor-Guided Decoding：</strong>高置信已确定 token 充当 anchor。图上受 anchor 影响的位置可以使用更低阈值，不必等到统一的保守门槛。</li>
+    <li><strong>Conflict-Based Scheduling：</strong>剩余候选按置信度贪心选最大独立集；依赖图中相连的位置不会在同一轮提交，减少并行更新冲突。</li>
+  </ul>
+  <h4>实验怎么做</h4>
+  <p>模型覆盖 LLaDA-8B-Instruct、LLaDA-1.5、Dream-v0-Base-7B 和 Dream-v0-Instruct-7B；任务是 GSM8K、MATH、HumanEval、MBPP。baseline 包括逐 token 的 Original sampler、Fast-dLLM 的 confidence-aware parallel、KLASS 和 LocalLeap。主实验在单张 H100 80GB 上完成，生成长度 256、block length 32，DAWN 平均最后 4 层 attention。</p>
+  <h4>关键结果</h4>
+  <p>总体 speedup 是 1.80x 到 8.06x。LLaDA-8B-Instruct 在 GSM8K 上保持 77.94 accuracy，吞吐从 10.32 TPS 提到 44.72 TPS，也就是 4.33x；LLaDA-1.5 在 MBPP 上达到最高 8.06x。消融里去掉 Anchor-Guided Decoding 后，GSM8K 吞吐从 44.72 降到 22.31 TPS，说明主要收益确实来自“有可靠前因时放宽阈值”，而不是图结构本身。</p>
+  <h4>怎么读，哪里要留心</h4>
+  <p>先读 DSB，再读 DAWN。DSB 处理宏观 block 顺序，DAWN 处理 block 内的依赖与冲突。论文把 attention 当成依赖代理，这很便宜，但不等于真正的因果关系；结果在推理 benchmark 上很强，换到长生成或开放域对话时仍要重新检查图的稳定性。</p>
+</article>
+
+<article id="sia">
+  <h3>13. Inference-time Alignment via Sparse Junction Steering (SIA)</h3>
+  <div class="meta">arXiv 2602.21215 · <a href="papers/2026_arxiv_sia_inference_time_alignment.pdf">PDF</a> · <a href="extracted_text/2026_arxiv_sia_inference_time_alignment.txt">TXT</a> <span class="tag">inference-time alignment</span><span class="tag">sparse steering</span></div>
+  <p><strong>一句话：</strong>inference-time alignment 不必每生成一个 token 都调用 value model。SIA 只在高熵的分岔点介入，其余 token 沿 base model 自己的分布走。</p>
+  <h4>为什么它仍放绿色</h4>
+  <p>论文会测 harmlessness，但方法不是攻击、防御协议或隐私机制。它研究的是生成时怎样少跑 value model、怎样减少 steering 对原分布的扰动，核心问题是 inference-time control 的计算与质量折中。</p>
+  <h4>方法拆解</h4>
+  <p>第一步是训练 token-level value model。作者用 trajectory reward 做蒸馏，让 value model 学到局部 token 对最终奖励的贡献。第二步是 gating：论文比较随机、位置、结构、attention 与 entropy 等信号，最后选 entropy。高熵意味着模型正站在多个合理续写的分岔口，这时外部 reward 最有价值。被 gate 选中的位置才对 top-k candidate 做 value guidance。</p>
+  <h4>实验怎么做</h4>
+  <p>模型包括 Qwen3 0.6B、1.7B、4B 和 Llama-3.2 1B、3B，并测试小 value model 指导 Qwen3-8B/14B、Llama-3.1-8B 的 weak-to-strong 场景。数据覆盖 HEx-PHI、AlpacaEval、TruthfulQA，对应 harmlessness、helpfulness、honesty。比较对象有完整 token steering、Best-of-N 和 chunk-based search。</p>
+  <h4>关键结果</h4>
+  <p>多数模型只 steering 20% 到 80% token 就达到最佳 reward，继续加干预反而可能掉分。约 20% steering 可以追平 BoN-8，计算量大约少 4x；20% 到 40% 可以追平 CBS-8，效率高 2x 到 4x。Qwen3 的强 base model 在约 20% 到 40% 干预时，能接近甚至超过对应 instruct model。论文还把 SIA 接到 search-based 方法上，报告最高约 6x 的计算节省。</p>
+  <h4>怎么读，哪里要留心</h4>
+  <p>这篇的真正贡献不是“entropy 很重要”这么简单，而是把 value guidance 从连续控制改成事件触发控制。代价也很清楚：需要额外训练 value model，主评测又依赖 reward model 当裁判。看结果时要把“少干预更好”和“裁判模型偏好被利用”分开。</p>
+</article>
+
+<article id="schedmate">
+  <h3>14. Semantic-Aware Scheduling for GPU Clusters with Large Language Models (SchedMate)</h3>
+  <div class="meta">arXiv 2510.03334 · <a href="papers/2025_arxiv_schedmate_semantic_gpu_scheduling.pdf">PDF</a> · <a href="extracted_text/2025_arxiv_schedmate_semantic_gpu_scheduling.txt">TXT</a> <span class="tag">GPU cluster</span><span class="tag">LLM for systems</span></div>
+  <p><strong>一句话：</strong>传统 scheduler 只看到 GPU 数、提交时间和少量 profile；SchedMate 让它读代码、日志和历史任务，从而知道“这个 job 到底是什么”。</p>
+  <h4>问题不是换一个排队策略</h4>
+  <p>短任务的 profiling 可能和任务本身一样长；duration prediction 在代码更新后容易失效；失败日志里真正的 root cause 常被后续报错淹没。作者把这几件事归成一个问题：scheduler 缺少语义，而语义其实已经躺在 source code、runtime log、hardware metrics 和历史任务里。</p>
+  <h4>三个模块</h4>
+  <ul>
+    <li><strong>Scheduling Advisor：</strong>从源代码提取 workload fingerprint，检索相似历史任务，估算时长和资源画像，能跳过一部分 profiling。</li>
+    <li><strong>Metric Tracker：</strong>从日志中恢复训练进度和运行状态，发现 packing 或资源调整后实际 slowdown，给现有 scheduler 纠错。</li>
+    <li><strong>Failure Handler：</strong>先定位最早的关键错误，再让 LLM 分类 infrastructure、framework 或 user-code failure，并对可恢复硬件故障触发隔离、换机和 checkpoint restart。</li>
+  </ul>
+  <h4>实现与实验</h4>
+  <p>系统约 5,500 行，基于 Ray、vLLM、FlagEmbedding、Redis 和 NVML。作者把它接到 Lucid、Sia，也单独实现 SJF 版本。模型用量化 Qwen2.5-7B-Instruct 和 BGE-m3；trace 包括 Philly、Helios、Acme、Sia，以及自建 Mars，后者来自 1,024-GPU 集群的 500 个 7B 到 100B LLM 训练任务。</p>
+  <h4>关键结果</h4>
+  <p>物理集群实验中，Lucid+SchedMate 的 average JCT 比 Lucid 低 23.2%，Scheduling Advisor 平均只花 9 秒。仿真中对 Lucid 的 average JCT 改善为 1.23x 到 1.91x；独立调度版本比 QSSF 降低 25.7%，比 Tiresias 降低 16%，Failure Handler 再带来约 12.5% 改善。论文摘要写 128-GPU physical cluster，但硬件段同时写了 8 nodes x 8 A800，这个拓扑数字内部不一致，读性能比例比死记 GPU 总数更稳妥。</p>
+  <h4>怎么接到 ICEFROG</h4>
+  <p>ICEFROG 把 layer freezing 变成 scheduler 可见的弹性，SchedMate 则把代码与日志里的语义变成 scheduler 可见的信息。两篇都在扩展调度器的状态空间，只是一个新增可控 knob，一个新增观测。</p>
+</article>
+
+<article id="ddit">
+  <h3>15. DDiT: Dynamic Resource Allocation for Diffusion Transformer Model Serving</h3>
+  <div class="meta">arXiv 2506.13497 · <a href="papers/2025_arxiv_ddit_diffusion_transformer_serving.pdf">PDF</a> · <a href="extracted_text/2025_arxiv_ddit_diffusion_transformer_serving.txt">TXT</a> <span class="tag">video generation</span><span class="tag">dynamic GPU allocation</span></div>
+  <p><strong>一句话：</strong>视频生成 pipeline 里的 DiT 和 VAE 不该绑在同一组 GPU 上跑到底。DDiT 把阶段拆开，并允许一个请求在 denoising 过程中按 step 改变并行度。</p>
+  <h4>论文先做了三条画像</h4>
+  <p>第一，T2V 的 DiT 和 VAE 在 batch size 1 时就接近饱和，继续 batching 主要拉高单请求延迟。第二，DiT 会随分辨率和 GPU 数获得不同程度的加速，但 VAE 几乎不吃多 GPU。第三，静态 degree of parallelism 只对某一种负载合适，在线请求一变就会出现空闲 GPU 或错误并行度。</p>
+  <h4>系统设计</h4>
+  <p>DDiT 有 Offline Profiler、Centralized Control Plane 和 Engine Units。每张 GPU 先放完整权重，通信组按需建立，不预先把实例锁死。profiler 给不同分辨率找最合适的 DoP；global scheduler 结合等待时间、starvation 和当前空闲资源分配 GPU；engine controller 每个 denoising step 都能重组通信并 scale up/down。进入 VAE 时，资源会缩到更合适的规模。</p>
+  <h4>实验怎么做</h4>
+  <p>模型链是 T5v1.1-xxl encoder、OpenSora STDiT-v3 和 OpenSoraVAE。单机有 8 张 H800 80GB、NVLink 400GB/s；扩展实验仿真 8 节点 64 GPU。请求固定 51 frames、30 denoising steps，分辨率为 144p、240p、360p，arrival rate 从 0.25 到 1，并加入 burst。baseline 由 VideoSys 扩展出 static DoP、static/dynamic partition 等配置。</p>
+  <h4>关键结果</h4>
+  <p>单节点不同负载下，DDiT 的 p99 latency 最多下降 36.6%，对固定 DoP=4 的 average latency 最多下降 44.4%。多节点 burst 场景里，相对四种 baseline，p99 至少下降 30.4%，平均延迟至少下降 30%；成本最多下降 30.4%，是理论最优的 1.39x，而最好 baseline 仍是 2.08x。摘要把最高改善写成 p99 1.44x、平均 1.43x。</p>
+  <h4>怎么接到 DSA</h4>
+  <p>DSA 优化单次 attention 的计算与通信，DDiT 管整个 T2V pipeline 的 GPU 生命周期。前者回答“一步怎么算快”，后者回答“每一步给谁、给几张卡”。真正部署视频生成服务，两层通常要一起看。</p>
+</article>
+
+<article id="prompttuner">
+  <h3>16. PromptTuner: SLO-Aware Elastic System for LLM Prompt Tuning</h3>
+  <div class="meta">arXiv 2603.05087 · <a href="papers/2026_arxiv_prompttuner_slo_elastic_tuning.pdf">PDF</a> · <a href="extracted_text/2026_arxiv_prompttuner_slo_elastic_tuning.txt">TXT</a> <span class="tag">SLO</span><span class="tag">elastic GPU service</span></div>
+  <p><strong>一句话：</strong>prompt tuning 很像训练，因为有迭代和梯度；又很像在线推理，因为请求短、流量抖、SLO 紧。PromptTuner 专门为这种夹在中间的 workload 做资源管理。</p>
+  <h4>为什么训练 scheduler 和 inference autoscaler 都不够</h4>
+  <p>训练 scheduler 常把固定 GPU pool 预先开好，空闲时成本照付；inference 系统通常一 job 一 GPU，也不擅长在分钟级 SLO 下快速组出多 GPU。LPT 的 GPU allocation overhead 可占总时间 37% 到 41%，而不同初始 prompt 又会让达到目标精度所需迭代相差 1.7x 到 4.5x。</p>
+  <h4>两个核心部件</h4>
+  <ul>
+    <li><strong>Prompt Bank：</strong>按任务相似性检索可复用的初始 prompt，用两层索引把选择时间压到 10 秒内，减少后续 tuning 迭代。</li>
+    <li><strong>Workload Scheduler：</strong>每个 LLM 维护带预加载 runtime/weights 的 warm GPU pool，公共 cold pool 负责扩缩。调度器可一次分配多张 warm GPU，并判断请求是先查 Prompt Bank 还是直接执行。</li>
+  </ul>
+  <h4>实验怎么做</h4>
+  <p>主测试最多使用 4 台服务器、每台 8 张 A100 80GB，覆盖 GPT2-Base、GPT2-Large、Vicuna-7B 的 12 个数据集，并把任务切成 120 个 workload。baseline 是增强后的 INFless 和 ElasticFlow。作者还测试 LLaMA-30B、Qwen7B-R1，并把规模扩到 96 GPU。</p>
+  <h4>关键结果</h4>
+  <p>相对 INFless，SLO violation 最多降低 4.0x、成本最多降低 1.6x；相对 ElasticFlow 分别是 7.9x 和 4.5x。大规模 96-GPU 场景中，PromptTuner 的 violation 是 25.4%，INFless 为 57.1%，ElasticFlow 为 78.2%；成本分别是 57.2、65.9、99.1 美元。Prompt reuse 单独贡献 13% 到 23% 的 violation 降幅和 30% 到 40% 的成本节省。</p>
+  <h4>怎么读，哪里要留心</h4>
+  <p>这篇最有用的判断是 LPT 不能硬塞进 training/inference 二分法。Prompt Bank 同时改变算法收敛速度和系统调度结果，属于典型 algorithm-system co-design。实验里的成本按 AWS p4de.24xlarge 价格估算，换云、换模型常驻策略后，绝对美元数会变，组件之间的因果关系更值得记。</p>
+</article>
+
 <h2 id="excluded">4. 明确剔除的旧 security/attack/watermark 条目</h2>
 <p>这些论文以前可能被放进了旧版 16 篇，或者在用户 pasted text 中容易被关键词误判为 inference 相关；但按“不要 security”的新口径，不再作为核心导读。</p>
 <table>
@@ -385,7 +477,7 @@
 </table>
 
 <h2 id="downloads">5. 本地 PDF 与抽取文本索引</h2>
-<p>当前目录只保留非安全核心 11 篇 PDF/TXT。</p>
+<p>当前目录只保留非安全核心 16 篇 PDF/TXT。彩色标注页里的安全论文没有混进这个下载集。</p>
 <table>
   <thead><tr><th>#</th><th>论文</th><th>PDF</th><th>TXT</th></tr></thead>
   <tbody>
@@ -400,6 +492,11 @@
     <tr><td>9</td><td>Di-PS</td><td><a href="papers/2026_nsdi_dips_cross_cluster_llm_training.pdf">PDF</a></td><td><a href="extracted_text/2026_nsdi_dips_cross_cluster_llm_training.txt">TXT</a></td></tr>
     <tr><td>10</td><td>ICEFROG</td><td><a href="papers/2025_tpds_icefrog_gpu_cluster_scheduling.pdf">PDF</a></td><td><a href="extracted_text/2025_tpds_icefrog_gpu_cluster_scheduling.txt">TXT</a></td></tr>
     <tr><td>11</td><td>Edge SLM-Cloud LLM Collaborative Inference Survey</td><td><a href="papers/2025_csur_edge_slm_cloud_llm_collaborative_inference_survey.pdf">PDF</a></td><td><a href="extracted_text/2025_csur_edge_slm_cloud_llm_collaborative_inference_survey.txt">TXT</a></td></tr>
+    <tr><td>12</td><td>DAWN</td><td><a href="papers/2026_arxiv_dawn_diffusion_llm_inference.pdf">PDF</a></td><td><a href="extracted_text/2026_arxiv_dawn_diffusion_llm_inference.txt">TXT</a></td></tr>
+    <tr><td>13</td><td>SIA</td><td><a href="papers/2026_arxiv_sia_inference_time_alignment.pdf">PDF</a></td><td><a href="extracted_text/2026_arxiv_sia_inference_time_alignment.txt">TXT</a></td></tr>
+    <tr><td>14</td><td>SchedMate</td><td><a href="papers/2025_arxiv_schedmate_semantic_gpu_scheduling.pdf">PDF</a></td><td><a href="extracted_text/2025_arxiv_schedmate_semantic_gpu_scheduling.txt">TXT</a></td></tr>
+    <tr><td>15</td><td>DDiT</td><td><a href="papers/2025_arxiv_ddit_diffusion_transformer_serving.pdf">PDF</a></td><td><a href="extracted_text/2025_arxiv_ddit_diffusion_transformer_serving.txt">TXT</a></td></tr>
+    <tr><td>16</td><td>PromptTuner</td><td><a href="papers/2026_arxiv_prompttuner_slo_elastic_tuning.pdf">PDF</a></td><td><a href="extracted_text/2026_arxiv_prompttuner_slo_elastic_tuning.txt">TXT</a></td></tr>
   </tbody>
 </table>
 
@@ -407,16 +504,16 @@
 <table>
   <thead><tr><th>要求</th><th>当前证据</th><th>状态</th></tr></thead>
   <tbody>
-    <tr><td>不要 security</td><td>核心 11 篇不含安全/隐私/攻击/水印/泄漏/red-teaming；旧 security PDF/TXT 已从目录移除。</td><td><span class="score">已完成</span></td></tr>
-    <tr><td>不能靠会议名筛</td><td>按 publication pasted text 和官网全量标题逐项筛，新增了 ICS/NSDI/TPDS/CSUR 等非推理会议/期刊中的系统论文。</td><td><span class="score">已完成</span></td></tr>
-    <tr><td>推理、调度、GPU 集群都算</td><td>核心覆盖 serving、decoding、batch admission、dLLM/video inference、context filtering、long-sequence training、cross-cluster training、GPU scheduling、edge-cloud collaborative inference。</td><td><span class="score">已完成</span></td></tr>
-    <tr><td>所有核心论文下载</td><td><code>papers/</code> 下 11 个 PDF，<code>extracted_text/</code> 下 11 个 TXT。</td><td><span class="score">已完成</span></td></tr>
-    <tr><td>逐篇导读</td><td>第 3 节包含 11 篇导读，每篇含架构、创新点、实验过程、关键结果和读法。</td><td><span class="score">已完成</span></td></tr>
+    <tr><td>不要 security</td><td>核心 16 篇不含攻击、隐私协议、水印和 red-teaming。SIA 虽测 safety alignment，但方法本身是 inference-time sparse steering，不是安全攻防论文。</td><td><span class="score">已完成</span></td></tr>
+    <tr><td>不能只看官网</td><td>2026-07-14 比对官网、arXiv 作者检索和 Google Scholar 个人主页；补出 42 条官网外记录，其中 5 篇进入非安全核心。</td><td><span class="score">已完成</span></td></tr>
+    <tr><td>推理、调度、GPU 集群都算</td><td>核心覆盖 serving、decoding、batch admission、dLLM/video inference、inference-time steering、context filtering、long-sequence training、cross-cluster training、GPU scheduling 和边云协同。</td><td><span class="score">已完成</span></td></tr>
+    <tr><td>所有核心论文下载</td><td><code>papers/</code> 下 16 个 PDF，<code>extracted_text/</code> 下 16 个 TXT；新增 5 份均已检查页数和文本层。</td><td><span class="score">已完成</span></td></tr>
+    <tr><td>逐篇导读</td><td>第 3 节包含 16 篇导读，每篇都写清问题、方法、实验、关键数字和与前后论文的关系。</td><td><span class="score">已完成</span></td></tr>
   </tbody>
 </table>
 
 <footer>
-  <p>生成日期：2026-06-22。资料来源：Tianwei Zhang publication page、用户提供的 publication pasted text、已下载 PDF、由 <code>mutool draw -F txt</code> 抽取的本地文本。</p>
+  <p>初版生成于 2026-06-22，最近核对于 2026-07-14。资料来源：Tianwei Zhang publication page、作者 arXiv 检索、Google Scholar 个人主页、已下载 PDF，以及由 <code>mutool draw -F txt</code> 抽取的本地文本。</p>
 </footer>
 
 </main>
