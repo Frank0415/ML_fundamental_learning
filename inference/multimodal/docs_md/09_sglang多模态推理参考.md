@@ -13,7 +13,7 @@ SGLang 社区目前对多模态 prefix caching 的讨论集中在以下方向：
 - **截断匹配**：当一个请求的 sequence 到达视觉 token 边界时，自动截断 prefix 匹配，之后的部分视为全新 prefix 单独计算。
 
 <figure style="margin: 1rem 0 1.5rem;">
-  <img src="../docs/assets/architecture/sglang_radixattention_lru.png" alt="SGLang RadixAttention 与 LRU 淘汰示意图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <img src="https://raw.githubusercontent.com/Frank0415/Research/main/papers-source/multimodal/docs/assets/architecture/sglang_radixattention_lru.png" alt="SGLang RadixAttention 与 LRU 淘汰示意图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
   <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
     来源：SGLang 论文 Figure 3。它展示了 RadixAttention 如何在多轮请求中复用、分叉和淘汰前缀节点，比抽象描述更容易看懂 prefix reuse 的动态过程。
   </figcaption>

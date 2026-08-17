@@ -52,7 +52,7 @@ DiffusionGemma 使用均匀状态扩散：
 ## 3. 网络架构：Encoder-Denoiser 动态模式切换
 
 <figure style="margin: 1rem 0 1.5rem;">
-  <img src="../../docs/assets/architecture/diffusiongemma_technical_report_architecture.png" alt="DiffusionGemma technical report 的简化架构图" style="width: 100%; max-width: 860px; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <img src="https://raw.githubusercontent.com/Frank0415/Research/main/papers-source/diffusion/docs/assets/architecture/diffusiongemma_technical_report_architecture.png" alt="DiffusionGemma technical report 的简化架构图" style="width: 100%; max-width: 860px; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
   <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
     来源：arXiv 技术报告《How Transparent is DiffusionGemma?》Figure 1。图中每轮去噪之间传递 canvas token \(o^t\) 和 self-conditioning 向量 \(S^t\)，prompt 侧 KV 在整个循环中保持静态。
   </figcaption>
@@ -61,7 +61,7 @@ DiffusionGemma 使用均匀状态扩散：
 这张 technical report 图把数据流拆成三部分：**prefill prompt**、**当前 canvas**、**跨 step 传递的 self-conditioning**。工程上最值得看的是这里：Gemma 主干没有被整套推倒重做，改动集中在输入组织、attention mask、KV cache 写入时机和 denoising loop。
 
 <figure style="margin: 1rem 0 1.5rem;">
-  <img src="../../docs/assets/architecture/diffusiongemma_architecture.png" alt="DiffusionGemma 的 encoder-denoiser 架构图" style="width: 100%; max-width: 820px; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <img src="https://raw.githubusercontent.com/Frank0415/Research/main/papers-source/diffusion/docs/assets/architecture/diffusiongemma_architecture.png" alt="DiffusionGemma 的 encoder-denoiser 架构图" style="width: 100%; max-width: 820px; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
   <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
     来源：Google Developers Blog《DiffusionGemma: The Developer Guide》中的 `diffusion_architecture` 图。图里可以直接看到 input query 走 causal encoder，noisy canvas 走 bidirectional denoiser，KV cache 复用，self-conditioning 回到下一步输入。
   </figcaption>

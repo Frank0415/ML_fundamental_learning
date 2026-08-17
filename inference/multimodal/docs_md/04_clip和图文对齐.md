@@ -7,7 +7,7 @@ CLIP（Contrastive Language-Image Pre-training）是 OpenAI 提出的图文对�
 CLIP 使用两个独立编码器，训练目标是让配对的图文在向量空间中距离最近：
 
 <figure style="margin: 1rem 0 1.5rem;">
-  <img src="../docs/assets/architecture/clip_summary_of_approach.png" alt="CLIP 双塔对比学习总览图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <img src="https://raw.githubusercontent.com/Frank0415/Research/main/papers-source/multimodal/docs/assets/architecture/clip_summary_of_approach.png" alt="CLIP 双塔对比学习总览图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
   <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
     来源：CLIP 论文 Figure 1。左侧是对比预训练，右侧是零样本分类时如何把标签文本转成 classifier，这比文字更直观地说明了“双塔 + 对比学习”。
   </figcaption>

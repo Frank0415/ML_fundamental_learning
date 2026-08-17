@@ -47,7 +47,7 @@ prompt
 ```
 
 <figure style="margin: 1rem 0 1.5rem;">
-  <img src="../../docs/assets/architecture/sd3_mmdit_architecture.png" alt="SD3 / MMDiT 的整体推理与模型架构图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <img src="https://raw.githubusercontent.com/Frank0415/Research/main/papers-source/diffusion/docs/assets/architecture/sd3_mmdit_architecture.png" alt="SD3 / MMDiT 的整体推理与模型架构图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
   <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
     来源：SD3 论文 Figure 2。左半部分把 text encoder、latent patching、position embedding 和 MMDiT 主干串起来，正适合作为“推理全景”的真实工业版本。
   </figcaption>

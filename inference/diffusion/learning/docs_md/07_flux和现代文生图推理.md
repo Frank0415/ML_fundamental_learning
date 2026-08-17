@@ -11,7 +11,7 @@
 ## 2. FLUX vs SD3：架构层面对比
 
 <figure style="margin: 1rem 0 1.5rem;">
-  <img src="../../docs/assets/architecture/flux_architecture.png" alt="FLUX.1 高层架构总览图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <img src="https://raw.githubusercontent.com/Frank0415/Research/main/papers-source/diffusion/docs/assets/architecture/flux_architecture.png" alt="FLUX.1 高层架构总览图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
   <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
     来源：技术报告《Demystifying Flux Architecture》Figure 4。我已在浏览器中打开原图后截图保存。图里把 text encoder、噪声 latent、double-stream / single-stream attention blocks、以及 VAE decoder 的主干串成了一条完整推理链。
   </figcaption>

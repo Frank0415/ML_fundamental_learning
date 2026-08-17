@@ -11,7 +11,7 @@ ViT 将图像切成固定大小的小方块（patch），把每个 patch 展开�
 对于一幅 448×448 的图像，patch 大小仍为 16×16：总共 \(28\times 28=784\) 个 patch，visual token 数增加到 784 个。token 数量随分辨率平方增长，这也是为什么 受限显存设备必须严格控制 `max_pixels`。
 
 <figure style="margin: 1rem 0 1.5rem;">
-  <img src="../docs/assets/architecture/vit_model_overview.png" alt="ViT 模型总览图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <img src="https://raw.githubusercontent.com/Frank0415/Research/main/papers-source/multimodal/docs/assets/architecture/vit_model_overview.png" alt="ViT 模型总览图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
   <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
     来源：ViT 论文 Figure 1。原图把 patchify、线性投影、位置编码和 Transformer Encoder 主干一次性串起来，正好对应本节的输入管线说明。
   </figcaption>

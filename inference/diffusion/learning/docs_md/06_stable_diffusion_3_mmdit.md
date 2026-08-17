@@ -35,7 +35,7 @@ x_t = (1 - t)x_0 + t\epsilon
 MMDiT 让**文本和图像分别经过独立的 Transformer stream**，并在 attention 层交换信息。
 
 <figure style="margin: 1rem 0 1.5rem;">
-  <img src="../../docs/assets/architecture/sd3_mmdit_architecture.png" alt="SD3 MMDiT 双流架构图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
+  <img src="https://raw.githubusercontent.com/Frank0415/Research/main/papers-source/diffusion/docs/assets/architecture/sd3_mmdit_architecture.png" alt="SD3 MMDiT 双流架构图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
   <figcaption style="margin-top: 0.6rem; color: #555; font-size: 0.95rem;">
     来源：SD3 论文 Figure 2。右半部分给出了单个 MM-DiT block 的真实结构，和下方的教学版 ASCII 图可以一一对照。
   </figcaption>
