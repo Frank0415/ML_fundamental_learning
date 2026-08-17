@@ -4,7 +4,7 @@
 **Head配置**: dim=64, heads=16, dtype=fp16
 **Backend**: numpy_estimation
 
-## 关键发现
+## 主要发现
 
 - 视频 vs 图像 attention 倍率: **16.0×**
 - 复杂度: Attention 内存 O(N²)。Token 数翻倍 → attention matrix 翻四倍。

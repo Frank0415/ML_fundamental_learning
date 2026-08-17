@@ -39,7 +39,7 @@ prompt
 
 ## 1. prompt → tokenizer → text encoder → prompt embeddings
 
-这是整条流水线的**文本入口**，也是唯一一次和 LLM 世界有交集的地方——但这里的 text encoder 只是 conditioning，不是生成主体。
+这是整条流水线的**文本入口**，也是唯一一次和 LLM 世界有交集的地方，但这里的 text encoder 只是 conditioning，不是生成主体。
 
 ### 1.1 Tokenizer
 
@@ -108,7 +108,7 @@ latent_shape: (B, C, T, H, W) = (1, 4, 16, 32, 32)
 - C = 4：同图像 latent。
 - T = 16：16 帧视频。这是常见的小规格设置。
 - H = W = 32：256x256 像素经 8x VAE 压缩。实际生产模型可能用更多帧和更高分辨率。
-- 注意：不同模型对维度的约定不同——有些用 `(B, C, T, H, W)`，有些用 `(B, T, C, H, W)`。在你的 `diffusion_engine/` 里需要统一约定或做显式 rearrange。
+- 注意：不同模型对维度的约定不同，有些用 `(B, C, T, H, W)`，有些用 `(B, T, C, H, W)`。在你的 `diffusion_engine/` 里需要统一约定或做显式 rearrange。
 
 **spacetime patch**：视频 DiT 通常在进入 transformer 之前，把 `(B, C, T, H, W)` 的 latent 进一步按 spacetime patch 切块。例如取 patch size = (1, 2, 2)，表示时间维度不切（patch_t=1），空间维度 2x2 一组。这样：
 
@@ -319,7 +319,7 @@ z_0: (B, C, H, W)  latent  →  VAE Decoder  →  pixel: (B, 3, H*8, W*8)
 ### 7.2 为什么 VAE 很重要
 
 - 它决定了最终输出的分辨率和细节质量。
-- 它是 latent diffusion 和像素之间的**唯一桥接**——denoiser 只看到 VAE 压缩后的 latent，而人眼只看到 VAE 解码后的像素。
+- 它是 latent diffusion 和像素之间的**唯一桥接**，denoiser 只看到 VAE 压缩后的 latent，而人眼只看到 VAE 解码后的像素。
 - 不同的 VAE 有不同的压缩比（8x 最常见，Sana 等用 32x 的高压缩比变体以降低计算）、不同的 latent 通道数（4 或 16）、不同的色域和细节保真度。
 
 ### 7.3 推理中的 VAE Decode
@@ -447,6 +447,6 @@ output save                  pipeline.py
 
 ---
 
-## 本页结论
+## 结论
 
 现代 diffusion 推理的数据流核心是：**prompt → embedding → latent init → 去噪循环（DiT forward + CFG + scheduler update）→ VAE decode → 输出**。这整条流水线在 latent space 运行以换取计算效率，使用 DiT/MMDiT 替代老式 U-Net 以获取 transformer 的 scaling 优势与文本对齐能力。CFG 必须在 denoiser 输出的 vector field 层面做，不能在 latent 更新之后做。video 比 image 多一个时间维度，需要在 latent、patchify、VAE decode 等环节统一处理 shape 约定。

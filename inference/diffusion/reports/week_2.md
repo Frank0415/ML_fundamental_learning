@@ -1,7 +1,7 @@
 # 第 2 周报告：Scheduler / Rectified Flow / Toy 实验
 
 > **日期**：2026-06-07  Week 2
-> **来源任务**：T10 — scheduler / rectified flow / timestep embedding + toy rectified flow
+> **来源任务**：T10 - scheduler / rectified flow / timestep embedding + toy rectified flow
 > **证据文件**：`.omo/evidence/task-10-pytest.txt`、`.omo/evidence/task-10-toy-rf.txt`
 
 ---
@@ -36,7 +36,7 @@
 
 ---
 
-## 2. 技术关键发现
+## 2. 技术主要发现
 
 ### 2.1 Rectified Flow vs Score-Based
 
@@ -48,7 +48,7 @@
 | **采样器** | SDE/ODE solver（需处理 score） | ODE solver（直接沿矢量场） |
 | **步数需求** | 通常需要 50-1000 步 | 4-50 步即可（尤其是蒸馏后） |
 
-关键结论：rectified flow 之所以能在少步数下工作，是因为它的路径被显式训练为尽可能笔直。直线路径意味着每一步的更新方向更准确，不需要像 score-based 方法那样靠大量小步来逼近弯曲的路径。
+主要结论：rectified flow 之所以能在少步数下工作，是因为它的路径被显式训练为尽可能笔直。直线路径意味着每一步的更新方向更准确，不需要像 score-based 方法那样靠大量小步来逼近弯曲的路径。
 
 ### 2.2 Scheduler 选择对延迟的影响
 
@@ -60,7 +60,7 @@
 
 ### 2.3 Toy 实验的教学价值
 
-Toy rectified flow 用 2D 环形分布示范了整个流程：从噪声（散布在环内的随机点）出发，沿学到的矢量场方向（指向环的边界），8 步后收敛到近环形的分布。这比数学公式更直观——你可以看到每一步点群的位置变化，理解 ODE 积分在做什么。
+Toy rectified flow 用 2D 环形分布示范了整个流程：从噪声（散布在环内的随机点）出发，沿学到的矢量场方向（指向环的边界），8 步后收敛到近环形的分布。这比数学公式更直观，你可以看到每一步点群的位置变化，理解 ODE 积分在做什么。
 
 ---
 
@@ -68,9 +68,9 @@ Toy rectified flow 用 2D 环形分布示范了整个流程：从噪声（散布
 
 `learning/notes/04_scheduler设计.md` 记录了三项关键设计决策：
 
-1. **接口统一**：Euler 和 RectifiedFlow 共用同一 `step()` 签名，调用方不感知 scheduler 类型。这是为了后续 pipeline 和 benchmark 中能无缝切换 scheduler。
+1. **接口统一**：Euler 和 RectifiedFlow 共用同一 `step()` 签名，调用方不感知 scheduler 类型。这是为了后续 pipeline 和 benchmark 中能直接切换 scheduler。
 
-2. **确定性要求**：所有 scheduler 通过 `torch.Generator` 接受 seed，确保相同输入产生相同输出。这对测试和调试至关重要。
+2. **确定性要求**：所有 scheduler 通过 `torch.Generator` 接受 seed，确保相同输入产生相同输出。这对测试和调试很重要。
 
 3. **image/video 双支持**：scheduler 操作的是 latent tensor（任意维度），不假设 shape，由调用方管理维度语义。测试中分别用 `(1, 4, 64, 64)` 和 `(1, 4, 8, 64, 64)` 验证。
 
@@ -104,4 +104,4 @@ Rectified flow 是 flow matching 的一种特例。广义 flow matching 允许�
 
 2. **更简单的 scheduler 实现**：Euler ODE solver 在直线路径上的一阶截断误差最小。相比 score-based 方法需要高精度的 Heun/DPM-Solver，rectified flow 的 Euler update 几乎同效。
 
-与 Consistency Models 的对比：consistency models 走的是 "将多步蒸馏为单步" 的路线（直接学习从噪声到图像的映射），而 rectified flow 走的是 "让每步更有效" 的路线（直线路径 + 少步数）。两者不互斥——Sana Sprint 同时使用了 rectified flow 的直线路径和 consistency distillation 的少步策略。
+与 Consistency Models 的对比：consistency models 走的是 "将多步蒸馏为单步" 的路线（直接学习从噪声到图像的映射），而 rectified flow 走的是 "让每步更有效" 的路线（直线路径 + 少步数）。两者不互斥，Sana Sprint 同时使用了 rectified flow 的直线路径和 consistency distillation 的少步策略。

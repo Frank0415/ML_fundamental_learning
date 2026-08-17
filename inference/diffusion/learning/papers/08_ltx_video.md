@@ -1,9 +1,9 @@
-# 08 — LTX-Video 2B：Real-Time DiT 视频生成
+# 08 - LTX-Video 2B：Real-Time DiT 视频生成
 
 > **模型名称**：LTX-Video（Lightricks）
 > **官方仓库**：[github.com/Lightricks/LTX-Video](https://github.com/Lightricks/LTX-Video)
 > **HF Model Card**：[huggingface.co/Lightricks/LTX-Video](https://huggingface.co/Lightricks/LTX-Video)
-> **分类**：文生视频 + image-to-video — 最快开源视频模型（real-time DiT）
+> **分类**：文生视频 + image-to-video - 最快开源视频模型（real-time DiT）
 > **阅读日期**：2026-06-07
 
 ---
@@ -84,7 +84,7 @@ LTX-Video VAE（32×空间, 8×时间, 121f×720×480）：
   latent (4, 15, 22, 15) → tokens = 15 × 11 × 8 = 1,320
 ```
 
-**Token 数从 40,500 → 1,320，减少了 30×！** 这才是 LTX-Video 速度快的根本原因——不是模型小，而是 latent token 数极少，attention 成本极低。
+**Token 数从 40,500 → 1,320，减少了 30×！** 这才是 LTX-Video 速度快的根本原因，不是模型小，而是 latent token 数极少，attention 成本极低。
 
 **代价**：激进压缩意味着 latent 的信息损失更大（VAE 需要在更少的 latent 像素中编码更多的视频信息），因此 LTX-Video 在纹理细节和超高清场景下不如 Wan 或 HunyuanVideo。但对于"可接受的视频质量 + 实时推理"这一目标，这个 tradeoff 是合理的。
 
@@ -109,7 +109,7 @@ for t in [1.0, 0.7, 0.3, 0.0]:   # 仅 4 个 timestep
 
 LTX-Video 支持视频 chunking：对于不满足显存的超长视频，可以将视频分成多个 chunk 分别生成后在时间维度上拼接。每个 chunk 独立走 denoising loop，chunk 之间通过少量重叠帧保持连贯性。
 
-**对受限显存配置的影响**：chunking 允许以更小的 per-chunk 显存需求生成长视频——例如 241 帧的视频可以分两个 121 帧的 chunk 分别生成。
+**对受限显存配置的影响**：chunking 允许以更小的 per-chunk 显存需求生成长视频，例如 241 帧的视频可以分两个 121 帧的 chunk 分别生成。
 
 ### 3.5 Attention 结构
 
@@ -150,7 +150,7 @@ VAE decoder: (1, 4, 15, 22, 15) → (1, 3, 121, 720, 480)
 1. Token 数极少（~1,320 vs 40,500 for standard VAE）
 2. DiT 步数极少（4~8 vs 50 步）
 3. DiT 参数量小（2B vs 8B+）
-4. 三者共同作用：总计算量约为同类模型的 `(1320²/40500²) × (4/50) × (2B/8B) ≈ 0.1%` ——是的，不到 1%！
+4. 三者共同作用：总计算量约为同类模型的 `(1320²/40500²) × (4/50) × (2B/8B) ≈ 0.1%`，是的，不到 1%！
 
 ---
 
@@ -182,7 +182,7 @@ VAE decoder: (1, 4, 15, 22, 15) → (1, 3, 121, 720, 480)
 
 ### 6.1 显存瓶颈
 
-LTX-Video 的显存瓶颈很低——即使标准规格也远低于 中等显存配置：
+LTX-Video 的显存瓶颈很低，即使标准规格也远低于 中等显存配置：
 
 | 排序 | 组件 | VRAM（121f×720p, fp16） | 说明 |
 |------|------|------------------------|------|
@@ -230,7 +230,7 @@ video = pipe(
 ## 7. 对我的 diffusion_engine 的启发
 
 ### 7.1 `scheduler.py`
-- Few-step（4 步）scheduler 是 LTX-Video 的核心。当前 `RectifiedFlowScheduler` 支持任意步数，但 timestep 序列是均匀分布的——distilled scheduler 需要非均匀分布（如 teacher 学到的分布）。
+- Few-step（4 步）scheduler 是 LTX-Video 的核心。当前 `RectifiedFlowScheduler` 支持任意步数，但 timestep 序列是均匀分布的，distilled scheduler 需要非均匀分布（如 teacher 学到的分布）。
 - T16 的 scheduler benchmark 应以 LTX-Video 的 4 步推理作为 few-step benchmark 基线。
 
 ### 7.2 `vae_stub.py`

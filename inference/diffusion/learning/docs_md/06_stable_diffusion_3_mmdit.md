@@ -1,34 +1,38 @@
-# 06 — Stable Diffusion 3 / MMDiT
+# 06 - Stable Diffusion 3 / MMDiT
 
-本文解释 SD3（*Scaling Rectified Flow Transformers for High-Resolution Image Synthesis*, Esser et al., 2024）的核心创新：**Rectified Flow + MMDiT 双流架构**。
+SD3（*Scaling Rectified Flow Transformers for High-Resolution Image Synthesis*, Esser et al., 2024）把 **Rectified Flow** 与 **MMDiT 双流架构** 放进同一条生成管线。
 
-## 1. 两大核心创新
+## 1. Rectified Flow 与 MMDiT 双流
 
 > **SD3 = Rectified Flow 框架 + MMDiT 架构**
-> 
+>
 > **训练范式**：Rectified Flow（直线插值，比 DDPM 更高效）
-> 
+>
 > **模型架构**：MMDiT（Multi-Modal Diffusion Transformer，双流 joint attention）
 
 ### Rectified Flow 简述
 
 Rectified Flow 定义了一条从噪声到数据的直线路径：
 
-```python
-x_t = (1 - t)·x_0 + t·ε      (t 从 1 到 0 的线性插值)
-```
+\[
+x_t = (1 - t)x_0 + t\epsilon
+\]
 
-模型学习预测速度（矢量场） v_θ，而非噪声 ε_θ：
+这里 \(t\) 从 1 到 0 做线性插值。
 
-```python
-dx_t/dt = v_θ(x_t, t, c)     (c = 文本条件)
-```
+模型学习预测速度（矢量场） \(v_\theta\)，而非噪声 \(\epsilon_\theta\)：
+
+\[
+\frac{d x_t}{d t} = v_\theta(x_t, t, c)
+\]
+
+其中 \(c\) 表示文本条件。
 
 相比 DDPM 的曲线路径，rectified flow 的直线路径 **采样步数更少**（28 步而非 50+ 步）。
 
 ## 2. MMDiT：双流 Transformer
 
-MMDiT 的核心思想：**文本和图像分别走独立的 Transformer stream**，在 attention 层进行交叉信息交换。
+MMDiT 让**文本和图像分别经过独立的 Transformer stream**，并在 attention 层交换信息。
 
 <figure style="margin: 1rem 0 1.5rem;">
   <img src="../../docs/assets/architecture/sd3_mmdit_architecture.png" alt="SD3 MMDiT 双流架构图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
@@ -68,17 +72,25 @@ MMDiT 的核心思想：**文本和图像分别走独立的 Transformer stream**
 
 在 attention 层，Q 分别来自各自的 stream，但 K 和 V 来自拼接后的两个 stream：
 
-```python
-# 对 image stream
-Q_img = W_q_img · img_tokens
-K_joint = concat(W_k_img·img, W_k_text·text)
-V_joint = concat(W_v_img·img, W_v_text·text)
-attn_img = softmax(Q_img · K_joint^T / sqrt(d)) · V_joint
+对 image stream：
 
-# 对 text stream（对称）
-Q_text = W_q_text · text
-attn_text = softmax(Q_text · K_joint^T / sqrt(d)) · V_joint
-```
+\[
+\begin{aligned}
+Q_{\mathrm{img}} &= W_{q,\mathrm{img}}\,X_{\mathrm{img}}, \\
+K_{\mathrm{joint}} &= \operatorname{concat}\left(W_{k,\mathrm{img}}X_{\mathrm{img}},\,W_{k,\mathrm{text}}X_{\mathrm{text}}\right), \\
+V_{\mathrm{joint}} &= \operatorname{concat}\left(W_{v,\mathrm{img}}X_{\mathrm{img}},\,W_{v,\mathrm{text}}X_{\mathrm{text}}\right), \\
+\operatorname{Attn}_{\mathrm{img}} &= \operatorname{softmax}\left(\frac{Q_{\mathrm{img}}K_{\mathrm{joint}}^{\mathsf{T}}}{\sqrt{d}}\right)V_{\mathrm{joint}}.
+\end{aligned}
+\]
+
+对 text stream（对称）：
+
+\[
+\begin{aligned}
+Q_{\mathrm{text}} &= W_{q,\mathrm{text}}\,X_{\mathrm{text}}, \\
+\operatorname{Attn}_{\mathrm{text}} &= \operatorname{softmax}\left(\frac{Q_{\mathrm{text}}K_{\mathrm{joint}}^{\mathsf{T}}}{\sqrt{d}}\right)V_{\mathrm{joint}}.
+\end{aligned}
+\]
 
 ## 3. 文本编码器：三编码器策略
 
@@ -90,7 +102,7 @@ SD3 使用 **三个文字编码器**：
 | CLIP-G (ViT-bigG/14) | 1280 (pooled) + 77×1280 (seq) | 高质量视觉语义 |
 | T5-XXL (4.7B) | 4096 (seq only) | 详细描述理解 |
 
-三个编码器的输出拼接后投影到 MMDiT 的 hidden_size。**关键**：T5-XXL 显存占用很大（>10GB），SD3.5 Medium 可以去掉 T5 以适配 中等显存配置。
+三个编码器的输出拼接后投影到 MMDiT 的 hidden_size。**T5-XXL 的显存代价**超过 10GB；SD3.5 Medium 可以去掉 T5，以适配中等显存配置。
 
 ## 4. 推理 Pipeline（SD3 完整流程）
 
@@ -141,11 +153,11 @@ SD3 使用 **三个文字编码器**：
 
 SD3 的 CFG 在 **矢量场 (velocity field)** 层面执行，而非噪声或图像层面：
 
-```python
-v_cfg = v_uncond + s · (v_cond − v_uncond)
-```
+\[
+v_{\mathrm{cfg}} = v_{\mathrm{uncond}} + s\left(v_{\mathrm{cond}} - v_{\mathrm{uncond}}\right)
+\]
 
-其中 s 是 CFG scale（通常 3.0~7.0）。这与 DDPM 框架的 CFG 等价，但因为 rectified flow 学习的是 v_θ 而非 ε_θ，所以公式稍有不同。
+其中 \(s\) 是 CFG scale（通常 3.0~7.0）。这与 DDPM 框架的 CFG 等价，但因为 rectified flow 学习的是 \(v_\theta\) 而非 \(\epsilon_\theta\)，所以公式稍有不同。
 
 CFG 需要 **双重前向传播**（有文本 + 无文本），对中档显存卡会是个不小的负担。T16/T17 将探索 batched CFG 以节省显存。
 
@@ -163,7 +175,7 @@ CFG 需要 **双重前向传播**（有文本 + 无文本），对中档显存�
 
 ## 9. MMDiT 双流设计在视频模型中的延续
 
-MMDiT 的双流设计（text stream + image stream 独立 QKV + joint attention）不仅是 SD3 的核心，也在视频 DiT 中被延续：
+SD3 使用 MMDiT 双流设计：text stream 与 image stream 各自计算 QKV，再做 joint attention。部分视频 DiT 也沿用了这套结构：
 
 | 模型 | Denoiser 类型 | Text-Image 交互 | 双流/单流 | Token 数（典型） |
 |------|---------------|----------------|----------|------------------|
@@ -174,13 +186,13 @@ MMDiT 的双流设计（text stream + image stream 独立 QKV + joint attention�
 | CogVideoX | Expert Transformer | Cross-Attention (causal) | 单流 | ~17,550 |
 | LTX-Video | Compact DiT | Cross-Attention | 单流 | ~1,320 |
 
-**观察**：HunyuanVideo 是唯一明确延续 MMDiT 双流设计的视频模型（text stream + image stream 独立 AdaLN + joint attention）。其他视频模型选择了更简单的单流 + cross-attention 方案——对于 受限显存场景，单流意味着更少的参数和更简单的推理路径。
+**观察**：HunyuanVideo 是唯一明确延续 MMDiT 双流设计的视频模型（text stream + image stream 独立 AdaLN + joint attention）。其他视频模型选择了更简单的单流 + cross-attention 方案，对于 受限显存场景，单流意味着更少的参数和更简单的推理路径。
 
 **受限显存场景下的"双流 vs 单流"选择**：双流（如 HunyuanVideo）虽然 text-image 交互更精细，但双倍的 QKV 和 AdaLN 参数也意味着更大的 DiT 权重。当 HunyuanVideo 的 8.3B DiT 权重本身就超 中等显存配置 时（fp16 ~16.6GB），双流的"质量优势"在 中等显存配置 约束下没有实现空间。这也是为什么 CogVideoX-2B（单流）和 LTX-Video 2B（单流）更受 中等显存配置 用户青睐。
 
-## 本页结论
+## 结论
 
-SD3 将 rectified flow（训练框架）和 MMDiT（模型架构）结合，用双流 joint attention 让文本和图像 tokens 在所有层交互。相比 DiT，采样步数大幅减少（250→28），文本理解和图像质量均有提升。但三编码器（尤其是 T5-XXL）带来的显存压力，在受限显存配置下往往需要靠去 T5、offload、slicing 等策略缓解。在视频 DiT 中，双流 MMDiT 设计被 HunyuanVideo 延续，但大多数显存更友好的视频模型都转向了更轻的单流方案。
+SD3 将 rectified flow（训练框架）和 MMDiT（模型架构）结合，用双流 joint attention 让文本和图像 tokens 在所有层交互。相比 DiT，采样步数从 250 降到 28，文本理解和图像质量也有提升。三编码器，尤其是 T5-XXL，会增加显存压力；受限显存配置通常需要去掉 T5，或使用 offload、slicing。视频 DiT 中，HunyuanVideo 延续了双流 MMDiT，部分显存占用更低的模型则使用更轻的单流方案。
 
 ## 和我的 diffusion_engine 的关系
 

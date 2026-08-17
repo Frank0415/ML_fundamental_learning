@@ -1,4 +1,4 @@
-# Text Encoder 与 Prompt Embedding Cache — 扩散推理中的"条件编码"优化
+# Text Encoder 与 Prompt Embedding Cache - 扩散推理中的"条件编码"优化
 
 > **对应任务**：T12
 > **产出日期**：2026-06-07
@@ -10,7 +10,7 @@
 
 ### 与 LLM 的根本不同
 
-在 LLM 推理中，text encoder 不是独立模块——模型本身就是一个 text-to-text transformer。但在扩散模型中，**text encoder 是独立的前置模块**，其输出在整个 denoising loop 中**不变**。
+在 LLM 推理中，text encoder 不是独立模块，模型本身就是一个 text-to-text transformer。但在扩散模型中，**text encoder 是独立的前置模块**，其输出在整个 denoising loop 中**不变**。
 
 **LLM 推理**：
 ```
@@ -86,10 +86,10 @@ for step in range(28):
 **收益分析**：
 
 - **encode 次数**：从 28 × 2 = 56 次降为 2 次
-- **时间节省**：CLIP-L encode 一次约 50–100ms → 省 (56-2) × 75ms ≈ 4s
+- **时间节省**：CLIP-L encode 一次约 50-100ms → 省 (56-2) × 75ms ≈ 4s
 - **显存节省**：无重复中间激活（text encoder 的 forward 中间态不必保留）
 
-**更关键的收益**：sequential CFG 的两次 forward 各需要一次 encode（无 cache 时），但缓存后两个 forward 共用同一份 embedding。对于 batched CFG，一次 forward 就需要两份 embedding——缓存避免了一轮 text encoder forward。
+**更关键的收益**：sequential CFG 的两次 forward 各需要一次 encode（无 cache 时），但缓存后两个 forward 共用同一份 embedding。对于 batched CFG，一次 forward 就需要两份 embedding，缓存避免了一轮 text encoder forward。
 
 ### 缓存寿命
 
@@ -123,8 +123,8 @@ key = hashlib.sha256(raw.encode("utf-8")).hexdigest()
 使用 SHA256 hash 可避免 key 过长（prompt 可能几百字），并保证确定性。
 
 **需要注意的细节**：
-- `prompt` 需要 trim/normalize 吗？建议不做归一化——让 hash 精确反映用户输入。用户换一个空格也应该是新 cache entry。
-- `device` 是字符串如 `"cuda:0"`——不同 GPU 之间的 buffer 不能直接共享，必须通过 `tensor.to()` 搬迁。
+- `prompt` 需要 trim/normalize 吗？建议不做归一化，让 hash 精确反映用户输入。用户换一个空格也应该是新 cache entry。
+- `device` 是字符串如 `"cuda:0"`，不同 GPU 之间的 buffer 不能直接共享，必须通过 `tensor.to()` 搬迁。
 
 ---
 
@@ -224,7 +224,7 @@ class PromptEmbeddings:
 下游模块（pipeline、denoiser）的约定：
 - `cond` 和 `uncond` 同时不为 None（CFG 需要）
 - 若 `cfg_scale = 1.0`，`uncond` 可以为 None
-- shape 约定: `(B, L, D)` — batch, 序列长度, 隐藏维度
+- shape 约定: `(B, L, D)` - batch, 序列长度, 隐藏维度
 - dtype 和 device 与 denoiser 一致
 
 ### 与 DiT/TinyDiT 的对接

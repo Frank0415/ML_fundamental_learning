@@ -1,6 +1,6 @@
-# Reference Video Inference — Blocker (Wan)
+# Reference Video Inference - Blocker (Wan)
 
-**日期**：2026-06-07（占位 — 真实运行日期待定）
+**日期**：2026-06-07（占位 - 真实运行日期待定）
 **模型**：Wan-AI/Wan2.1-T2V-1.3B
 **设备**：可用的 CUDA GPU（中等显存配置）（远程，待连接）
 **执行者**：T15 系统尝试

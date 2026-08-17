@@ -1,4 +1,4 @@
-# 10 — Consistency / Distillation / Few-Step Sampling 总览
+# 10 - Consistency / Distillation / Few-Step Sampling 总览
 
 > **方法族**：Consistency Model, LCM, Turbo, Lightning, Progressive Distillation
 > **覆盖范围**：所有扩散模型的 few-step 推理加速方法
@@ -21,7 +21,7 @@
 
 ### 3.1 Consistency Model（一致性模型，Song et al., 2023）
 
-**核心思想**：将扩散模型的完整 ODE 轨迹映射为一步映射——任何时间点的噪声 latent 直接映射到数据 latent。
+**核心思想**：将扩散模型的完整 ODE 轨迹映射为一步映射，任何时间点的噪声 latent 直接映射到数据 latent。
 
 ```
 传统扩散：x_T → (N 步 denoising) → x_0
@@ -40,7 +40,7 @@
 
 LCM 将一致性模型的思想应用到 **latent diffusion** 框架中（即 Stable Diffusion 的 latent 空间）。关键创新：
 - 在 latent 空间而非像素空间做 consistency mapping
-- 使用 **LoRA** 而非从头训练——意味着可以在不改变原 SD 权重的情况下添加 fast sampling 能力
+- 使用 **LoRA** 而非从头训练，意味着可以在不改变原 SD 权重的情况下添加 fast sampling 能力
 - 推理 1-4 步即可得到合理结果
 
 **代表性 HCF 模型**：
@@ -65,14 +65,14 @@ Turbo 变体通过 **对抗训练 + 蒸馏** 的混合策略将原模型压缩�
 
 ### 3.4 FLUX schnell（快速变体）
 
-FLUX schnell 是 **guided distillation** 的结果——不是简单的 step reduction，而是将 CFG guidance 在蒸馏过程中内化：
+FLUX schnell 是 **guided distillation** 的结果，不是简单的 step reduction，而是将 CFG guidance 在蒸馏过程中内化：
 
 - **原始 FLUX dev**：50 步，cfg=3.5-7.0，cond+uncond 双 forward
 - **FLUX schnell**：4 步，cfg≈0（guidance 已内化到模型权重中），单 forward
 
 这意味着 schnell 的每步计算量比 dev 的一半还少（因为 dev 每步需要 cond+uncond 两次 forward）。总计算量：`4 步 × 1 forward = 4` vs `50 步 × 2 forward = 100` → **25× 加速**。
 
-**schnell 的启示**：蒸馏不仅可以减少步数，还可以**消除 CFG 的双 forward 开销**。对于 受限显存场景，这至关重要（因为 CFG 的双 forward 是每步的显存峰值）。
+**schnell 的启示**：蒸馏不仅可以减少步数，还可以**消除 CFG 的双 forward 开销**。对于 受限显存场景，这很重要（因为 CFG 的双 forward 是每步的显存峰值）。
 
 ### 3.5 Progressive Distillation（渐进蒸馏）
 
@@ -121,7 +121,7 @@ Student (6 steps) → Student (4 steps)
 
 ### 5.1 ODE 轨迹的"直线性"
 
-在全步长扩散中，ODE（常微分方程）轨迹是弯曲的——每个 timestep 需要跨过一段曲线。蒸馏的过程本质上是将弯曲的 ODE 轨迹"拉直"：
+在全步长扩散中，ODE（常微分方程）轨迹是弯曲的，每个 timestep 需要跨过一段曲线。蒸馏的过程本质上是将弯曲的 ODE 轨迹"拉直"：
 
 ```
 原始 ODE 轨迹（弯曲）：
@@ -137,7 +137,7 @@ x_T ──────→ x_mid ──────→ x_0        (2 步)
 
 ### 5.2 一致性函数的不变性质
 
-Consistency Model 的关键数学性质是 **self-consistency**（自一致性）：沿 ODE 轨迹的所有点映射到同一个 x_0。这意味着即使一步从 x_T 跳到 x_0 是"大跳跃"，一致性函数的训练目标确保了跳跃的有效性——因为所有中间点也在训练中被"拉到"同一个 x_0。
+Consistency Model 的关键数学性质是 **self-consistency**（自一致性）：沿 ODE 轨迹的所有点映射到同一个 x_0。这意味着即使一步从 x_T 跳到 x_0 是"大跳跃"，一致性函数的训练目标确保了跳跃的有效性，因为所有中间点也在训练中被"拉到"同一个 x_0。
 
 ---
 

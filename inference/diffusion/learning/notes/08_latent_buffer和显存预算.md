@@ -1,4 +1,4 @@
-# Latent Buffer 与显存预算 — 扩散推理的显存管理
+# Latent Buffer 与显存预算 - 扩散推理的显存管理
 
 > **对应任务**：T12
 > **产出日期**：2026-06-07
@@ -25,7 +25,7 @@ for step in range(N):
 2. 为 `latent + ...` 分配新 tensor
 3. 释放旧 latent tensor
 
-在 28 步循环中，这意味着约 28 × 3 = 84 次 GPU malloc/free。每次 cudaMalloc 的固定开销约 10–50 μs（取决于碎片化程度），累计约 1–4 ms。虽然不大，但在 latency-sensitive 场景中值得优化。
+在 28 步循环中，这意味着约 28 × 3 = 84 次 GPU malloc/free。每次 cudaMalloc 的固定开销约 10-50 μs（取决于碎片化程度），累计约 1-4 ms。虽然不大，但在 latency-sensitive 场景中值得优化。
 
 ### 真正的收益：显存可预测性
 
@@ -89,9 +89,9 @@ class LatentBufferManager:
 ```
 
 **image vs video shape**：
-- 图像 latent: `(B=1, C=4, H, W)` — 4D
-- 视频 latent: `(B=1, C=16, T, H, W)` — 5D（CogVideoX 有 16 个 latent channels）
-- 视频场景下 buffer 占用量显著增加（T 维度可达 49–81 帧）
+- 图像 latent: `(B=1, C=4, H, W)` - 4D
+- 视频 latent: `(B=1, C=16, T, H, W)` - 5D（CogVideoX 有 16 个 latent channels）
+- 视频场景下 buffer 占用量显著增加（T 维度可达 49-81 帧）
 
 ---
 
@@ -123,7 +123,7 @@ Step k+1: [x_next] ← f(x_t)    x_t ← [读 buffer B（原 A 的内容）]
 
 ---
 
-## 4. 中等显存配置分账 — 真实推理预算
+## 4. 中等显存配置分账 - 真实推理预算
 
 ### 假设：SD3 Medium @ 1024×1024, fp16, 28 steps
 
@@ -147,26 +147,26 @@ Step k+1: [x_next] ← f(x_t)    x_t ← [读 buffer B（原 A 的内容）]
 | **小计** | **< 1 MB** | |
 | | | |
 | **Attention Activations** | | |
-| MMDiT self-attention (24 layers) | ~1–2 GB | N² attention, N=4096 patches per 128² latent |
-| Cross-attention (24 layers) | ~0.5–1 GB | Q·K^T 中间激活 |
-| **小计** | **~1.5–3 GB** | 这是真正的显存瓶颈！ |
+| MMDiT self-attention (24 layers) | ~1-2 GB | N² attention, N=4096 patches per 128² latent |
+| Cross-attention (24 layers) | ~0.5-1 GB | Q·K^T 中间激活 |
+| **小计** | **~1.5-3 GB** | 这是真正的显存瓶颈！ |
 | | | |
 | **其他** | | |
 | PyTorch CUDA context | ~0.5 GB | cuBLAS/cuDNN 内部 buffer |
 | 系统保留 | ~0.5 GB | NVIDIA driver 占用 |
 | **小计** | **~1 GB** | |
 | | | |
-| **总计** | **~10–12 GB** | 非常接近 在中档显存卡的上限！ |
+| **总计** | **~10-12 GB** | 非常接近 在中档显存卡的上限！ |
 
-### 关键发现
+### 主要发现
 
-1. **Latent buffer 占用 < 1 MB** — 不是显存瓶颈。Ping-pong buffer 机制主要解决 malloc 碎片化，而非显存节省。
+1. **Latent buffer 占用 < 1 MB** - 不是显存瓶颈。Ping-pong buffer 机制主要解决 malloc 碎片化，而非显存节省。
 
-2. **Model weights 占大头（~7.6 GB）** — 这也是为什么 CPU offload（把 text encoder 或 VAE offload 到 CPU）是 受限显存推理的必要策略。
+2. **Model weights 占大头（~7.6 GB）** - 这也是为什么 CPU offload（把 text encoder 或 VAE offload 到 CPU）是 受限显存推理的必要策略。
 
-3. **Attention activations 是第二大开销（~1.5–3 GB）** — N² attention 在高分辨率下爆炸。1024² latent 有 4096 patches，self-attention = (4096²) × head_dim × num_heads × num_layers。
+3. **Attention activations 是第二大开销（~1.5-3 GB）** - N² attention 在高分辨率下爆炸。1024² latent 有 4096 patches，self-attention = (4096²) × head_dim × num_heads × num_layers。
 
-4. **T5-XXL（22GB）根本放不下** — SD3 Medium 的 optional T5 必须完全跳过，或使用 CPU offload。
+4. **T5-XXL（22GB）根本放不下** - SD3 Medium 的 optional T5 必须完全跳过，或使用 CPU offload。
 
 ### 受限显存策略
 
@@ -221,7 +221,7 @@ class MemoryStats:
 
 ---
 
-## 6. 扩散独有 vs LLM 通用 — 内存管理的差异总结
+## 6. 扩散独有 vs LLM 通用 - 内存管理的差异总结
 
 ### 扩散独有
 
@@ -246,6 +246,6 @@ class MemoryStats:
 试图在扩散中保留"过去 step 的 latent"（类比 KV cache）会：
 1. **浪费显存**：旧 latent 对下一步的 ODE 积分无意义
 2. **数值错误**：ODE 积分需要当前 latent 和 vector field，不是历史 latent 的聚合
-3. **概念混淆**：扩散的"step"不是 LLM 的"token"——step 之间不是追加关系，而是替换关系
+3. **概念混淆**：扩散的"step"不是 LLM 的"token"，step 之间不是追加关系，而是替换关系
 
 **正确思路**：扩散的内存优化应聚焦于模型权重的 offload 和 attention 激活的压缩，而非 latent 历史的缓存。Ping-pong buffer 只是工程实现上的整洁性优化，不是显存节省的核心。

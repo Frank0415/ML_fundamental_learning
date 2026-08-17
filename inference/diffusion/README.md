@@ -17,7 +17,7 @@
 - **优化**：设计并运行 prompt cache、latent buffer、scheduler benchmark、CFG batching、attention memory、VAE tiling 共 6 个对照实验。
 - **总结**：产出一份最终报告，清楚对比扩散推理与 LLM 推理的系统优化差异。
 
-**策略**：双轨执行——日常在 Mac M5 (Metal 4) 上开发和跑 toy 实验，真实 reference inference 放到远程 CUDA GPU 上执行。
+**策略**：双轨执行，日常在 Mac M5 (Metal 4) 上开发和跑 toy 实验，真实 reference inference 放到远程 CUDA GPU 上执行。
 
 ---
 
@@ -163,15 +163,15 @@ T13 脚手架已完成（3 个模型脚本 + memory profiler）。T14 真实尝�
 **推荐首选**（环境就绪后）：
 
 ```bash
-# Sana 0.6B — Apache 2.0，无授权障碍，对中低显存更友好
+# Sana 0.6B - Apache 2.0，无授权障碍，对中低显存更友好
 python3 experiments/reference_image_inference/run_sana_if_possible.py \
   --prompt "一只柴犬在樱花树下"
 
-# SD3 Medium — 需 HF token + license accept
+# SD3 Medium - 需 HF token + license accept
 python3 experiments/reference_image_inference/run_sd3_medium_if_possible.py \
   --prompt "一只柴犬在樱花树下" --no_t5
 
-# FLUX.1-schnell — 需 HF token + license accept，仅 4 steps
+# FLUX.1-schnell - 需 HF token + license accept，仅 4 steps
 python3 experiments/reference_image_inference/run_flux_schnell_if_possible.py \
   --prompt "一只柴犬在樱花树下"
 ```
@@ -183,11 +183,11 @@ python3 experiments/reference_image_inference/run_flux_schnell_if_possible.py \
 T15 脚手架已完成（3 个模型脚本 + 3 个 blocker 占位文件）。所有 blocker 均为"脚本就绪，等待远程 GPU 环境"。默认小规格：≤16 帧 × 256² × ≤8 步。
 
 ```bash
-# CogVideoX-2B — Apache 2.0，无授权障碍
+# CogVideoX-2B - Apache 2.0，无授权障碍
 python3 experiments/reference_video_inference/run_cogvideox_if_possible.py \
   --prompt "一只猫在草地上奔跑" --num_frames 16 --width 256 --height 256
 
-# LTX-Video 2B distilled — 开放协议
+# LTX-Video 2B distilled - 开放协议
 python3 experiments/reference_video_inference/run_ltx_video_if_possible.py \
   --prompt "一只猫在草地上奔跑" --num_frames 16 --width 256 --height 256
 ```
@@ -351,41 +351,41 @@ python3 experiments/diffusion_inference_optimization/run_all_benchmarks.py
 
 | 周 | 主要内容 | 建议时间 |
 |---|---|---|
-| **Week 1** | 环境审计 + 老引擎盘点 + 复用决策 + 阅读 rectified flow / DiT 基础材料 | **15–20h** |
-| **Week 2** | scheduler + rectified flow + timestep embedding + toy 实验 | **8–12h** |
-| **Week 3** | DiT/MMDiT 实现 + pipeline + memory manager（**最重的一周**） | **15–20h** |
-| **Week 4** | reference image 脚手架 + 至少跑通一个真实模型 | **10–15h** |
-| **Week 5** | 视频 reference 脚手架 + 尝试（允许失败） | **6–10h** |
-| **Week 6** | optimization 6 个实验 + 最终文档 + 报告 | **12–18h** |
-| **合计** | | **65–95h**，平均 **11–16h/周** |
+| **Week 1** | 环境审计 + 老引擎盘点 + 复用决策 + 阅读 rectified flow / DiT 基础材料 | **15-20h** |
+| **Week 2** | scheduler + rectified flow + timestep embedding + toy 实验 | **8-12h** |
+| **Week 3** | DiT/MMDiT 实现 + pipeline + memory manager（**最重的一周**） | **15-20h** |
+| **Week 4** | reference image 脚手架 + 至少跑通一个真实模型 | **10-15h** |
+| **Week 5** | 视频 reference 脚手架 + 尝试（允许失败） | **6-10h** |
+| **Week 6** | optimization 6 个实验 + 最终文档 + 报告 | **12-18h** |
+| **合计** | | **65-95h**，平均 **11-16h/周** |
 
 ### 模式 B：AI 辅助（实际经历的）
 
 | 周 | 你实际需要做什么 | 建议时间 |
 |---|---|---|
-| **Week 1** | 验证环境、读 paper 卡片（10 篇各 30–60 min）、决策确认 | **3–5h** |
-| **Week 2** | 看 toy rectified flow 跑通、检查 scheduler/RF 笔记 | **2–3h** |
-| **Week 3** | 看 DiT forward shape 正确、看 6 步 pipeline 接口 | **3–5h** |
-| **Week 4** | 下载模型、跑 Sana/SD3、记录真实参数 | **3–5h**（含下载等待） |
-| **Week 5** | 下载视频模型、尝试 1–2 个小规格 | **2–4h** |
-| **Week 6** | 跑 optimization 实验、看结果、review 最终报告 | **3–5h** |
-| **合计** | | **16–27h**，平均 **3–5h/周** |
+| **Week 1** | 验证环境、读 paper 卡片（10 篇各 30-60 min）、决策确认 | **3-5h** |
+| **Week 2** | 看 toy rectified flow 跑通、检查 scheduler/RF 笔记 | **2-3h** |
+| **Week 3** | 看 DiT forward shape 正确、看 6 步 pipeline 接口 | **3-5h** |
+| **Week 4** | 下载模型、跑 Sana/SD3、记录真实参数 | **3-5h**（含下载等待） |
+| **Week 5** | 下载视频模型、尝试 1-2 个小规格 | **2-4h** |
+| **Week 6** | 跑 optimization 实验、看结果、review 最终报告 | **3-5h** |
+| **合计** | | **16-27h**，平均 **3-5h/周** |
 
 ### 关键变量
 
 - **Week 3 永远是峰值**：DiT 实现 + pipeline + memory manager 三个模块跨子领域，理解成本最高
-- **Week 4 受网络影响最大**：gated repo（SD3/FLUX/Wan/LTX）需要先到 HF 接受 license，可能多耗 1–2h
-- **Week 5 取决于远程 CUDA GPU 是否就绪**：如果远程 GPU 不可用，纯 M5 跑视频只能 toy-level，1–2h 就够；如果远程可达，可能多耗 2–4h 调参
+- **Week 4 受网络影响最大**：gated repo（SD3/FLUX/Wan/LTX）需要先到 HF 接受 license，可能多耗 1-2h
+- **Week 5 取决于远程 CUDA GPU 是否就绪**：如果远程 GPU 不可用，纯 M5 跑视频只能 toy-level，1-2h 就够；如果远程可达，可能多耗 2-4h 调参
 
 ### 实际参考
 
-刚刚跑完这轮 6 周计划，AI 端总耗时约 5h 15m。如果按"读 + 决策 + review"折算人工时间，预估你这一周投入约 **4–6h** 就能跟上节奏。
+刚刚跑完这轮 6 周计划，AI 端总耗时约 5h 15m。如果按"读 + 决策 + review"折算人工时间，预估你这一周投入约 **4-6h** 就能跟上节奏。
 
 ### 建议
 
 - 如果是**学习目的**（想真懂 diffusion 推理）：选 **模式 A** 的下限（约 11h/周）
-- 如果是**项目交付目的**（拿到可工作的代码库）：选 **模式 B**（约 3–5h/周）
-- 不要同时追求两者——Week 3 试图完全手写 DiT 又用 AI 加速会两边都不讨好
+- 如果是**项目交付目的**（拿到可工作的代码库）：选 **模式 B**（约 3-5h/周）
+- 不要同时追求两者，Week 3 试图完全手写 DiT 又用 AI 加速会两边都不讨好
 
 ---
 

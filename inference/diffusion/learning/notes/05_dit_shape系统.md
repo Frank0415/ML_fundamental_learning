@@ -1,6 +1,6 @@
 # DiT Shape 系统：从图像到 Tokens 再回来
 
-> T11 学习笔记 — 记录 Diffusion Transformer 的核心 shape 变换逻辑  
+> T11 学习笔记 - 记录 Diffusion Transformer 的核心 shape 变换逻辑
 > 最后更新：2026-06-07
 
 ---
@@ -200,7 +200,7 @@ tokens:  (B, N, p*p*C)
 | **归一化** | 静态 RMSNorm | AdaLN（动态 scale/shift/gate） |
 | **输入维度** | `(B, seq_len, D)`, seq_len 逐步增长 | `(B, N, D)`, N 固定不变 |
 | **输出** | 逐 token 概率分布 | 完整 latent 预测（一步输出全部 N） |
-| **复用价值** | 无（除 SiluAndMul 11 行） | — |
+| **复用价值** | 无（除 SiluAndMul 11 行） | - |
 
 ---
 

@@ -1,6 +1,6 @@
 # diffusion-inference 知识库
 
-> 一份面向现代扩散模型推理的中文静态知识库。覆盖 rectified flow、DiT/MMDiT、文生图、文生视频、系统优化的完整技术栈。13 个页面，零外部依赖，`file://` 协议直接打开。
+> 这套中文静态文档讨论现代扩散模型推理，包括 rectified flow、DiT/MMDiT、文生图、文生视频和系统优化。全站共 13 页，不依赖外部资源，也可以通过 `file://` 直接打开。
 
 ## 项目概览
 
@@ -16,10 +16,10 @@ Diffusion 推理数据流 9 要点。从 U-Net 到 DiT/MMDiT 的转向。
 ## 技术细节
 
 ### 04 Rectified Flow & Flow Matching
-线性路径、矢量场、ODE 积分。与 score-based 的本质区别。
+线性路径、矢量场、ODE 积分，以及它与 score-based 方法的区别。
 
 ### 05 Diffusion Transformer 架构
-DiT 核心组件：patchify、AdaLN-Zero、full attention、joint attention。
+DiT 组件：patchify、AdaLN-Zero、full attention、joint attention。
 
 ### 06 SD3 MMDiT
 多模态 DiT：image + text token 联合处理。双流注意力设计。
@@ -41,7 +41,7 @@ Spacetime patch、3D VAE、视频 latent 结构。架构范式对比。
 ## 优化与总结
 
 ### 11 扩散推理系统优化
-6 项技术 + 实验数据。与 LLM KV cache 的根本差异。Attention O(N²) 是真实瓶颈。**T18 新建**
+6 项技术及其实验数据，解释它与 LLM KV cache 的差别，并测量 Attention \(O(N^2)\) 的显存代价。**T18 新建**
 
 ### 12 DiffusionGemma 推理
 Discrete diffusion、自纠错机制、Encoder-Denoiser、vLLM 推理部署。
@@ -51,6 +51,6 @@ Discrete diffusion、自纠错机制、Encoder-Denoiser、vLLM 推理部署。
 
 ## 快速入口
 
-如果你是第一次来，推荐阅读顺序：**01 任务总览** → **03 推理背景** → **04 Rectified Flow** → **05 DiT 架构** → **11 系统优化** → **12 DiffusionGemma** → **13 成果说明**。
+第一次阅读可以按这个顺序：**01 任务总览** → **03 推理背景** → **04 Rectified Flow** → **05 DiT 架构** → **11 系统优化** → **12 DiffusionGemma** → **13 成果说明**。
 
 如果你想运行代码，查看 [13 最终成果说明](13_最终成果说明.md) 中的"如何运行"一节，或阅读顶层 `README.md`。

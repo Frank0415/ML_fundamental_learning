@@ -1,7 +1,7 @@
 # Reference Video Inference 实验
 
 > **优先级**：P1（视频是小规格尝试，失败也接受，但必须留 attempt trace 或 blocker）
-> **负责任务**：T15 — 视频 reference 脚手架、尝试、blocker 与 Week 5 报告
+> **负责任务**：T15 - 视频 reference 脚手架、尝试、blocker 与 Week 5 报告
 > **执行环境**：远程 CUDA GPU（中等显存配置），Mac M5 不支持 CUDA
 > **最后更新**：2026-06-07
 
@@ -17,7 +17,7 @@
 2. **显存策略**：验证 受限显存配置下视频推理的现实可行性，测试 cpu_offload / vae_tiling / frame_chunk 等策略。
 3. **Blocker 文化**：如实记录每一个失败点，不美化、不伪造、不跳过。
 
-**一句话总结**：只要留下了完整的 attempt trace 或 blocker 记录，T15 就是成功交付。
+**简短总结**：只要留下了完整的 attempt trace 或 blocker 记录，T15 就是成功交付。
 
 ### 1.2 对后续任务的依赖关系
 
@@ -148,7 +148,7 @@ pipe = CogVideoXPipeline.from_pretrained('THUDM/CogVideoX-2b', torch_dtype=torch
 | `run_cogvideox_if_possible.py` | CogVideoX-2B 视频生成 | 16f×256×256, 8 steps, bf16, cpu_offload |
 | `run_wan_if_possible.py` | Wan2.1-T2V-1.3B 视频生成 | 16f×256×256, 8 steps, bf16, cpu_offload |
 | `profile_video_memory.py` | 视频 VRAM 预估与 profile（dry-run） | 默认不加载模型 |
-| `sample_prompts.txt` | 6 条中英视频 prompt 参考 | — |
+| `sample_prompts.txt` | 6 条中英视频 prompt 参考 | - |
 
 ### 预期运行命令
 
@@ -282,7 +282,7 @@ experiments/reference_video_inference/
 当模型失败时，必须在 `results/blocker_<model>.md` 中填写以下内容：
 
 ```markdown
-# Reference Video Inference — Blocker (<模型名>)
+# Reference Video Inference - Blocker (<模型名>)
 
 **日期**：YYYY-MM-DD
 **模型**：<HF model ID>

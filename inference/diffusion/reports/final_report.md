@@ -21,31 +21,31 @@
 
 ## 二、已完成产出清单（35+ 文件）
 
-### 知识库 (docs/) — 13 个文件
+### 知识库 (docs/) - 13 个文件
 - `index.html`：知识库首页（分 4 类，12 页链接）
 - `01_任务总览.html` ~ `12_最终成果说明.html`：12 个中文静态知识库页面
 - `style.css`：共享样式表（浅色/深色主题，零外部依赖）
 
-### 学习笔记 (learning/notes/) — 10 篇
+### 学习笔记 (learning/notes/) - 10 篇
 - `01_老引擎结构审计.md` ~ `10_diffusers_reference源码走读.md`
 
-### 论文卡片 (learning/papers/) — 10 篇
+### 论文卡片 (learning/papers/) - 10 篇
 - `00_论文清单.md`、`01_scaling_rectified_flow_transformers_sd3.md` ~ `10_consistency_distillation_and_fast_sampling.md`
 
-### 自写引擎 (diffusion_engine/) — 10 核心模块 + 36 测试
+### 自写引擎 (diffusion_engine/) - 10 核心模块 + 36 测试
 - `core/scheduler.py`、`rectified_flow.py`、`timestep_embedding.py`
 - `core/attention.py`、`transformer_block.py`、`dit.py`
 - `core/text_conditioning.py`、`pipeline.py`、`memory_manager.py`、`vae_stub.py`
 - `tests/test_scheduler.py`、`test_rectified_flow.py`、`test_dit_shapes.py`、`test_pipeline_smoke.py`
 
-### 实验 (experiments/) — 5 个目录
+### 实验 (experiments/) - 5 个目录
 - `toy_rectified_flow/`：trajectory PNG + JSON
 - `toy_dit_inference/`：blcker 记录
 - `reference_image_inference/`：3 个模型脚本 + profiler + attempt manifest（blocker）
 - `reference_video_inference/`：3 个模型脚本 + profiler + 3 个 blocker 文件
 - `diffusion_inference_optimization/`：6 个实验脚本 + 12 个结果文件（JSON + MD）
 
-### 报告 (reports/) — 8 份
+### 报告 (reports/) - 8 份
 - `engine_inventory.md`（515 行）
 - `week_1.md` ~ `week_6.md`
 - `final_report.md`（本文件）
@@ -157,7 +157,7 @@
 
 LLM 的自回归解码有一个关键假设：第 N+1 个 token 需要 attend 前 N 个 token，而前 N 个 token 的 key/value 已经计算过了，不需要重复计算。KV cache 正是利用这个假设：每次只需计算最新 token 的 K/V，追加到 cache。
 
-扩散模型的 denoising loop 没有这个假设。第 t 步的 latent 和第 t+1 步的 latent 是完全不同的两个张量。虽然它们的值有关联（ODE 积分的关系），但从 attention 的角度看，它们需要各自从头计算 K、Q、V——上一轮的 K/V 对当前轮没有任何帮助。
+扩散模型的 denoising loop 没有这个假设。第 t 步的 latent 和第 t+1 步的 latent 是完全不同的两个张量。虽然它们的值有关联（ODE 积分的关系），但从 attention 的角度看，它们需要各自从头计算 K、Q、V，上一轮的 K/V 对当前轮没有任何帮助。
 
 **哪里有相似之处**：
 
@@ -210,7 +210,7 @@ LLM 的自回归解码有一个关键假设：第 N+1 个 token 需要 attend �
 
 #### 中期（环境就绪后，Week 9-12）
 
-5. **xformers / flash-attn 集成**：在一块可用的 CUDA GPU 上安装 xformers 或 flash-attn，实测 memory-efficient attention 对 DiT 的加速比。这是 attention memory benchmark 的实际验证——理论上的 4.19× 节省（16384 tokens）能否兑现。
+5. **xformers / flash-attn 集成**：在一块可用的 CUDA GPU 上安装 xformers 或 flash-attn，实测 memory-efficient attention 对 DiT 的加速比。这是 attention memory benchmark 的实际验证，理论上的 4.19× 节省（16384 tokens）能否兑现。
 6. **torch.compile 测试**：对 DiT transformer block 应用 `@torch.compile`，测试 Blackwell 架构下的 kernel fusion 效果。
 7. **MPS 后端评估**：在 Apple M5 上安装 PyTorch MPS 后端，评估 toy 实验的 MPS 性能，判断 M5 是否适合扩散推理的开发用途。
 8. **多模型批量测试**：在真实 GPU 环境下跑通 SD3 Medium 和 FLUX schnell，记录每个模型的 VRAM/latency 曲线。
@@ -299,9 +299,9 @@ LLM 的自回归解码有一个关键假设：第 N+1 个 token 需要 attend �
 T14 和 T15 的 blocker 记录是整个项目中最诚实的部分。在一个追求"看起来完成"的文化中，明确写出"脚手架就绪但环境未跑通，不伪造成功记录"需要一定的纪律。
 
 但这个纪律是值得的：
-- 它保持了项目的信誉——读者可以信任 README 中的每一行状态描述
-- 它为后续工作保留了清晰的路标——下一任维护者知道"只需要安装依赖就能跑"，而不是"这里可能有什么隐蔽的 bug"
-- 它避免了"虚假的成就感"——16 个已完成的代码任务 + 2 个诚实的环境 blocker 比 18 个"似乎完成但实际没跑通"更有意义
+- 它保持了项目的信誉，读者可以信任 README 中的每一行状态描述
+- 它为后续工作保留了清晰的路标，下一任维护者知道"只需要安装依赖就能跑"，而不是"这里可能有什么隐蔽的 bug"
+- 它避免了"虚假的成就感"，16 个已完成的代码任务 + 2 个诚实的环境 blocker 比 18 个"似乎完成但实际没跑通"更有意义
 
 ---
 
@@ -328,9 +328,9 @@ T14 和 T15 的 blocker 记录是整个项目中最诚实的部分。在一个�
 
 ---
 
-> **报告完成日期**：2026-06-07  
-> **相关知识库**：`docs/index.html`（12 页中文静态 HTML）  
-> **顶层入口**：`README.md`（13 小节齐全，项目完整 overview）  
-> **任务追踪**：`TODO.md`（17/18 完成）  
-> **计划文件**：`.omo/plans/modern-diffusion-inference-roadmap.md`  
+> **报告完成日期**：2026-06-07
+> **相关知识库**：`docs/index.html`（12 页中文静态 HTML）
+> **顶层入口**：`README.md`（13 小节齐全，项目完整 overview）
+> **任务追踪**：`TODO.md`（17/18 完成）
+> **计划文件**：`.omo/plans/modern-diffusion-inference-roadmap.md`
 > **Final Verification**：F1-F4 全部 APPROVE（2026-06-07）

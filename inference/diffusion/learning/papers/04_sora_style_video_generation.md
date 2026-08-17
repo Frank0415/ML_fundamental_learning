@@ -1,9 +1,9 @@
-# 04 — Sora-Style Video Generation（OpenAI Sora 技术说明）
+# 04 - Sora-Style Video Generation（OpenAI Sora 技术说明）
 
 > **来源**：OpenAI 技术报告 *Video generation models as world simulators*（2024-02-15）
 > **官方链接**：[openai.com/index/video-generation-models-as-world-simulators](https://openai.com/index/video-generation-models-as-world-simulators/)
 > **开源复现参考**：Open-Sora（`github.com/hpcaitech/Open-Sora`）、Open-Sora-Plan（`github.com/PKU-YuanGroup/Open-Sora-Plan`）
-> **分类**：文生视频 + image-to-video — 视频 DiT 架构范式奠基
+> **分类**：文生视频 + image-to-video - 视频 DiT 架构范式奠基
 > **阅读日期**：2026-06-07
 
 ---
@@ -24,7 +24,7 @@ Sora 虽未开源，但它的技术说明提出了视频生成的**关键架构�
 
 ### 3.1 Spacetime Patch：视频的"Token 化"
 
-这是 Sora 最基础也最重要的架构贡献。图像 DiT 将 latent `(B, C, H, W)` 切割为 2D patches——每个 patch 是 `(p, p)` 的方形区域。Sora 将这一思想扩展到三维：**spacetime patch** 同时在时间和空间维度上切割视频 latent。
+这是 Sora 最基础也最重要的架构贡献。图像 DiT 将 latent `(B, C, H, W)` 切割为 2D patches，每个 patch 是 `(p, p)` 的方形区域。Sora 将这一思想扩展到三维：**spacetime patch** 同时在时间和空间维度上切割视频 latent。
 
 具体而言，一个 spacetime patch 覆盖 `(t_p, h_p, w_p)` 的时空块，例如 `(1 帧, 2×2 空间)` 或 `(2 帧, 2×2 空间)`。这些 patches 被 flatten 为 token 序列送入 DiT。
 
@@ -35,7 +35,7 @@ Sora 虽未开源，但它的技术说明提出了视频生成的**关键架构�
 
 **为什么这很重要对推理**：
 - Attention 是 full attention over all spacetime tokens。token 总数 = `(T_latent/t_p) × (H_latent/h_p) × (W_latent/w_p)`，三个维度乘在一起，token 数极易破万。
-- 这与 LLM 的序列长度瓶颈类似——视频越长、分辨率越高、帧数越多，attention 的 O(n²) 代价就越严重。
+- 这与 LLM 的序列长度瓶颈类似，视频越长、分辨率越高、帧数越多，attention 的 O(n²) 代价就越严重。
 - 因此 Sora 必须依赖非常激进的视频 VAE 压缩（见 3.2）来把 token 数压到可控范围。
 
 ### 3.2 视频 VAE（Video Compression Network）
@@ -60,18 +60,18 @@ Spacetime tokens：4 × 16 × 16 = 1024 tokens
 
 ### 3.3 Variable Duration / Resolution / Aspect Ratio
 
-Sora 可以处理任意时长、分辨率和宽高比的视频——训练时使用原生分辨率/帧率/宽高比的视频，而非所有视频都 resize 到固定大小。这依赖两个设计：
+Sora 可以处理任意时长、分辨率和宽高比的视频，训练时使用原生分辨率/帧率/宽高比的视频，而非所有视频都 resize 到固定大小。这依赖两个设计：
 
 1. **Spacetime patch 的灵活性**：patch 大小固定，不同分辨率的视频自然产生不同数量的 tokens。
 2. **Position embedding 的泛化**：Sora 对每个 spacetime patch 分配一个基于其 `(t, y, x)` 坐标的位置编码。由于训练时见过各种尺寸，推理时可以处理训练分布内的任意尺寸。
 
-这对推理意味着什么：不需要在推理前将输入 resize 到固定分辨率——直接输入原始尺寸即可。但这也意味着 token 数不固定，attention 的峰值显存因输入而异。
+这对推理意味着什么：不需要在推理前将输入 resize 到固定分辨率，直接输入原始尺寸即可。但这也意味着 token 数不固定，attention 的峰值显存因输入而异。
 
 ### 3.4 Recaptioning（视频字幕重写）
 
 Sora 的技术报告特别强调了 recaptioning 的重要性：使用一个专门的 video captioner 对训练视频生成高度描述性的文本，然后在训练时使用这些 rewritten captions 而非原始的简短 alt-text。这提升了 text-video 对齐质量。
 
-**对推理的影响**：推理时的 prompt 不需要是"高度描述性的"——recaptioning 仅在训练时使用。但推理 prompt 的质量仍然影响生成结果（如所有扩散模型），只是不需要像训练那样用专门的 recaptioner 预处理。
+**对推理的影响**：推理时的 prompt 不需要是"高度描述性的"，recaptioning 仅在训练时使用。但推理 prompt 的质量仍然影响生成结果（如所有扩散模型），只是不需要像训练那样用专门的 recaptioner 预处理。
 
 ### 3.5 Denoiser：DiT（未公开细节）
 
@@ -175,12 +175,12 @@ Sora 未开源，以下基于公开信息推理：
 ## 7. 对我的 diffusion_engine 的启发
 
 ### 7.1 `dit.py`
-- 当前 `TinyDiT` 只支持 2D patchify（`(B,C,H,W)` → `(B,N,D)`）。需要扩展为 3D spacetime patchify ——接受 `(B,C,T,H,W)` 输入，在 `(T,H,W)` 三维上 patchify。
+- 当前 `TinyDiT` 只支持 2D patchify（`(B,C,H,W)` → `(B,N,D)`）。需要扩展为 3D spacetime patchify，接受 `(B,C,T,H,W)` 输入，在 `(T,H,W)` 三维上 patchify。
 - 3D patchify 需要 3D 位置编码：`(t_pos, y_pos, x_pos)` 分别编码后相加。
 
 ### 7.2 `attention.py`
 - Spacetime full attention 是视频 attention 的基础形式。不同于图像的 2D full attention（所有 H×W patches 互 attend），视频的 3D full attention 是所有 T×H×W patches 互 attend。
-- Token 数膨胀意味着 O(n²) attention 在实际中不可行——这为 `LinearAttention`（参考 Sana 的 linear attention）提供了更强的动机。
+- Token 数膨胀意味着 O(n²) attention 在实际中不可行，这为 `LinearAttention`（参考 Sana 的 linear attention）提供了更强的动机。
 
 ### 7.3 `vae_stub.py`
 - 视频 VAE 需要定义 `encode_video()` 和 `decode_video()` 接口，输入/输出为 5D tensor `(B,C,T,H,W)`。

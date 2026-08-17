@@ -186,7 +186,7 @@ class Qwen3FFN(nn.Module):
         return x
 ```
 
-**事实**：`SiluAndMul` 类已在 `activation.py` 正确定义，但 `Qwen3FFN` 的 `self.act_fn` 被硬编码为 `None`，导致前向传播会在 `self.act_fn(gate_up)` 处抛出 `TypeError: 'NoneType' object is not callable`。这是一个**已知未修复的 Bug**，说明 `Qwen3FFN` 从未被正确端到端测试过（`validate_model.py` 的 HF 对比测试走的是不同路径——它通过 `_load_hf_weights_into_mini` 加载权重后做 hidden states 对比，但 forward 中 FFN 的 act_fn 调用在对比路径中可能被跳过或以其他方式绕过了）。
+**事实**：`SiluAndMul` 类已在 `activation.py` 正确定义，但 `Qwen3FFN` 的 `self.act_fn` 被硬编码为 `None`，导致前向传播会在 `self.act_fn(gate_up)` 处抛出 `TypeError: 'NoneType' object is not callable`。这是一个**已知未修复的 Bug**，说明 `Qwen3FFN` 从未被正确端到端测试过（`validate_model.py` 的 HF 对比测试走的是不同路径，它通过 `_load_hf_weights_into_mini` 加载权重后做 hidden states 对比，但 forward 中 FFN 的 act_fn 调用在对比路径中可能被跳过或以其他方式绕过了）。
 
 **对 diffusion 的影响**：
 - `SiluAndMul` 类本身**可直接复用**：扩散模型（如 DiT）的 FFN 也使用 SwiGLU / Gated SiLU 激活，实现与 `SiluAndMul` 一致

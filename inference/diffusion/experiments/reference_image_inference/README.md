@@ -3,7 +3,7 @@
 > **目标**：在 中等显存配置 约束下，用 HuggingFace Diffusers 跑通至少一个真实文生图推理。
 > **最低标准**：**只要跑通一个 image reference 即满足最低要求。**
 > **负责任务**：T13（脚手架+前置下载说明）+ T14（真实推理尝试）
-> **执行环境**：远程 CUDA GPU（中等显存配置）— dev host Mac M5 不支持 CUDA
+> **执行环境**：远程 CUDA GPU（中等显存配置）- dev host Mac M5 不支持 CUDA
 
 ---
 
@@ -12,7 +12,7 @@
 ### 核心目标
 1. 验证至少一个现代文生图模型在一块可用的 CUDA GPU 上能否完成推理。
 2. 记录成功/失败参数（resolution、steps、dtype、offload、peak VRAM、latency）。
-3. 为 `diffusion_engine/`（自研引擎）提供真实对照——对比 diffusers pipeline 与我们的 toy pipeline 在数据流与显存上的差异。
+3. 为 `diffusion_engine/`（自研引擎）提供真实对照，对比 diffusers pipeline 与我们的 toy pipeline 在数据流与显存上的差异。
 4. 失败时如实记录 blocker（OOM、gated、下载失败、CUDA 不支持），不伪造成功。
 
 ### 最低成功标准（一句话）
@@ -37,8 +37,7 @@
  └── 是
       │
       是否在 CUDA 设备上？
-      ├── 否（MPS / CPU）→ 记录 blocker：MPS 不支持 diffusers real pipeline，
-      │                          切换到远程 CUDA GPU
+      ├── 否（MPS / CPU）→ 记录 blocker：MPS 不支持 diffusers real pipeline，│                          切换到远程 CUDA GPU
       └── 是（可用的 CUDA GPU）
            │
            尝试 Sana（首选，开放模型，显存友好）
@@ -250,10 +249,10 @@ Level 4: 切更小模型
 症状：HFValidationError / RepositoryNotFoundError / 401 Unauthorized
 
 排查步骤：
-1. huggingface-cli whoami — 确认已登录
-2. 访问 model card 页面 — 确认已点击 "Agree and access repository"
-3. 检查 token 权限 — 至少需要 "Read" scope
-4. 等待 5 分钟 — HF 权限同步可能有延迟
+1. huggingface-cli whoami - 确认已登录
+2. 访问 model card 页面 - 确认已点击 "Agree and access repository"
+3. 检查 token 权限 - 至少需要 "Read" scope
+4. 等待 5 分钟 - HF 权限同步可能有延迟
 5. 仍失败 → 记录 blocker：模型 gated，尝试下一个模型
 ```
 
@@ -277,7 +276,7 @@ Level 4: 切更小模型
 
 处理：
   - MPS (Mac M5)：diffusers 真实 pipeline 在 MPS 上可能部分算子缺失或报错。
-    不要尝试在 Mac 上跑真实 diffusers 模型——只跑 toy 实验。
+    不要尝试在 Mac 上跑真实 diffusers 模型，只跑 toy 实验。
   - 远程 CUDA GPU：SSH 过去执行。
   - 记录 blocker：当前设备不支持 CUDA，需远程执行。
 ```
@@ -323,7 +322,7 @@ experiments/reference_image_inference/
 如果任何模型在 中等显存配置 约束下无法完成推理，在 `results/blocker_<model>.md` 中记录：
 
 ```markdown
-# Reference Image Inference — Blocker: <模型名>
+# Reference Image Inference - Blocker: <模型名>
 
 **日期**：YYYY-MM-DD
 **模型**：<HF model ID>
@@ -359,7 +358,7 @@ experiments/reference_image_inference/
 
 - **不要**在脚本中硬编码 HF token。
 - **不要**把 token 提交到 git 仓库。
-- **不要**在 `--help` 或 README 中写"开箱即跑"——gated 模型需要手动授权。
+- **不要**在 `--help` 或 README 中写"开箱即跑"，gated 模型需要手动授权。
 - **不要**把 diffusers pipeline 的调用包装成 `diffusion_engine/` 的成果。
 - `diffusers` 在本目录中的作用是 **reference**（对照），不是我们的引擎。
 
@@ -384,7 +383,7 @@ experiments/reference_image_inference/
   - SD3 Medium: <https://huggingface.co/stabilityai/stable-diffusion-3-medium-diffusers>
   - FLUX.1-schnell: <https://huggingface.co/black-forest-labs/FLUX.1-schnell>
 - Diffusers pipeline 文档：<https://huggingface.co/docs/diffusers>
-- 本任务计划：`.omo/plans/modern-diffusion-inference-roadmap.md` T13–T14
+- 本任务计划：`.omo/plans/modern-diffusion-inference-roadmap.md` T13-T14
 - 论文卡片：
   - `learning/papers/01_scaling_rectified_flow_transformers_sd3.md`
   - `learning/papers/02_flux_architecture_notes.md`

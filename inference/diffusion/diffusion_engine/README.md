@@ -1,6 +1,6 @@
 # diffusion_engine：现代 Diffusion 推理引擎
 
-> **状态**：骨架就绪，核心模块待 T10–T12 填充。
+> **状态**：骨架就绪，核心模块待 T10-T12 填充。
 > **定位**：从零构建的最小 diffusion 推理引擎，与 `minivLLM/` 完全独立。
 
 ---
@@ -32,8 +32,8 @@ diffusion/
 └── diffusion_engine/      # 新引擎，独立 Python 包
     ├── README.md          # 本文件
     ├── layers/            # 算子层（待 T11 创建）
-    ├── core/              # 核心模块（待 T10–T12 填充）
-    └── tests/             # 单元测试（待 T10–T12 填充）
+    ├── core/              # 核心模块（待 T10-T12 填充）
+    └── tests/             # 单元测试（待 T10-T12 填充）
 ```
 
 两份 `pyproject.toml` 完全独立，使用各自的虚拟环境。
@@ -42,7 +42,7 @@ diffusion/
 
 ## 已实现模块
 
-> 目前 diffusion_engine 处于骨架阶段，以下模块等待 Wave 2（T10）和 Wave 3（T11–T12）填充。
+> 目前 diffusion_engine 处于骨架阶段，以下模块等待 Wave 2（T10）和 Wave 3（T11-T12）填充。
 
 尚无已实现模块。`SiluAndMul` 将在 T11 从 minivLLM 复制到 `diffusion_engine/layers/activation.py`。
 
@@ -50,7 +50,7 @@ diffusion/
 
 ## 未来模块（按实现顺序）
 
-### Wave 2（T10）— Scheduler 与 Rectified Flow
+### Wave 2（T10）- Scheduler 与 Rectified Flow
 
 | 模块 | 文件 | 职责 | 关键接口 |
 |------|------|------|---------|
@@ -58,22 +58,22 @@ diffusion/
 | Rectified Flow | `core/rectified_flow.py` | Rectified Flow 矢量场训练/推理 | `sample_ode()`, `compute_flow_loss()` |
 | Timestep Embedding | `core/timestep_embedding.py` | Fourier/sinusoidal timestep 编码 | `get_timestep_embedding(t, dim)` |
 
-### Wave 3（T11–T12）— Transformer Block 与 Pipeline
+### Wave 3（T11-T12）- Transformer Block 与 Pipeline
 
 | 模块 | 文件 | 职责 | 关键接口 |
 |------|------|------|---------|
-| Attention | `core/attention.py` | DiT full attention（所有 patches 互相 attend） | `forward(x, c)` — AdaLN modulated |
+| Attention | `core/attention.py` | DiT full attention（所有 patches 互相 attend） | `forward(x, c)` - AdaLN modulated |
 | Transformer Block | `core/transformer_block.py` | DiT block（AdaLN-Zero + FFN + attention） | `forward(x, t_emb, c_emb)` |
 | Text Conditioning | `core/text_conditioning.py` | 文本编码器条件注入（pooled + seq） | `encode_text(prompt)`, `get_conditioning()` |
 | Pipeline | `core/pipeline.py` | 完整推理 pipeline（调度 + 去噪 + VAE 解码） | `__call__(prompt)` → PIL Image |
 | Memory Manager | `core/memory_manager.py` | 显存追踪与 buffer 管理 | `allocate()`, `free()`, `stats()` |
 | Activation | `layers/activation.py` | 激活函数（从 minivLLM 复制 SiluAndMul） | `SiluAndMul.forward(x)` |
 
-### Wave 4（T16–T17）— 系统优化辅助
+### Wave 4（T16-T17）- 系统优化辅助
 
 | 模块 | 文件 | 职责 |
 |------|------|------|
-| (实验脚本在 `experiments/` 下，不在 engine core 内) | — | — |
+| (实验脚本在 `experiments/` 下，不在 engine core 内) | - | - |
 
 ---
 

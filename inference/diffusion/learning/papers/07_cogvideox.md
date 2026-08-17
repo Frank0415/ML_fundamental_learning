@@ -1,10 +1,10 @@
-# 07 — CogVideoX：Expert Transformer 文生视频
+# 07 - CogVideoX：Expert Transformer 文生视频
 
 > **模型名称**：CogVideoX（智谱 AI）
 > **官方仓库**：[github.com/THUDM/CogVideo](https://github.com/THUDM/CogVideo)
 > **HF Model Card (2B)**：[huggingface.co/THUDM/CogVideoX-2b](https://huggingface.co/THUDM/CogVideoX-2b)
 > **HF Model Card (5B)**：[huggingface.co/THUDM/CogVideoX-5b](https://huggingface.co/THUDM/CogVideoX-5b)
-> **分类**：文生视频 + image-to-video — 最易尝试的视频模型
+> **分类**：文生视频 + image-to-video - 最易尝试的视频模型
 > **阅读日期**：2026-06-07
 
 ---
@@ -33,7 +33,7 @@ CogVideoX-2B 是 中等显存配置 上**最现实的开源视频模型**。仅 
 CogVideoX 的论文标题中的 "Expert Transformer" 指的是为视频专门设计的 transformer，而非传统 MoE（Mixture of Experts）。核心设计特点：
 
 - **3D attention**：attention 在 `(T, H, W)` 三个维度上计算，所有 spacetime patches 参与
-- **Causal in time**：时间维度上是 causal 的——当生成第 t 帧时，只能 attend 第 1~t 帧和当前帧的 patches，不能"看到"未来的帧
+- **Causal in time**：时间维度上是 causal 的，当生成第 t 帧时，只能 attend 第 1~t 帧和当前帧的 patches，不能"看到"未来的帧
 - **空间维度 full attention**：每个帧内部的所有 patches 互 attend（non-causal）
 - **Attention 公式**：QK^T 计算后，时间维度超过当前帧的那些位置被 mask 掉（设置为 -inf）
 
@@ -43,7 +43,7 @@ CogVideoX 的论文标题中的 "Expert Transformer" 指的是为视频专门设
 对于第 t 帧的某个 patch：
   - 可以 attend：帧 1 ~ t 的所有 patches（T×H×W 的子集）
   - 不能 attend：帧 t+1 ~ T 的 patches
-  - 这保证了逐帧生成的连贯性——生成当前帧时不会"偷看"未来帧
+  - 这保证了逐帧生成的连贯性，生成当前帧时不会"偷看"未来帧
 ```
 
 **与 Wan 的区别**：Wan 使用 full attention（所有帧互相 attend，无 causal mask）。CogVideoX 的 causal attention 在理论上有两个优势：① 更稳定的帧间过渡（因为每帧生成时只能基于已生成的帧）；② 在推理时，可以逐帧生成而非一次性生成所有帧（虽然实践中通常仍是一次性 denoising）。
@@ -64,7 +64,7 @@ CogVideoX 使用自训练的 **3D Causal VAE**：
 | 空间压缩 | 8× | 8× |
 | 时间压缩 | 4× | 4× |
 
-CogVideoX 选择 4 通道 VAE 而非 16 通道是为了降低计算量——patch 展平后的维度 = p²C = 2²×4 = 16（vs Wan 的 2²×16 = 64），每个 token 输入维度更小，transformer 的 hidden dim 可以更小，参数量更低。
+CogVideoX 选择 4 通道 VAE 而非 16 通道是为了降低计算量，patch 展平后的维度 = p²C = 2²×4 = 16（vs Wan 的 2²×16 = 64），每个 token 输入维度更小，transformer 的 hidden dim 可以更小，参数量更低。
 
 ### 3.3 Expert Adaptive LayerNorm
 
@@ -75,12 +75,12 @@ CogVideoX 引入了 **expert adaptive LayerNorm**，这是一种条件注入机�
 
 ### 3.4 Progressive Training
 
-CogVideoX 采用 progressive training 策略——训练过程不是一次性在所有分辨率/帧数上进行，而是由低到高逐步增加：
+CogVideoX 采用 progressive training 策略，训练过程不是一次性在所有分辨率/帧数上进行，而是由低到高逐步增加：
 1. 先在低分辨率低帧数上训练（如 256×256, 17f）
 2. 逐步增加到中等规格（如 480×480, 33f）
 3. 最终在高规格上 fine-tune（如 720×480, 49f）
 
-**对推理的影响**：这解释了为什么 CogVideoX-2B 在不同规格下的表现不一——它的训练分布决定了推理时的推荐参数。
+**对推理的影响**：这解释了为什么 CogVideoX-2B 在不同规格下的表现不一，它的训练分布决定了推理时的推荐参数。
 
 ### 3.5 Multi-Resolution Frame Pack
 

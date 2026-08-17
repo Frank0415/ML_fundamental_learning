@@ -245,8 +245,7 @@ class DiffusionPipeline:
 
     @classmethod
     def from_pretrained(cls, model_path: str, device: str = "cuda") -> "DiffusionPipeline":
-        """加载预训练模型权重。注意：这不是 diffusers 的 from_pretrained，
-        是我们自己的加载逻辑。"""
+        """加载预训练模型权重。注意：这不是 diffusers 的 from_pretrained，是我们自己的加载逻辑。"""
         ...
 
     def __call__(
@@ -280,7 +279,7 @@ class DiffusionPipeline:
 | **内部实现** | 不复制 | 自己的 scheduler、attention、CFG 合并、latent 管理 |
 | **from_pretrained** | 不复制 | 我们的加载逻辑是自定义的（可能只加载 .safetensors 权重） |
 | **CPU offload 机制** | 不复制具体逻辑 | 只实现简单版本（将整个模块 .to("cuda") / .to("cpu")） |
-| **VAE decoder** | 不复制 diffusers 的 AutoencoderKL | 使用 diffusers 的 VAE 模块（`pipe.vae`）——因为 VAE 是预训练的，我们没必要自己重写 |
+| **VAE decoder** | 不复制 diffusers 的 AutoencoderKL | 使用 diffusers 的 VAE 模块（`pipe.vae`），因为 VAE 是预训练的，我们没必要自己重写 |
 
 ### 5.3 明确的使用边界（T13/T15 执行者必读）
 
@@ -288,7 +287,7 @@ class DiffusionPipeline:
 - ✅ 验证模型能在我们的硬件上跑通（VRAM、latency 实测）
 - ✅ 作为 reference 对照我们自己引擎的输出质量
 - ✅ 记录峰值 VRAM 和端到端延迟，为优化实验提供 baseline
-- ❌ **不是我们的成果**。不要在 final report 中说"我们实现了 SD3 pipeline"——我们实现的是自己的 `diffusion_engine/`，用 diffusers 做对照。
+- ❌ **不是我们的成果**。不要在 final report 中说"我们实现了 SD3 pipeline"，我们实现的是自己的 `diffusion_engine/`，用 diffusers 做对照。
 
 **在 T13/T14/T15 中的使用方式**：
 ```
@@ -330,6 +329,6 @@ class DiffusionPipeline:
 
 ---
 
-## 7. 本页结论
+## 7. 结论
 
-diffusers 为所有现代扩散模型提供了统一的 pipeline API：`from_pretrained()` 加载权重，`__call__()` 执行推理，`enable_*_offload()` 管理显存。图像和视频 pipeline 共享 `prompt` / `num_inference_steps` / `guidance_scale` / `height` / `width` 参数，视频 pipeline 额外多了 `num_frames`。我们的 `diffusion_engine/` 模仿其接口设计但不复制其内部实现——diffusers 是我们的 reference 和 profiling 工具，不是我们的成果。T13/T14 文生图和 T15 文生视频的 reference 实验均应以 diffusers pipeline 作为基线，并在结果文件中明确标注"使用 diffusers 作为 reference"。
+diffusers 为所有现代扩散模型提供了统一的 pipeline API：`from_pretrained()` 加载权重，`__call__()` 执行推理，`enable_*_offload()` 管理显存。图像和视频 pipeline 共享 `prompt` / `num_inference_steps` / `guidance_scale` / `height` / `width` 参数，视频 pipeline 额外多了 `num_frames`。我们的 `diffusion_engine/` 模仿其接口设计但不复制其内部实现，diffusers 是我们的 reference 和 profiling 工具，不是我们的成果。T13/T14 文生图和 T15 文生视频的 reference 实验均应以 diffusers pipeline 作为基线，并在结果文件中明确标注"使用 diffusers 作为 reference"。

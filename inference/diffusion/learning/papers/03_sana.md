@@ -1,11 +1,11 @@
-# 03 — Sana：Efficient High-Resolution Image Synthesis
+# 03 - Sana：Efficient High-Resolution Image Synthesis
 
 > **论文全称**：Sana: Efficient High-Resolution Image Synthesis with Linear Diffusion Transformers
 > **arXiv**：[2410.10629](https://arxiv.org/abs/2410.10629)
 > **作者**：NVLabs（NVIDIA Research）
 > **项目主页**：[nvlabs.github.io/Sana](https://nvlabs.github.io/Sana/)
 > **GitHub**：[github.com/NVlabs/Sana](https://github.com/NVlabs/Sana)
-> **分类**：文生图（image）— 高效高分辨率 DiT
+> **分类**：文生图（image）- 高效高分辨率 DiT
 > **阅读日期**：2026-06-07
 
 ---
@@ -77,7 +77,7 @@ A = φ(Q) · (φ(K)^T · V)        → O(n) 内存和时间
 
 但代价是：LLM 的 hidden dim (2304) 与 diffusion 的 hidden dim（通常 1536-4096）不匹配，需要额外的投影。
 
-**Text token 与 image token 的交互方式**：Sana 使用 **cross-attention**（而非 MMDiT 的 joint attention）。text tokens 作为 cross-attention 的 K/V，image tokens 作为 Q。这样 text tokens 不参与自注意力——进一步降低注意力复杂度（自注意力只对 image tokens，O(n_img²) → 或用 linear attention 降到 O(n_img)）。
+**Text token 与 image token 的交互方式**：Sana 使用 **cross-attention**（而非 MMDiT 的 joint attention）。text tokens 作为 cross-attention 的 K/V，image tokens 作为 Q。这样 text tokens 不参与自注意力，进一步降低注意力复杂度（自注意力只对 image tokens，O(n_img²) → 或用 linear attention 降到 O(n_img)）。
 
 ### 3.4 Timestep / Sigma Conditioning
 
@@ -171,7 +171,7 @@ noise z₁ ──→ 第1步 Denoising ──→ z_mid ──→ 第2步 Denoisi
 |------|----------|---------------------|------|
 | DiT (1.6B) | ~3.2 GB | **~0.8 GB** | 4× 压缩 |
 | Gemma-2B | ~4 GB | **~1 GB**（可选量化） | 4× |
-| AE | ~0.3 GB | 保持 fp16（AE 对量化敏感） | — |
+| AE | ~0.3 GB | 保持 fp16（AE 对量化敏感） | - |
 
 **注意**：SVDQuant 不是简单 round-to-nearest int4，而是基于 SVD（奇异值分解）的量化方案，对 attention 的 weight 矩阵做了特定处理以保持推理质量。
 

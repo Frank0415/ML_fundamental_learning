@@ -1,4 +1,4 @@
-# docs_md/ — Markdown 知识库
+# docs_md/ - Markdown 知识库
 
 > `docs/` 目录下 HTML 知识库的 Markdown 版本。所有内容、链接、表格、shape 约定完全对应 HTML 版本。便于：
 > - 在终端中直接 `cat` 或 `grep` 阅读
@@ -10,7 +10,7 @@
 
 | 编号 | 文件 | 主题 |
 |------|------|------|
-| — | [index.md](index.md) | 知识库首页导航 |
+| - | [index.md](index.md) | 知识库首页导航 |
 | 01 | [01_任务总览.md](01_任务总览.md) | 项目目标、路线选择 |
 | 02 | [02_老引擎审计.md](02_老引擎审计.md) | minivLLM 复用决策 C |
 | 03 | [03_现代diffusion推理最小背景.md](03_现代diffusion推理最小背景.md) | 推理数据流 9 要点 |
@@ -56,10 +56,10 @@
 
 ### 第一次来（30 分钟快速了解项目）
 
-1. `01_任务总览.md` — 项目目标
-2. `03_现代diffusion推理最小背景.md` — 数据流
-3. `13_最终成果说明.md` — 成果汇总
-4. `12_diffusion_gemma.md` — DiffusionGemma
+1. `01_任务总览.md` - 项目目标
+2. `03_现代diffusion推理最小背景.md` - 数据流
+3. `13_最终成果说明.md` - 成果汇总
+4. `12_diffusion_gemma.md` - DiffusionGemma
 
 ### 深入技术（2-3 小时）
 

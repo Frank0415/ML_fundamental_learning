@@ -1,6 +1,6 @@
-# 05 — Diffusion Transformer (DiT) 架构
+# 05 - Diffusion Transformer (DiT) 架构
 
-本文解释 DiT（*Scalable Diffusion Models with Transformers*，Peebles & Xie, ICCV 2023）的核心架构：如何用 Transformer 替代 U-Net 做扩散模型的去噪骨干。
+DiT（*Scalable Diffusion Models with Transformers*，Peebles & Xie, ICCV 2023）用 Transformer 取代 U-Net 作为扩散模型的去噪骨干。本页按数据形状拆解它的结构。
 
 ## 1. 为什么用 Transformer 替代 U-Net？
 
@@ -16,7 +16,7 @@ DiT 提出的答案：**把 latent 切成 patches，用标准 Transformer（ViT 
 - 自然的文本条件注入（所有层都能 attend 文本 embedding）
 - 与 NLP 研究生态对齐（可使用成熟的 Transformer 优化技术）
 
-## 2. 核心 Pipeline
+## 2. DiT Pipeline
 
 ```
 ┌──────────┐    ┌──────────┐    ┌──────────────────────┐    ┌──────────┐    ┌──────────┐
@@ -35,13 +35,13 @@ DiT 提出的答案：**把 latent 切成 patches，用标准 Transformer（ViT 
 
 ### Step 1: Patchify
 
-将 (B, C, H, W) 切割为 N = (H/p) × (W/p) 个 patch，每个 patch 展平为 p×p×C 维。
+将 `(B, C, H, W)` 切割为 \(N = (H / p) \times (W / p)\) 个 patch，每个 patch 展平为 \(p \times p \times C\) 维。
 
 | 参数 | 示例 | 结果 |
 |------|------|------|
-| latent=(1,4,32,32), p=2 | 16×16=256 patches | (1, 256, 16) |
-| latent=(1,4,64,64), p=2 | 32×32=1024 patches | (1, 1024, 16) |
-| latent=(1,16,32,32), p=2 | 16×16=256 patches | (1, 256, 64) |
+| latent=(1,4,32,32), p=2 | \(16 \times 16 = 256\) patches | (1, 256, 16) |
+| latent=(1,4,64,64), p=2 | \(32 \times 32 = 1024\) patches | (1, 1024, 16) |
+| latent=(1,16,32,32), p=2 | \(16 \times 16 = 256\) patches | (1, 256, 64) |
 
 ### Step 2: Position Embedding
 
@@ -77,11 +77,11 @@ Attention 是 **non-causal full self-attention**：所有 patches 互相 attend�
 
 ### Step 5: Unpatchify + Output
 
-最终 Linear 层将 (B, N, hidden) → (B, N, p²C)，再通过 reshape/transpose 重组为 (B, C, H, W)。
+最终 Linear 层将 `(B, N, hidden)` 转换为 \((B, N, p^2C)\)，再通过 reshape/transpose 重组为 `(B, C, H, W)`。
 
-输出可以是 **ε_θ**（预测噪声）或 **v_θ**（预测速度/矢量场），取决于训练目标。
+输出可以是 **\(\epsilon_\theta\)**（预测噪声）或 **\(v_\theta\)**（预测速度/矢量场），取决于训练目标。
 
-## 3. 关键 Shape 对照
+## 3. Shape 对照
 
 | 阶段 | 输入 Shape | 输出 Shape |
 |------|-----------|-----------|
@@ -107,14 +107,14 @@ Attention 是 **non-causal full self-attention**：所有 patches 互相 attend�
 
 ## 5. AdaLN-Zero 机制（真实 DiT）
 
-真实 DiT 论文中的 AdaLN-Zero 包括一个关键初始化技巧：
+真实 DiT 论文中的 AdaLN-Zero 使用零初始化：
 
 - 最后输出层的权重初始化为零
-- 训练开始时，gate_attn = gate_ffn = 0，所以 `x = x + 0 = x`
+- 训练开始时，\(\mathrm{gate}_{\mathrm{attn}} = \mathrm{gate}_{\mathrm{ffn}} = 0\)，所以 \(x = x + 0 = x\)
 - 模型退化为恒等映射，逐步学习非零 gate
 - **toy 简化**：我们的 TinyDiT 使用标准 Xavier 初始化，未实现零初始化
 
-## 6. 与 LLM Attention 的关键差异
+## 6. 与 LLM Attention 的差异
 
 | 维度 | LLM (如 GPT) | DiT |
 |------|-------------|-----|
@@ -126,33 +126,34 @@ Attention 是 **non-causal full self-attention**：所有 patches 互相 attend�
 
 ## 7. DiT 在视频生成中的扩展：Spacetime Patch
 
-图像 DiT 的 patchify 只在 (H, W) 二维上切分。视频 DiT 将这一思想扩展到三维——**spacetime patch** 在 (T, H, W) 三个维度上同时切分视频 latent。
+图像 DiT 的 patchify 只在 (H, W) 二维上切分。视频 DiT 将这一思想扩展到三维，**spacetime patch** 在 (T, H, W) 三个维度上同时切分视频 latent。
 
 ### Spacetime Patch 的计算
 
 给定视频 latent `(B, C, T_latent, H_latent, W_latent)` 和 patch 参数 `(t_p, h_p, w_p)`：
 
-```python
-N_spacetime = (T_latent / t_p) × (H_latent / h_p) × (W_latent / w_p)
-每个 patch 展平为：t_p × h_p × w_p × C 维
-```
+\[
+N_{\mathrm{spacetime}} = \left(T_{\mathrm{latent}} / t_p\right) \times \left(H_{\mathrm{latent}} / h_p\right) \times \left(W_{\mathrm{latent}} / w_p\right)
+\]
+
+每个 patch 展平为 \(t_p \times h_p \times w_p \times C\) 维。
 
 | 视频规格 | VAE 压缩后 Latent | Patch (1,2,2) | Spacetime Tokens | Full Attn 矩阵 |
 |---------|------------------|--------------|------------------|----------------|
-| Sora 推测：16f×256² | `(C, 4, 32, 32)` | 4×16×16 | = 1,024 | ~2 MB |
-| CogVideoX：49f×720×480 | `(4, 13, 90, 60)` | 13×45×30 | = 17,550 | ~616 MB |
-| Wan2.1-1.3B：81f×480×832 | `(16, 21, 60, 104)` | 21×30×52 | = 32,760 | ~2.1 GB |
-| LTX-Video (32×VAE)：121f×720×480 | `(4, 15, 22, 15)` | 15×11×8 | = 1,320 | ~3.5 MB |
+| Sora 推测：16f×256² | `(C, 4, 32, 32)` | \(4 \times 16 \times 16\) | \(= 1{,}024\) | ~2 MB |
+| CogVideoX：49f×720×480 | `(4, 13, 90, 60)` | \(13 \times 45 \times 30\) | \(= 17{,}550\) | ~616 MB |
+| Wan2.1-1.3B：81f×480×832 | `(16, 21, 60, 104)` | \(21 \times 30 \times 52\) | \(= 32{,}760\) | ~2.1 GB |
+| LTX-Video (32×VAE)：121f×720×480 | `(4, 15, 22, 15)` | \(15 \times 11 \times 8\) | \(= 1{,}320\) | ~3.5 MB |
 
-**关键洞察**：LTX-Video 的激进 VAE 压缩（32×空间而非 8×）将 token 数从 40,500+ 降到 1,320——减少了 30×。这意味着 attention 成本降低了近 1000×。在 中等显存配置 约束下，**减少 token 数比优化 attention 算法更直接有效**。
+**Token 数对 attention 的影响**：LTX-Video 的 VAE 使用 32× 空间压缩而不是 8×，将 token 数从 40,500+ 降到 1,320，减少了 30×。按 \(O(N^2)\) 计算，attention 成本降低近 1000×。在中等显存配置下，减少 token 数会同时缩小 attention 矩阵的两个维度。
 
 ### 3D Position Encoding
 
 视频 DiT 的位置编码从 2D 扩展到 3D：每个 spacetime patch 的 `(t, y, x)` 坐标分别编码后相加或拼接。Wan2.1 和 CogVideoX 在 patchify 阶段注入 3D positional encoding，确保模型知道每个 token 在视频时空中的时空位置。
 
-## 本页结论
+## 结论
 
-DiT 将 image latent 切割为 patch tokens，用标准 Transformer blocks（带 timestep 调制的 AdaLN）替代 U-Net。核心贡献是证明了 Transformer 可以在扩散模型中替代卷积架构，且具有良好的 scaling 特性。与 LLM 的关键不同在于：attention 是 non-causal 全连接，无 KV cache，归一化由 timestep 动态控制。
+DiT 将 image latent 切割为 patch tokens，用带 timestep 调制 AdaLN 的 Transformer blocks 替代 U-Net。论文证明了 Transformer 可以承担扩散模型的去噪主干，并随模型规模增长改善生成结果。它与 LLM 的主要区别是 non-causal full attention、无 KV cache，以及由 timestep 动态控制的归一化。
 
 ## 和我的 diffusion_engine 的关系
 

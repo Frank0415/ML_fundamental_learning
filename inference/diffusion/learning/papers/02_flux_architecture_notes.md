@@ -1,10 +1,10 @@
-# 02 — FLUX.1 / FLUX 系列架构笔记
+# 02 - FLUX.1 / FLUX 系列架构笔记
 
 > **模型全称**：FLUX.1（schnell / dev / pro 三变体）
 > **开发者**：Black Forest Labs（原 Stability AI 核心团队）
 > **官方 blog**：[Announcing Black Forest Labs](https://blackforestlabs.ai/announcing-black-forest-labs/)
 > **开源仓库**：[github.com/black-forest-labs/flux](https://github.com/black-forest-labs/flux)
-> **分类**：文生图（image）— open-weight flow matching transformer
+> **分类**：文生图（image）- open-weight flow matching transformer
 > **阅读日期**：2026-06-07
 
 ---
@@ -106,7 +106,7 @@ FLUX 的 transformer block 使用 **parallel attention + MLP** 结构：
 
 **RoPE 在 diffusion 中的角色**：RoPE 原本是 LLM 的位置编码方案（Su et al., 2021）。FLUX 将其扩展到 2D，对 image token 的 (x, y) 坐标分别应用频率旋转。这使得 attention 能够感知 token 之间的相对位置关系，在相同 token 数下比 2D sin/cos 提供更好的位置感知。
 
-但这**偏离了 rectified flow 的主流**：SD3、Sana、大多数视频 DiT 使用 2D sinusoidal 或可学习位置编码。FLUX 的 RoPE 选择是一个"工程实用主义"的决策——不是因为 RoPE 比 sin/cos 理论上更好，而是因为 FlashAttention 对 RoPE 有原生 kernel 加速，实测速度更快。
+但这**偏离了 rectified flow 的主流**：SD3、Sana、大多数视频 DiT 使用 2D sinusoidal 或可学习位置编码。FLUX 的 RoPE 选择是一个"工程实用主义"的决策，不是因为 RoPE 比 sin/cos 理论上更好，而是因为 FlashAttention 对 RoPE 有原生 kernel 加速，实测速度更快。
 
 ### 3.7 VAE
 
@@ -260,22 +260,22 @@ pipe.enable_sequential_cpu_offload()  # 比 model_cpu_offload 更激进
 
 ### 7.2 `attention.py`
 - FLUX 使用 **RoPE**，这是对 SD3 的 2D sin/cos 位置编码的偏离。当前的 `attention.py`（T11）使用可学习 position embedding，与 FLUX 和 SD3 都不同
-- QK-normalization（注意力中对 Q 和 K 做 LayerNorm）是 FLUX 的独特设计，用于提高推理数值精度——TinyDiT 的 toy 实现不需要，但 T18 总结时应标注"真实 DiT 通常会加入 QK-norm"
+- QK-normalization（注意力中对 Q 和 K 做 LayerNorm）是 FLUX 的独特设计，用于提高推理数值精度，TinyDiT 的 toy 实现不需要，但 T18 总结时应标注"真实 DiT 通常会加入 QK-norm"
 - Parallel attention + MLP 是工程优化，TinyDiT 保持串行（attn → FFN）以简化实现
 
 ### 7.3 `dit.py`
-- FLUX 的单流 DiT（text+image concat 后统一处理）比 SD3 的双流 MMDiT 更接近我们 T11 的 toy 简化——我们的 TinyDiT 也是拼接式处理
+- FLUX 的单流 DiT（text+image concat 后统一处理）比 SD3 的双流 MMDiT 更接近我们 T11 的 toy 简化，我们的 TinyDiT 也是拼接式处理
 - 这意味着 TinyDiT 实际上更像 FLUX 的单流架构而非 SD3 的 MMDiT 双流。T18 总结时应明确这个对应关系
 - Patch_size=2（与 SD3 相同）仍是推荐值
 
 ### 7.4 `text_conditioning.py`（T12 待实现）
-- FLUX 的双 encoder（CLIP-L + T5）提供了比 SD3 三 encoder 更简单的参考——我们的 v1 可以先实现 CLIP-L + pooled 注入 adaLN
+- FLUX 的双 encoder（CLIP-L + T5）提供了比 SD3 三 encoder 更简单的参考，我们的 v1 可以先实现 CLIP-L + pooled 注入 adaLN
 - T5 可选的概念需在接口设计中体现：`TextConditioning` 应支持"加载 T5 / 不加载 T5"两种路径
 
 ### 7.5 `pipeline.py`（T12 待实现）
 - FLUX schnell 的 few-step loop（4 步出图）是我们在 受限显存场景下的**目标 benchmark**
 - Schnell 的 CFG=0（guidance 蒸馏内化）意味着只需一次 forward per step（不需要 cond+uncond 双 forward），这对 受限显存场景极其友好
-- Dev 的 50 步 + CFG>3 → 双 forward → VRAM 和时间压力——这反过来证明蒸馏对推理的重要性
+- Dev 的 50 步 + CFG>3 → 双 forward → VRAM 和时间压力，这反过来证明蒸馏对推理的重要性
 
 ### 7.6 `memory_manager.py`（T12 待实现）
 - Parallel attention block 的 activation memory 模式不同于串行 attention+FFN（并行模式下 attention 和 FFN 的中间结果同时存在），需在 T16 的 `attention_memory_benchmark.py` 中考虑

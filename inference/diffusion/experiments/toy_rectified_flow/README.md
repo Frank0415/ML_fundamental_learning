@@ -2,7 +2,7 @@
 
 > **状态**：T10 完成，可运行。
 > **优先级**：P0（Wave 2 首个可运行实验）
-> **负责任务**：T10 — scheduler / rectified flow / timestep embedding + toy rectified flow
+> **负责任务**：T10 - scheduler / rectified flow / timestep embedding + toy rectified flow
 
 ---
 
@@ -14,7 +14,7 @@
 2. **Scheduler**（`diffusion_engine/core/scheduler.py`）：验证 EulerScheduler 和 RectifiedFlowScheduler 在 t 空间和 sigma 空间的 step 行为一致。
 3. **Timestep Embedding**（`diffusion_engine/core/timestep_embedding.py`）：验证 sinusoidal embedding 的 shape 和数值范围。
 
-**核心思想**：不训练任何模型——使用**人工设计的合成向量场**代替学习到的 v_θ(x, t)，观察 ODE 轨迹的行为。这使我们可以在零训练成本下验证调度器和 ODE 积分器的正确性。
+**核心思想**：不训练任何模型，使用**人工设计的合成向量场**代替学习到的 v_θ(x, t)，观察 ODE 轨迹的行为。这使我们可以在零训练成本下验证调度器和 ODE 积分器的正确性。
 
 **期望产出**：
 - 一张 2D 散点图，展示从高斯噪声出发沿 rectified flow ODE 积分到达目标分布（圆环/原点/双中心/螺旋）的轨迹。
@@ -132,7 +132,7 @@ results/
 
 ## 参考
 
-- T5 笔记：`learning/notes/03_diffusion推理数据流.md` — scheduler 的 timestep 约定
+- T5 笔记：`learning/notes/03_diffusion推理数据流.md` - scheduler 的 timestep 约定
 - 计划详情：`.omo/plans/modern-diffusion-inference-roadmap.md` T10 章节
 - 论文：[2403.03206] Scaling Rectified Flow Transformers for High-Resolution Image Synthesis（SD3 论文）
 - 核心模块：`diffusion_engine/core/scheduler.py`、`rectified_flow.py`、`timestep_embedding.py`

@@ -1,8 +1,8 @@
 # Toy DiT Inference 实验
 
-> **状态**：T12 完成 — 完整 pipeline demo 已实现。
+> **状态**：T12 完成 - 完整 pipeline demo 已实现。
 > **优先级**：P0（Wave 3 首个端到端实验）
-> **负责任务**：T12 — text conditioning / pipeline / memory manager + toy DiT inference
+> **负责任务**：T12 - text conditioning / pipeline / memory manager + toy DiT inference
 
 ---
 
@@ -100,7 +100,7 @@ python experiments/toy_dit_inference/infer_tiny_dit.py --help
 | `--prompt` | str | "a cat sitting on a chair" | 正向文本提示 |
 | `--negative_prompt` | str | "" | 负向文本提示（默认空，无负面引导） |
 | `--num_steps` | int | 28 | ODE 去噪步数。步数越多，质量越高但越慢。SD3 常用 28。 |
-| `--cfg_scale` | float | 7.5 | CFG 引导强度。1.0 为无引导，> 1 为有引导。典型值 4–10。 |
+| `--cfg_scale` | float | 7.5 | CFG 引导强度。1.0 为无引导，> 1 为有引导。典型值 4-10。 |
 | `--height` | int | 64 | 输出图像高度（像素，需为 8 的整数倍） |
 | `--width` | int | 64 | 输出图像宽度（像素，需为 8 的整数倍） |
 | `--seed` | int | 0 | 随机种子（保证确定性输出） |
@@ -208,10 +208,10 @@ x_cfg = x_uncond + cfg_scale × (x_cond - x_uncond)
 ## 参考
 
 - T12 计划：`.omo/plans/modern-diffusion-inference-roadmap.md` T12 章节
-- T10 实验：`experiments/toy_rectified_flow/README.md` — 对比参考
+- T10 实验：`experiments/toy_rectified_flow/README.md` - 对比参考
 - 学习笔记：
-  - `learning/notes/06_cfg和negative_prompt.md` — CFG 原理与实现
-  - `learning/notes/07_text_encoder和prompt_embedding_cache.md` — cache 设计
-  - `learning/notes/08_latent_buffer和显存预算.md` — memory budget
+  - `learning/notes/06_cfg和negative_prompt.md` - CFG 原理与实现
+  - `learning/notes/07_text_encoder和prompt_embedding_cache.md` - cache 设计
+  - `learning/notes/08_latent_buffer和显存预算.md` - memory budget
 - 论文：[2403.03206] Scaling Rectified Flow Transformers (SD3)
 - 核心模块：`diffusion_engine/core/pipeline.py`、`text_conditioning.py`、`memory_manager.py`、`vae_stub.py`

@@ -1,15 +1,15 @@
-# 09 — Pyramid Flow Matching：多尺度高效视频生成
+# 09 - Pyramid Flow Matching：多尺度高效视频生成
 
 > **方法名称**：Pyramid Flow Matching for Efficient Video Generative Modeling
 > **arXiv**：搜索 "Pyramid Flow Matching efficient video generation"
-> **分类**：文生视频 — 多尺度 flow matching（效率方向）
+> **分类**：文生视频 - 多尺度 flow matching（效率方向）
 > **阅读日期**：2026-06-07
 
 ---
 
 ## 1. 为什么对现代 diffusion 推理重要
 
-Pyramid Flow Matching 提出了用 **"金字塔式 flow"（多分辨率/多尺度 flow matching）** 提高视频生成效率的方法。它的核心思想——用低分辨率 latent 计算粗粒度 flow，再用高分辨率 latent 细化细节——直接降低了大分辨率 latent 下的 attention 开销。在 中等显存配置 约束下，multi-scale 策略比单纯降分辨率更智能：低分辨率阶段快速生成结构，高分辨率阶段只做局部精修。
+Pyramid Flow Matching 提出了用 **"金字塔式 flow"（多分辨率/多尺度 flow matching）** 提高视频生成效率的方法。它的核心思想，用低分辨率 latent 计算粗粒度 flow，再用高分辨率 latent 细化细节，直接降低了大分辨率 latent 下的 attention 开销。在 中等显存配置 约束下，multi-scale 策略比单纯降分辨率更智能：低分辨率阶段快速生成结构，高分辨率阶段只做局部精修。
 
 ---
 

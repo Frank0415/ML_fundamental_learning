@@ -1,7 +1,7 @@
 # 第 1 周报告：前置环境验证与风险结论
 
 > **日期**：2026-06-06  Week 1
-> **来源任务**：T1 — 前置环境与风险验证
+> **来源任务**：T1 - 前置环境与风险验证
 > **证据文件**：`.omo/evidence/task-1-env.txt`、`.omo/evidence/task-1-hf-check.txt`
 
 ---
@@ -10,20 +10,20 @@
 
 | 项目 | 实际值 | 计划值 | 结论 |
 |------|--------|--------|------|
-| **主机** | MacBook (franksAir.local) | — | — |
+| **主机** | MacBook (franksAir.local) | - | - |
 | **芯片** | Apple M5 | NVIDIA 可用的 CUDA GPU (Blackwell) | **关键偏差** |
 | **GPU API** | Metal 4 | CUDA 12.x+ | **关键偏差** |
 | **NVIDIA GPU** | 无（`nvidia-smi` 不可用） | 中档 CUDA 单卡 | **关键偏差** |
-| **macOS** | 26.5 (Build 25F71) | — | 最新正式版 |
+| **macOS** | 26.5 (Build 25F71) | - | 最新正式版 |
 | **系统 Python** | 3.9.6 (`/usr/bin/python3`) | 3.13 | 不可用于 diffusion 项目 |
-| **uv** | 0.11.17 (aarch64-apple-darwin) | — | 可用于管理 Python 3.13 |
-| **PyTorch** | 未安装 | — | 需后续安装 |
-| **磁盘 (diffusion/)** | 772 GiB 可用 (926 GiB 总量, 14% 使用) | — | 充足 |
-| **HuggingFace** | 200 OK (可达) | — | 连通性正常 |
+| **uv** | 0.11.17 (aarch64-apple-darwin) | - | 可用于管理 Python 3.13 |
+| **PyTorch** | 未安装 | - | 需后续安装 |
+| **磁盘 (diffusion/)** | 772 GiB 可用 (926 GiB 总量, 14% 使用) | - | 充足 |
+| **HuggingFace** | 200 OK (可达) | - | 连通性正常 |
 
 ---
 
-## 2. 与原计划的偏差说明 — 这是最关键的发现
+## 2. 与原计划的偏差说明 - 这是最关键的发现
 
 **原计划里默认的是一张中档 CUDA 单卡，但当前开发宿主机是 Apple Silicon M5（Metal 4），没有 NVIDIA GPU。**
 
@@ -280,7 +280,7 @@ HF 连通性证据已保存到 `.omo/evidence/task-1-hf-check.txt`。
 
 | 项目 | 状态 |
 |------|------|
-| `minivLLM/.venv` | 不存在 — 虚拟环境未创建 |
+| `minivLLM/.venv` | 不存在 - 虚拟环境未创建 |
 | `minivLLM/pyproject.toml` | 存在，声明 `requires-python = ">=3.13"`, 依赖 `torch>=2.11.0`, `transformers>=5.8.0`, `huggingface-hub>=1.14.0` |
 | `minivLLM/.python-version` | 内容 `3.13` |
 
@@ -294,8 +294,8 @@ HF 连通性证据已保存到 `.omo/evidence/task-1-hf-check.txt`。
 |--------|------|------|
 | Python 3.13 可用 | ❌ 未安装 | `uv python install 3.13` |
 | PyTorch (MPS) 可用 | ❌ 未安装 | `uv pip install torch` |
-| HuggingFace 可达 | ✅ 200 OK | — |
-| 磁盘充足 | ✅ 772 GiB | — |
+| HuggingFace 可达 | ✅ 200 OK | - |
+| 磁盘充足 | ✅ 772 GiB | - |
 | NVIDIA/CUDA 可用 | ❌ 无 | 需远程 CUDA GPU |
 | 旧引擎虚拟环境 | ❌ 未创建 | 不需要（新项目独立） |
 

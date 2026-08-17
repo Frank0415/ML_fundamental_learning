@@ -1,6 +1,6 @@
-# Reference Video Inference — Blocker (LTX-Video)
+# Reference Video Inference - Blocker (LTX-Video)
 
-**日期**：2026-06-07（占位 — 真实运行日期待定）
+**日期**：2026-06-07（占位 - 真实运行日期待定）
 **模型**：Lightricks/LTX-Video
 **设备**：可用的 CUDA GPU（中等显存配置）（远程，待连接）
 **执行者**：T15 系统尝试

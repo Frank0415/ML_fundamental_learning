@@ -1,9 +1,9 @@
-# 06 — HunyuanVideo 1.5：系统化视频生成框架
+# 06 - HunyuanVideo 1.5：系统化视频生成框架
 
 > **模型名称**：HunyuanVideo 1.5（腾讯混元视频）
 > **官方仓库**：[github.com/Tencent/HunyuanVideo](https://github.com/Tencent/HunyuanVideo)
 > **HF Model Card**：[huggingface.co/tencent/HunyuanVideo-1.5](https://huggingface.co/tencent/HunyuanVideo-1.5)
-> **分类**：文生视频 — 大规模视频 DiT（bonus 路线）
+> **分类**：文生视频 - 大规模视频 DiT（bonus 路线）
 > **阅读日期**：2026-06-07
 
 ---
@@ -111,7 +111,7 @@ denoising loop（step-distilled: 10~20 步；原始: 50 步）
 
 **Token 数爆炸**：标准 129f×720p 规格下，token 数 = 33 × 45 × 80 = **118,800**。这意味着单层 full attention 的矩阵是 118800² ≈ **14B 元素**。在 fp16 下约 28 GB per attention layer，对于任何消费级 GPU 都完全不可能。
 
-这也是为什么 HunyuanVideo 默认规格不建议在消费级 GPU 上跑——**必须大幅降规格**（减少帧数/分辨率）或 **使用社区量化/CPU offload 方案**。
+这也是为什么 HunyuanVideo 默认规格不建议在消费级 GPU 上跑，**必须大幅降规格**（减少帧数/分辨率）或 **使用社区量化/CPU offload 方案**。
 
 ---
 
@@ -190,7 +190,7 @@ denoising loop（step-distilled: 10~20 步；原始: 50 步）
 ## 7. 对我的 diffusion_engine 的启发
 
 ### 7.1 `dit.py`
-- 双流 Video DiT 是 MMDiT 在视频模态的延伸。当前 TinyDiT 是单流（image-only），双流需要分别处理 image stream 和 text stream 的 AdaLN 调制——这对 T12 的 text conditioning 设计有直接影响。
+- 双流 Video DiT 是 MMDiT 在视频模态的延伸。当前 TinyDiT 是单流（image-only），双流需要分别处理 image stream 和 text stream 的 AdaLN 调制，这对 T12 的 text conditioning 设计有直接影响。
 
 ### 7.2 `attention.py`
 - HunyuanVideo 的 token 爆炸问题（118K tokens → 28GB attention）是一个重要的反面教材：**在中等显存配置上做 video attention，token 数必须控制在 ~3K 以下**，否则 O(n²) 无法承受。
@@ -198,13 +198,13 @@ denoising loop（step-distilled: 10~20 步；原始: 50 步）
 
 ### 7.3 `memory_manager.py`
 - HunyuanVideo 证明了"模型权重量化"（GGUF/NF4）是 受限显存视频推理的常见路径。memory_manager 应预留 "weight_quantization" 和 "offload_strategy" 的配置项。
-- 注意力显存的公式：`n² × 2bytes × num_attention_layers × 2(QK + AV)`——这个公式对 video DiT 的显存预估算至关重要。
+- 注意力显存的公式：`n² × 2bytes × num_attention_layers × 2(QK + AV)`，这个公式对 video DiT 的显存预估算很重要。
 
 ### 7.4 `pipeline.py`
 - Step distillation（50→10 步）对 pipeline 的启发：pipeline 应支持 `num_steps` 的灵活配置，并且 scheduler 在低步数时自动调整 timestep 分布（非均匀间距）。
 
 ### 7.5 `scheduler.py`
-- Distilled scheduler 的 timestep 分布不是线性或对数均匀的——它是由 teacher-student 蒸馏学习到的。scheduler 接口需要支持自定义 `timestep_list`。
+- Distilled scheduler 的 timestep 分布不是线性或对数均匀的，它是由 teacher-student 蒸馏学习到的。scheduler 接口需要支持自定义 `timestep_list`。
 
 ---
 

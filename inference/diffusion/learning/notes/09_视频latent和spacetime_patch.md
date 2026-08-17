@@ -72,7 +72,7 @@ video_latent: (B, C, T, H, W)  或  (B, T, C, H, W)
 3. **官方示例代码**：看 `latents = torch.randn(...)` 的 shape 注释。
 4. **`transformer.config`**：看 `patch_size`、`patch_size_t` 字段。如果有 `patch_size_t`，说明模型使用了 spacetime patch。
 
-**错误的做法**：拿着 `(1, 4, 16, 32, 32)` 直接传给一个期望 `(1, 16, 4, 32, 32)` 的模型，期待它"内部自动转"——它不会。结果通常是静默的形状错误（被 broadcast 吃掉）或 cryptic error。
+**错误的做法**：拿着 `(1, 4, 16, 32, 32)` 直接传给一个期望 `(1, 16, 4, 32, 32)` 的模型，期待它"内部自动转"，它不会。结果通常是静默的形状错误（被 broadcast 吃掉）或 cryptic error。
 
 ---
 
@@ -119,7 +119,7 @@ Patch embedding (线性投影): 16 → D（如 D=768 或 1152 等 hidden dim）
 |------|---------|---------|---------|------|
 | **Sora**（概念框架） | 1 | 2 | 2 | 时间不压缩（patch_t=1），空间 2×2。token 数 = T × (H/2) × (W/2) |
 | **CogVideoX** | 1 | 2 | 2 | 同上，时间不 patch，空间 2×2。49 帧 720×480 latent → `49 * (90/2) * (60/2) ≈ 49*45*30 = 66,150` tokens。这是视频 DiT 自注意力的主要计算瓶颈。 |
-| **LTX-Video** | 1 | 1 | 1 | 不做 patch（patch_t=1, patch_h=1, patch_w=1），每个 latent 像素直接是一个 token。121 帧 768×512 latent → `121 * (96) * (64) = 742,656` tokens——为什么 LTX 可以这样？因为它是 2B distilled，few-step（4~8 步），每次 forward 虽 token 多但步数极少。 |
+| **LTX-Video** | 1 | 1 | 1 | 不做 patch（patch_t=1, patch_h=1, patch_w=1），每个 latent 像素直接是一个 token。121 帧 768×512 latent → `121 * (96) * (64) = 742,656` tokens，为什么 LTX 可以这样？因为它是 2B distilled，few-step（4~8 步），每次 forward 虽 token 多但步数极少。 |
 | **Wan** | 1 | 2 | 2 | 与 CogVideoX 相同，时间不切，空间 2×2。 |
 
 ### 3.4 为什么空间 patch 时间不 patch？
@@ -180,7 +180,7 @@ Video DiT block:
 这种分离设计的优点：
 - **显存高效**：Spatial attention 的复杂度是 O((HW)²)，temporal attention 是 O(T²)。分开算总开销远小于 merged 3D attention 的 O((T×H×W)²)。
 - **可独立优化**：可以对 temporal attention 使用更小的 head dim 或不同的 flash-attn kernel。
-- **CogVideoX 的 causal temporal**：CogVideoX 的 temporal attention 使用 causal mask（当前帧只能看自己和过去的帧），类似于 LLM 的因果约束。这是一个**重要例外**——大部分视频 DiT 的视频 attention 是 full（双向）的，但 CogVideoX 选择了 causal 以支持流式生成长视频。
+- **CogVideoX 的 causal temporal**：CogVideoX 的 temporal attention 使用 causal mask（当前帧只能看自己和过去的帧），类似于 LLM 的因果约束。这是一个**重要例外**，大部分视频 DiT 的视频 attention 是 full（双向）的，但 CogVideoX 选择了 causal 以支持流式生成长视频。
 
 #### 方案 B：Merged 3D Attention（简化但重）
 
@@ -319,11 +319,11 @@ experiments/reference_video_inference/results/
 
 ---
 
-## 7. 本页结论
+## 7. 结论
 
 视频 latent 的核心复杂度来自**多出来的时间维度**、**不统一的维度约定 `(B,C,T,H,W)` vs `(B,T,C,H,W)`**、以及**spacetime patch 引入的 3D tokenization**。video DiT 不是 image DiT + 一个参数开关，而是需要独立的 temporal attention 层和修改后的 patchify 流程。在 受限显存配置下，视频推理必须走"小规格 + 优先少步蒸馏模型"的路线，并设置明确的 timebox 和 blocker 边界以防无底洞式的调试。
 
 **对下游任务的影响**：
 - T15（视频 reference 脚手架）：本文档第 6 节是直接执行手册。
-- T18（最终汇总）：本页结论的"实际验证 vs 理论预期"对比是最终报告的核心段落。
+- T18（最终汇总）：结论的"实际验证 vs 理论预期"对比是最终报告的核心段落。
 - diffusion_engine：`pipeline.py` 必须在入口处显式处理 `(B,C,T,H,W)` vs `(B,T,C,H,W)` 转换，且在 shape 注释中注明。

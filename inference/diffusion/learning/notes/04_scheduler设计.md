@@ -1,4 +1,4 @@
-# scheduler 设计笔记 — Euler 与 Rectified Flow 调度器
+# scheduler 设计笔记 - Euler 与 Rectified Flow 调度器
 
 > **对应任务**：T10
 > **产出日期**：2026-06-07
@@ -153,7 +153,7 @@ x_next = x_t + (time_next - time_current) * v
 
 ## 8. 对未来模块的影响
 
-T10 的 scheduler 设计直接决定了 T11–T12 的 DiT 接口：
+T10 的 scheduler 设计直接决定了 T11-T12 的 DiT 接口：
 
 ```python
 # DiT forward 将与 scheduler 配合：

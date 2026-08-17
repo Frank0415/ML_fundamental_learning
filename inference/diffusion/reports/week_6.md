@@ -66,7 +66,7 @@
   - 1024² full decode：29.45 ms，18.0 MB
   - 1024² tiled 16×16（64 tiles）：66.93 ms，24.5 MB（2.27× 慢，1.36× 省显存）
   - 2048² tiled 32×32（64 tiles）：198.94 ms，97.4 MB（1.69× 慢，1.35× 省显存）
-  - Tiling 不是 flash-attn 或 torch.compile 等价物——它是应用层的显式 chunk decode + overlap blending
+  - Tiling 不是 flash-attn 或 torch.compile 等价物，它是应用层的显式 chunk decode + overlap blending
   - 受限显存配置下 tiling 几乎总是必要的
 
 ### 1.3 T18：知识库收束

@@ -1,10 +1,10 @@
-# 01 — Scaling Rectified Flow Transformers for High-Resolution Image Synthesis（SD3 / MMDiT）
+# 01 - Scaling Rectified Flow Transformers for High-Resolution Image Synthesis（SD3 / MMDiT）
 
 > **论文全称**：Scaling Rectified Flow Transformers for High-Resolution Image Synthesis
 > **arXiv**：[2403.03206](https://arxiv.org/abs/2403.03206)
 > **作者**：Patrick Esser, Sumith Kulal, Andreas Blattmann, Rahim Entezari, Jonas Müller, Harry Saini, Yam Levi, Dominik Lorenz, Axel Sauer, Frederic Boesel, Dustin Podell, Tim Dockhorn, Zion English, Kyle Lacey, Alex Goodwin, Yannik Marek, Robin Rombach（Stability AI）
 > **发表时间**：2024 年 3 月
-> **分类**：文生图（image）— rectified flow + MMDiT 奠基
+> **分类**：文生图（image）- rectified flow + MMDiT 奠基
 > **阅读日期**：2026-06-07
 
 ---
@@ -33,7 +33,7 @@
 SD3 的核心创新是用 MMDiT 替代传统 U-Net。MMDiT 是一种**双流 transformer**：
 - **Image stream**：latent 经 patchify（patch_size=2）后得到 image tokens，通过独立的 QKV 投影和 MLP 处理
 - **Text stream**：text embeddings（来自 CLIP/T5）通过另一组 QKV 投影和 MLP 处理
-- **Joint attention**：image tokens 和 text tokens 拼接后进入统一的注意力计算——所有 token 互相 attend（full attention，无 causal mask，与 LLM 的 causal/KV-cache 范式完全不同）
+- **Joint attention**：image tokens 和 text tokens 拼接后进入统一的注意力计算，所有 token 互相 attend（full attention，无 causal mask，与 LLM 的 causal/KV-cache 范式完全不同）
 - 双流的调制参数（scale/shift/gate）由各自的 adaLN 模块根据 timestep embedding 独立生成
 
 **为什么双流**：text token 和 image token 的语义空间不同，独立投影后再 joint attention 比直接拼接后统一投影效果好。这是 SD3 区别于 DiT（Peebles & Xie, 2023）的核心改进。
@@ -73,7 +73,7 @@ SD3 使用 **rectified flow** 的 timestep 参数化：
 - **类型**：full attention（所有 token 互相 attend），无 GQA、无 causal mask、无 KV cache
 - **Joint attention**：text tokens（~154 个）+ image tokens（~4096 个 for 1024px）→ 总计 ~4250 tokens，全部参与 QKV 计算
 - **FlashAttention 兼容**：MMDiT 的注意力计算与 FlashAttention 2/3 兼容，实际推理中通常通过 `xformers` 或 `torch.nn.functional.scaled_dot_product_attention` 加速
-- **无 RoPE**：SD3 不在 attention 中使用 Rotary Position Embedding——位置信息由 2D sinusoidal position embedding 在 patchify 阶段注入
+- **无 RoPE**：SD3 不在 attention 中使用 Rotary Position Embedding，位置信息由 2D sinusoidal position embedding 在 patchify 阶段注入
 
 ### 3.6 VAE
 
@@ -192,7 +192,7 @@ SD3 的显存瓶颈按严重程度排序：
 | 不能 Cache | 为什么 | 与 LLM 的差异 |
 |-----------|--------|--------------|
 | **Denoiser 内部 K/V 矩阵** | 每步 latent 都不同（被 scheduler 更新），上一步的 K/V 对下一步**完全无用** | LLM 的自回归生成中 K/V 随 token 追加而累积；扩散每步"重写全部 latent" |
-| **Latent buffer** | 每步被 scheduler 原地覆盖更新 | — |
+| **Latent buffer** | 每步被 scheduler 原地覆盖更新 | - |
 
 ### 6.4 Buffer 复用策略
 
@@ -247,7 +247,7 @@ image.save('output.png')
 
 ### 7.3 `dit.py`
 - SD3 的 `patch_size=2` 是工业实际值（不是 toy 的 4 或 8），我们的 TinyDiT 应该保持 patch_size=2
-- SD3 使用可学习的位置编码（`nn.Parameter`）而非 2D sinusoidal——这与 T11 TinyDiT 的选择一致（都是 toy 简化）
+- SD3 使用可学习的位置编码（`nn.Parameter`）而非 2D sinusoidal，这与 T11 TinyDiT 的选择一致（都是 toy 简化）
 - 真实 SD3 的 patchify 还注入了 2D sin/cos position embedding，TinyDiT 暂未实现
 
 ### 7.4 `text_conditioning.py`（T12 待实现）

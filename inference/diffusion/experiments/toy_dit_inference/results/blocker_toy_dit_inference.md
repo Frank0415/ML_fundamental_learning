@@ -1,4 +1,4 @@
-# Toy DiT Inference — Blocker 记录
+# Toy DiT Inference - Blocker 记录
 
 **日期**: 2026-06-07 04:18:50
 

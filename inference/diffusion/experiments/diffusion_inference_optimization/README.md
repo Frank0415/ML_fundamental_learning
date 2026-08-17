@@ -20,7 +20,7 @@ LLM 的推理优化集中在**自回归生成**这一单一范式上：
 | **Speculative decoding** | 每 token 延迟高 | 用小模型"猜"多个 token，大模型批量验证 |
 | **Prefix cache** | 长 prompt 多轮复用 | 共享 prefix 的 key/value 跨请求复用 |
 
-**核心前提**：过去 token 的 hidden state 是"不变的"——这是 KV cache 存在的第一性原理。
+**核心前提**：过去 token 的 hidden state 是"不变的"，这是 KV cache 存在的第一性原理。
 
 ### 1.2 Diffusion 推理优化（本目录的研究对象）
 
@@ -29,16 +29,16 @@ LLM 的推理优化集中在**自回归生成**这一单一范式上：
 | 优化方向 | 解决什么问题 | 为什么有效 | LLM 有对应吗 |
 |---------|-------------|-----------|------------|
 | **Prompt embedding cache** | 同一 prompt 重复走 text encoder | text encoder 输出在 denoising loop 内不变 | 部分对应 prefix cache，但粒度完全不同 |
-| **Latent buffer 预分配** | 每步 malloc/free latent 张量 | 预分配 + ping-pong 避免碎片化 | 无——LLM hidden state 增量追加 |
+| **Latent buffer 预分配** | 每步 malloc/free latent 张量 | 预分配 + ping-pong 避免碎片化 | 无，LLM hidden state 增量追加 |
 | **CFG batching** | cond/uncond 两次 forward | 拼接 batch 做一次 forward | 类似 continuous batching 但含义不同 |
-| **Scheduler step 选择** | ODE 积分步数与质量/速度平衡 | 少步=faster，多步=higher quality | 无——LLM 无 ODE 积分 |
-| **VAE tiling** | 高分辨率 decode 显存爆炸 | 分 tile decode 再拼接 | 无——LLM 输出 token 无需 decode 大张量 |
-| **Attention memory 控制** | N² attention 在 4K 图有 65536² 矩阵 | linear attention / flash-attn / chunking | partial——LLM 也有 attention 优化但 scale 不同 |
+| **Scheduler step 选择** | ODE 积分步数与质量/速度平衡 | 少步=faster，多步=higher quality | 无，LLM 无 ODE 积分 |
+| **VAE tiling** | 高分辨率 decode 显存爆炸 | 分 tile decode 再拼接 | 无，LLM 输出 token 无需 decode 大张量 |
+| **Attention memory 控制** | N² attention 在 4K 图有 65536² 矩阵 | linear attention / flash-attn / chunking | partial，LLM 也有 attention 优化但 scale 不同 |
 
 > **★★★ 核心认知：Diffusion 的主优化不是 LLM 的 KV cache ★★★**
 >
 > - LLM KV cache 存储的是 attention 层的 key/value 历史，用于自回归生成中跨 token 步复用。
-> - Diffusion denoising 每步 latent 全刷新——上一步的 K/V 没有复用价值。
+> - Diffusion denoising 每步 latent 全刷新，上一步的 K/V 没有复用价值。
 > - Diffusion 真正的优化焦点是：
 >   1. **Prompt embedding cache**（text encoder 输出缓存，非 attention KV cache）
 >   2. **CFG batched forward**（一次 forward 处理 cond+uncond，省掉一次前向）
@@ -51,10 +51,10 @@ LLM 的推理优化集中在**自回归生成**这一单一范式上：
 
 | 优先级 | 优化项 | 预计收益 | 中等显存配置 影响 |
 |-------|--------|---------|----------|
-| P0 | Prompt embedding cache | ~1–3 GB（避免重复加载 text encoder） | 决定性 |
+| P0 | Prompt embedding cache | ~1-3 GB（避免重复加载 text encoder） | 决定性 |
 | P0 | CFG batching | ~1.3× 加速（省一次 forward） | 显存代价 ~1.8×（双倍 batch） |
 | P1 | Scheduler 选择 | 4→50 步，速度差 10× | 无额外显存 |
-| P1 | Latent buffer 预分配 | 碎片化消除，~1–2ms per run | 可忽略（~1 MB） |
+| P1 | Latent buffer 预分配 | 碎片化消除，~1-2ms per run | 可忽略（~1 MB） |
 | P2 | VAE tiling | 1024²→2048² 可行 | 解码峰值降低 50%+ |
 | P2 | Attention memory | O(n²)→O(n) linear attn | 4K 图必需 |
 
@@ -62,7 +62,7 @@ LLM 的推理优化集中在**自回归生成**这一单一范式上：
 
 ## 2. 本目录实验清单
 
-### 2.1 T16 — 三个基础优化实验（本任务）
+### 2.1 T16 - 三个基础优化实验（本任务）
 
 | # | 脚本 | 核心目标 | 关键指标 |
 |---|------|---------|---------|
@@ -70,7 +70,7 @@ LLM 的推理优化集中在**自回归生成**这一单一范式上：
 | 2 | `latent_buffer_manager.py` | 管理 latent 张量预分配与复用 | allocation_count, peak_allocated, peak_reserved, latency_per_step |
 | 3 | `scheduler_step_benchmark.py` | 比较不同 ODE 步数的速度/质量 | latency_per_step, total latency, scheduler 类型差异 |
 
-### 2.2 T17 — 三个高级对照实验
+### 2.2 T17 - 三个高级对照实验
 
 | # | 脚本 | 核心目标 | 关键指标 |
 |---|------|---------|---------|
@@ -82,8 +82,8 @@ LLM 的推理优化集中在**自回归生成**这一单一范式上：
 
 ## 3. 执行顺序
 
-1. **T16（本任务）**：先实现前 3 个脚本——`prompt_embedding_cache.py`、`latent_buffer_manager.py`、`scheduler_step_benchmark.py`
-2. **T17**：再实现后 3 个脚本——`cfg_batching_experiment.py`、`attention_memory_benchmark.py`、`vae_tiling_experiment.py`
+1. **T16（本任务）**：先实现前 3 个脚本，`prompt_embedding_cache.py`、`latent_buffer_manager.py`、`scheduler_step_benchmark.py`
+2. **T17**：再实现后 3 个脚本，`cfg_batching_experiment.py`、`attention_memory_benchmark.py`、`vae_tiling_experiment.py`
 3. **T18**：汇总所有实验结果到最终报告
 
 所有脚本均为独立可运行文件，无跨脚本导入依赖，可按任意顺序单独运行。
@@ -96,7 +96,7 @@ LLM 的推理优化集中在**自回归生成**这一单一范式上：
 
 - Python ≥ 3.13
 - **仅需 numpy**（`pip install numpy` 或 `uv pip install numpy`）
-- **不依赖 torch、diffusers、transformers**——所有实验均为纯 numpy + 模拟
+- **不依赖 torch、diffusers、transformers**，所有实验均为纯 numpy + 模拟
 
 ### 4.2 单个脚本运行
 
@@ -202,8 +202,8 @@ tokens: (B, N, D)          如 (1, 256, 64) = 16,384 元素  (patch 后)
 
 **Demo 比较**：
 
-- **A. In-place reset**：每次 step 在预分配 buffer 上直接覆盖——零额外分配
-- **B. Out-of-place reset**：每次 step 分配新 buffer → 旧 buffer 被 GC——大量 malloc/free
+- **A. In-place reset**：每次 step 在预分配 buffer 上直接覆盖，零额外分配
+- **B. Out-of-place reset**：每次 step 分配新 buffer → 旧 buffer 被 GC，大量 malloc/free
 - 模拟 28 步推理，记录 allocation_count、peak_allocated bytes、每步 latency
 
 **显存预算下的真实占比**：
@@ -226,8 +226,8 @@ tokens: (B, N, D)          如 (1, 256, 64) = 16,384 元素  (patch 后)
 
 **对比的 scheduler 类型**：
 
-- `EulerScheduler`（sigma 空间，log-linear 间隔）——传统 DDIM/score-based 路线
-- `RectifiedFlowScheduler`（t∈[0,1] 空间，线性间隔）——SD3/FLUX 路线
+- `EulerScheduler`（sigma 空间，log-linear 间隔），传统 DDIM/score-based 路线
+- `RectifiedFlowScheduler`（t∈[0,1] 空间，线性间隔），SD3/FLUX 路线
 - 相同 step 数下两者约有 ±10% 的 latency 差异（步长间距不同导致每步计算量微差）
 
 **模拟方式**：
@@ -277,7 +277,7 @@ cache_key = PromptEmbeddingCacheKey(
 ## 8. 失败/Blocker 模板
 
 ```markdown
-# Diffusion Inference Optimization — Blocker
+# Diffusion Inference Optimization - Blocker
 
 **日期**：YYYY-MM-DD
 **实验**：[prompt_cache / latent_buffer / scheduler]
@@ -304,9 +304,9 @@ python experiments/diffusion_inference_optimization/<script>.py --demo ...
 
 | 本实验脚本 | 使用的 `diffusion_engine/core/` 接口 |
 |-----------|--------------------------------------|
-| `prompt_embedding_cache.py` | ToyTextConditioner（T12）——mock text encoder |
-| `latent_buffer_manager.py` | LatentBufferManager 接口参考（T12）——纯 numpy 重实现 |
-| `scheduler_step_benchmark.py` | EulerScheduler、RectifiedFlowScheduler（T10）——直接 import |
+| `prompt_embedding_cache.py` | ToyTextConditioner（T12），mock text encoder |
+| `latent_buffer_manager.py` | LatentBufferManager 接口参考（T12），纯 numpy 重实现 |
+| `scheduler_step_benchmark.py` | EulerScheduler、RectifiedFlowScheduler（T10），直接 import |
 
 > **注意**：`diffusion_engine/core/` 的 `memory_manager.py` 和 `text_conditioning.py` 依赖 torch，本目录的实验脚本实现了**纯 numpy 版本的相同接口**，以保持零 torch 依赖。两者接口兼容，但实现和依赖链独立。
 
@@ -314,15 +314,15 @@ python experiments/diffusion_inference_optimization/<script>.py --demo ...
 
 ## 10. 参考
 
-- **计划详情**：`.omo/plans/modern-diffusion-inference-roadmap.md` T16–T17 章节
+- **计划详情**：`.omo/plans/modern-diffusion-inference-roadmap.md` T16-T17 章节
 - **引擎模块**：
-  - `diffusion_engine/core/scheduler.py` — EulerScheduler + RectifiedFlowScheduler（T10，纯 numpy）
-  - `diffusion_engine/core/text_conditioning.py` — TextConditioner Protocol + ToyTextConditioner（T12，torch）
-  - `diffusion_engine/core/memory_manager.py` — LatentBufferManager + MemoryStats（T12，torch）
+  - `diffusion_engine/core/scheduler.py` - EulerScheduler + RectifiedFlowScheduler（T10，纯 numpy）
+  - `diffusion_engine/core/text_conditioning.py` - TextConditioner Protocol + ToyTextConditioner（T12，torch）
+  - `diffusion_engine/core/memory_manager.py` - LatentBufferManager + MemoryStats（T12，torch）
 - **学习笔记**：
   - `learning/notes/06_cfg和negative_prompt.md`
   - `learning/notes/07_text_encoder和prompt_embedding_cache.md`
   - `learning/notes/08_latent_buffer和显存预算.md`
 - **论文卡片**（与 scheduler benchmark 相关）：
-  - `learning/papers/10_consistency_distillation_and_fast_sampling.md` — T16 直接输入
-  - `learning/papers/01_scaling_rectified_flow_transformers_sd3.md` — 28 步 RF 基线
+  - `learning/papers/10_consistency_distillation_and_fast_sampling.md` - T16 直接输入
+  - `learning/papers/01_scaling_rectified_flow_transformers_sd3.md` - 28 步 RF 基线

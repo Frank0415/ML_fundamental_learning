@@ -1,17 +1,17 @@
-# 05 — Wan2.1：开源大规模视频生成模型
+# 05 - Wan2.1：开源大规模视频生成模型
 
 > **模型名称**：Wan2.1（阿里通义万相）
 > **官方仓库**：[github.com/Wan-Video/Wan2.1](https://github.com/Wan-Video/Wan2.1)
 > **HF Model Card (T2V-1.3B)**：[huggingface.co/Wan-AI/Wan2.1-T2V-1.3B](https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B)
 > **HF Model Card (T2V-14B)**：[huggingface.co/Wan-AI/Wan2.1-T2V-14B](https://huggingface.co/Wan-AI/Wan2.1-T2V-14B)
-> **分类**：文生视频 + image-to-video — 开源视频 DiT
+> **分类**：文生视频 + image-to-video - 开源视频 DiT
 > **阅读日期**：2026-06-07
 
 ---
 
 ## 1. 为什么对现代 diffusion 推理重要
 
-Wan2.1 是阿里开源的视频生成模型，公开了完整的 3D VAE 和 DiT 推理代码。它的 **Wan2.1-T2V-1.3B** 变体（仅 1.3B 参数）是 中等显存配置 上可以跑通的实用视频模型之一——官方报告 480p 视频在 8.19GB 显存即可运行。对比 SD3 Medium 的 2B 文生图模型，1.3B 视频 DiT 能在相近参数规模下生成有意义的视频，这证明了 DiT 架构在视频模态上的参数效率。理解 Wan 的推理路径是完成 video reference inference 的关键技术准备。
+Wan2.1 是阿里开源的视频生成模型，公开了完整的 3D VAE 和 DiT 推理代码。它的 **Wan2.1-T2V-1.3B** 变体（仅 1.3B 参数）是 中等显存配置 上可以跑通的实用视频模型之一，官方报告 480p 视频在 8.19GB 显存即可运行。对比 SD3 Medium 的 2B 文生图模型，1.3B 视频 DiT 能在相近参数规模下生成有意义的视频，这证明了 DiT 架构在视频模态上的参数效率。理解 Wan 的推理路径是完成 video reference inference 的关键技术准备。
 
 ---
 
@@ -35,10 +35,10 @@ Wan2.1 是阿里开源的视频生成模型，公开了完整的 3D VAE 和 DiT 
 
 Wan2.1 的 denoiser 是 **Video DiT**（基于 DiT 的视频版本）：
 - **Full attention over all spacetime tokens**：所有帧的所有 patches 互相 attend（非 causal）
-- **Patch size**：`(1, 2, 2)` ——时间维度上每 1 帧一个 patch（不做时间 patch），空间维度上每 2×2 latent pixel 一个 patch
+- **Patch size**：`(1, 2, 2)`，时间维度上每 1 帧一个 patch（不做时间 patch），空间维度上每 2×2 latent pixel 一个 patch
 - **Transformer block 结构**：标准的 AdaLN + Self-Attention + FFN
 
-由于没有 causal mask（不限制当前帧只能向前看），Wan 的 attention 是"并行"的——所有 tokens 同时 attend。这保证了全局一致性，但也意味着 token 数 = `T_latent × (H_latent/2) × (W_latent/2)`，总 token 数随帧数增加而线性增长。
+由于没有 causal mask（不限制当前帧只能向前看），Wan 的 attention 是"并行"的，所有 tokens 同时 attend。这保证了全局一致性，但也意味着 token 数 = `T_latent × (H_latent/2) × (W_latent/2)`，总 token 数随帧数增加而线性增长。
 
 ### 3.2 Latent 表示：3D VAE
 
@@ -55,9 +55,9 @@ Wan2.1 使用自训练的 **3D VAE**（公开可下载）：
 Wan2.1 使用 **T5 作为 text encoder**（推测为 T5-XXL，即 11B 参数版本），通过 cross-attention 注入 DiT。具体方式：
 - T5 的 last hidden states 作为 text tokens
 - Text tokens 通过 cross-attention 注入每层 DiT block（text tokens 作为 K/V，image tokens 作为 Q）
-- 此外，T5 的 pooled output（或特殊设计的全局条件向量）通过 adaLN 注入
+- 另外，T5 的 pooled output（或特殊设计的全局条件向量）通过 adaLN 注入
 
-**对受限显存配置的影响**：T5-XXL 约占 5GB fp16，在 1.3B DiT + T5 组合下总显存约 8.2GB——这意味着即使全加载，中等显存配置 也是舒适的。
+**对受限显存配置的影响**：T5-XXL 约占 5GB fp16，在 1.3B DiT + T5 组合下总显存约 8.2GB，这意味着即使全加载，中等显存配置 也是舒适的。
 
 ### 3.4 Timestep / Sigma Conditioning
 
@@ -76,7 +76,7 @@ Wan2.1 使用 **T5 作为 text encoder**（推测为 T5-XXL，即 11B 参数版�
 
 ### 3.6 VAE
 
-- **类型**：3D VAE（因果卷积？非因果？——官方文档未明确因果性，但从实现看可能是非因果的 3D Conv）
+- **类型**：3D VAE（因果卷积？非因果？，官方文档未明确因果性，但从实现看可能是非因果的 3D Conv）
 - **压缩因子**：时间 4×，空间 8×
 - **Decoder**：一次性 decode 所有帧（不是逐帧 decode），意味着 VAE decoder 的显存随帧数线性增长
 - **支持 tiling**：对于超长视频，社区已实现分块 decode 方案
@@ -112,7 +112,7 @@ denoising loop: t = 1 → 0（通常 50 步）
 - Full attention 矩阵：32,760² ≈ 1.07B 元素 → fp16 约 2.1 GB per attention layer
 - 对于 1.3B 模型（~30 层 DiT），attention 中间激活的内存需求非常大
 
-**这就是为什么 1.3B 模型在 480p 上"刚好"能跑**——32K tokens 的 full attention 已经接近了 中等显存配置的上限。如果升到 720p，token 数再翻倍（~131K），attention 就完全不可行了。
+**这就是为什么 1.3B 模型在 480p 上"刚好"能跑**，32K tokens 的 full attention 已经接近了 中等显存配置的上限。如果升到 720p，token 数再翻倍（~131K），attention 就完全不可行了。
 
 ---
 
@@ -218,11 +218,11 @@ pipe.enable_sequential_cpu_offload()
 
 ### 7.2 `attention.py`
 - Wan 的 full attention over all spacetime tokens 展现了视频 attention 的真实压力：32K tokens 的 O(n²) attention 在中等显存配置上已接近极限。这验证了 linear attention 或 sparse attention 的必要性。
-- 当前 `SelfAttention` 使用 `F.scaled_dot_product_attention`，本身就支持 FlashAttention——这是能跑 32K tokens 的原因。
+- 当前 `SelfAttention` 使用 `F.scaled_dot_product_attention`，本身就支持 FlashAttention，这是能跑 32K tokens 的原因。
 
 ### 7.3 `vae_stub.py`
 - Wan 的 3D VAE 提供了 video VAE 接口的具体参考：`encode(video_pixels) → (B,C,T,H,W)`，`decode(latent_3d) → video_pixels`
-- Channel=16 而非 4——与 image VAE (SD3/FLUX) 一致，这意味着视频 VAE 的 latent 容量比 SD1.x 的 4ch VAE 大 4 倍
+- Channel=16 而非 4，与 image VAE (SD3/FLUX) 一致，这意味着视频 VAE 的 latent 容量比 SD1.x 的 4ch VAE 大 4 倍
 
 ### 7.4 `pipeline.py`
 - 视频 denoising loop 结构：text_encode() → noise init → for t in steps: DiT forward → CFG → Euler step → VAE decode

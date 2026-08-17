@@ -1,4 +1,4 @@
-# CFG 与 Negative Prompt — 现代扩散模型的条件引导
+# CFG 与 Negative Prompt - 现代扩散模型的条件引导
 
 > **对应任务**：T12
 > **产出日期**：2026-06-07
@@ -21,7 +21,7 @@ v_cfg = v_uncond + s × (v_cond - v_uncond)
 其中：
 - `v_cond`：模型在给定 prompt 条件下的 vector field 预测
 - `v_uncond`：模型在空 prompt（或 negative prompt）下的 vector field 预测
-- `s`（cfg_scale）：引导强度，典型值 4–10
+- `s`（cfg_scale）：引导强度，典型值 4-10
 - `v_cfg`：CFG 调整后的最终 vector field
 
 **为什么在 vector field 层面做 CFG，不在 latent 层面？**
@@ -31,11 +31,11 @@ v_cfg = v_uncond + s × (v_cond - v_uncond)
 | Vector field（正确） | v_cfg = v_uncond + s × (v_cond - v_uncond) | 调整的是"模型预测的方向"，保持 ODE 积分一致性 |
 | Latent（错误） | x_cfg = x_uncond + s × (x_cond - x_uncond) | 在 latent 空间做线性插值，破坏 ODE 轨迹，生成结果变糊或崩溃 |
 
-**核心原因**：rectified flow ODE 的速度场 v_θ(x_t, t) 定义了概率流的方向。CFG 应该调整这个方向，而不是直接修改当前状态。在 latent 上做 CFG 相当于在错误的时间点做插值——当前 latent 是 t 时刻的中间态，不是最终状态。
+**核心原因**：rectified flow ODE 的速度场 v_θ(x_t, t) 定义了概率流的方向。CFG 应该调整这个方向，而不是直接修改当前状态。在 latent 上做 CFG 相当于在错误的时间点做插值，当前 latent 是 t 时刻的中间态，不是最终状态。
 
 ---
 
-## 2. s 的不同取值 — 边界行为
+## 2. s 的不同取值 - 边界行为
 
 ### s = 1.0（无引导）
 
@@ -74,7 +74,7 @@ v_cfg = (1 - s) × v_uncond + s × v_cond
 v_cfg = v_uncond + s × (v_cond - v_uncond)
 ```
 
-条件信号被 **s 倍放大**。这是最常见的使用方式，s 通常取 4–10。
+条件信号被 **s 倍放大**。这是最常见的使用方式，s 通常取 4-10。
 
 **s 过大的副作用**：
 - 图像过度饱和、对比度异常
@@ -85,9 +85,9 @@ v_cfg = v_uncond + s × (v_cond - v_uncond)
 **经验值**：
 | 模型 | 推荐 s | 说明 |
 |------|--------|------|
-| SD3 Medium | 4.5–7.0 | 标准文生图 |
-| FLUX.1-schnell | 0.0–2.0 | few-step 模型，CFG 非必需 |
-| Sana | 4.0–5.0 | 高效模型，对 s 较敏感 |
+| SD3 Medium | 4.5-7.0 | 标准文生图 |
+| FLUX.1-schnell | 0.0-2.0 | few-step 模型，CFG 非必需 |
+| Sana | 4.0-5.0 | 高效模型，对 s 较敏感 |
 | CogVideoX | 6.0 | 视频推理 |
 
 ---
@@ -96,7 +96,7 @@ v_cfg = v_uncond + s × (v_cond - v_uncond)
 
 ### 原理
 
-Negative prompt 是"无条件嵌入"的增强版——不是用空字符串的 embedding 做 v_uncond，而是用**明确的负面描述**（如 "blurry, low quality, distorted"）的 embedding 做 v_uncond。
+Negative prompt 是"无条件嵌入"的增强版，不是用空字符串的 embedding 做 v_uncond，而是用**明确的负面描述**（如 "blurry, low quality, distorted"）的 embedding 做 v_uncond。
 
 ```
 v_cfg = v_negative + s × (v_positive - v_negative)
@@ -120,7 +120,7 @@ v_cfg = v_negative + s × (v_positive - v_negative)
 
 ---
 
-## 4. Batched vs Sequential CFG — 实现维度
+## 4. Batched vs Sequential CFG - 实现维度
 
 ### Batched CFG
 
@@ -168,7 +168,7 @@ v_cfg = v_uncond + s * (v_cond - v_uncond)
 
 ### 数值等价性
 
-在确定性 ODE（无随机噪声注入）下，batched 和 sequential 产生**完全相同的结果**（浮点误差 < 1e-4）。因为两者使用相同的模型权重、相同的 latent 输入、相同的 timestep，唯一的区别是 batch grouping——在纯推理模式下，batch 不改变数值结果。
+在确定性 ODE（无随机噪声注入）下，batched 和 sequential 产生**完全相同的结果**（浮点误差 < 1e-4）。因为两者使用相同的模型权重、相同的 latent 输入、相同的 timestep，唯一的区别是 batch grouping，在纯推理模式下，batch 不改变数值结果。
 
 > **验证**：`pipeline_smoke.py` 的 `test_sequential_vs_batched_cfg` 测试此等价性。
 
@@ -182,8 +182,8 @@ v_cfg = v_uncond + s * (v_cond - v_uncond)
 |------|------------------------|------|
 | Latent | 4 × 128 × 128 × 2B = 128KB | 极小 |
 | Text embedding | 77 × 4096 × 2B ≈ 0.6MB | CLIP-L 的 hidden_state |
-| Model weights | 2–8 GB | 取决于模型大小 |
-| Attention activations | 数百 MB–数 GB | N² attention，N = patch 数 |
+| Model weights | 2-8 GB | 取决于模型大小 |
+| Attention activations | 数百 MB-数 GB | N² attention，N = patch 数 |
 | AdaLN 中间激活 | 数十 MB | Linear + SiLU 中间态 |
 
 Batched CFG 的额外开销：

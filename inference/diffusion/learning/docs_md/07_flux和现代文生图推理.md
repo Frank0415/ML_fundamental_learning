@@ -1,12 +1,12 @@
 # 07 · FLUX 与现代文生图推理
 
-本文解释 FLUX.1 系列模型（schnell / dev / pro）的核心架构、few-step 推理路径、text encoder 管线，以及与 SD3 主线模型的对比。
+这一页拆解 FLUX.1 的 schnell、dev、pro 三个版本，重点看模型结构、few-step 推理、text encoder 管线，以及它和 SD3 的差别。
 
 ## 1. FLUX 的定位
 
 > **FLUX = SD3 的 MMDiT 范式 × 工程优化 × few-step 蒸馏**
-> 
-> FLUX 由原 Stability AI 核心团队（Black Forest Labs）开发，是目前最强的 open-weight flow transformer。它的 schnell 变体（4 步推理，Apache 2.0 许可）是 受限显存场景下质量最高的文生图模型之一。
+>
+> FLUX 由 Black Forest Labs 开发。schnell 变体使用 4 步推理并采用 Apache 2.0 许可，适合在显存受限时做本地文生图实验。
 
 ## 2. FLUX vs SD3：架构层面对比
 
@@ -41,9 +41,9 @@ x = x + attn(adaln_norm(x)) + ffn(adaln_norm_parallel(x))
 
 并行模式减少了一次 kernel launch 和一次同步点，在相同参数规模下每步 forward 比 SD3 快约 15-20%。代价是训练更不稳定，需要 QK-normalization 来补偿。
 
-### RoPE 的选择：工程实用主义
+### RoPE 与现有 kernel 的配合
 
-FLUX 使用 **2D RoPE**（而非 SD3 的 2D sin/cos position encoding）不是因为在扩散中"理论上更好"，而是因为 FlashAttention 对 RoPE 有原生 kernel 加速。这是一个典型的"工程实用主义"决策：选择 CUDA kernel 支持更好的方案而非理论上更优雅的方案。
+FLUX 使用 **2D RoPE**，SD3 则采用 2D sin/cos position encoding。FlashAttention 已有 RoPE kernel 支持，这会直接影响实际实现的速度和维护成本。
 
 ## 3. Text Encoder 管线与 Latent 管线
 
@@ -54,7 +54,7 @@ FLUX 使用 **2D RoPE**（而非 SD3 的 2D sin/cos position encoding）不是�
 | CLIP-L (ViT-L/14) | 768 | 77 | ~0.9 GB | 必须 |
 | T5-XXL | 4096 | 256~512 | ~5 GB | **可选**（omit 可节省 ~5GB） |
 
-**受限显存策略**：schnell 去 T5 是最舒适的配置——CLIP-L 单独 ~0.9GB，剩余 VRAM 留给 DiT 权重和 attention。
+**受限显存策略**：schnell 去 T5 是最舒适的配置，CLIP-L 单独 ~0.9GB，剩余 VRAM 留给 DiT 权重和 attention。
 
 ### Latent 管线
 
@@ -95,7 +95,7 @@ VAE decoder: (1, 16, 128, 128) → (1, 3, 1024, 1024)
 
 **schnell 的 CFG 内化是什么**：
 
-在标准扩散中，CFG 需要每步做两次 forward（cond 有文本 + uncond 空文本），然后按公式 `v_cfg = v_uncond + s * (v_cond - v_uncond)` 合并。schnell 的蒸馏过程把这个"条件引导"能力内化到了模型权重中——模型在单次 forward 中就能产生相当于 "文本引导 + 无引导混合" 的结果。对中档显存卡来说，这意味着：**每步仅需一次 forward，时间和显存都能明显减半。**
+在标准扩散中，CFG 需要每步做两次 forward（cond 有文本 + uncond 空文本），然后按公式 \(v_{\mathrm{cfg}} = v_{\mathrm{uncond}} + s\left(v_{\mathrm{cond}} - v_{\mathrm{uncond}}\right)\) 合并。schnell 的蒸馏过程把这个"条件引导"能力内化到了模型权重中，模型在单次 forward 中就能产生相当于 "文本引导 + 无引导混合" 的结果。对中档显存卡来说，这意味着：**每步仅需一次 forward，时间和显存都能明显减半。**
 
 ## 5. 与 SD3 主线模型的对比
 
@@ -137,10 +137,10 @@ pipe.enable_sequential_cpu_offload()
 - De-noising 仅 4 步意味着 offload 的上下文切换仅 4 次（vs SD3 Medium 的 28 次或 56 次如果算上 uncond forward）
 - 4 步推理的 attention activation 总显存远小于 28 步（尽管每步 peak VRAM 相近）
 
-## 本页结论
+## 结论
 
-FLUX 在 SD3 的 rectified flow + DiT 范式上做了关键工程改进：单流架构简化了 text-image 交互，parallel attention block 减少了 kernel launch，RoPE 利用 FlashAttention 原生加速。schnell 变体通过 guided distillation 将 50 步压缩到 4 步且内化了 CFG guidance——这是 受限显存场景下质量/速度/VRAM 均衡的最佳文生图方案。对 diffusion_engine 的启发：few-step scheduler 需要非均匀 timestep，CFG 内化可消除双 forward 瓶颈。
+FLUX 在 SD3 的 rectified flow + DiT 路线上采用单流 text-image 交互、parallel attention block 和 RoPE；这些设计分别简化模态交互、减少 kernel launch，并可使用 FlashAttention。schnell 变体通过 guided distillation 将 50 步压缩到 4 步，同时内化 CFG guidance，减少受限显存场景下的步数和双 forward 开销。对 diffusion_engine 而言，few-step scheduler 需要非均匀 timestep，CFG 内化则可以消除双 forward 瓶颈。
 
 ## 和我的 diffusion_engine 的关系
 
-`diffusion_engine/core/scheduler.py` 中的 `RectifiedFlowScheduler` 可与 FLUX 风格推理兼容（t∈[0,1]，Euler step），但需支持非均匀 timestep 序列来适配 distilled 模型。`attention.py` 的当前实现使用可学习 position embedding，与 FLUX 的 RoPE 不同——toy 版本不急于实现 RoPE，但 T18 总结时需标注"真实 DiT 通常使用 RoPE 并配合 QK-norm"。
+`diffusion_engine/core/scheduler.py` 中的 `RectifiedFlowScheduler` 可与 FLUX 风格推理兼容（\(t \in [0, 1]\)，Euler step），但需支持非均匀 timestep 序列来适配 distilled 模型。`attention.py` 的当前实现使用可学习 position embedding，与 FLUX 的 RoPE 不同，toy 版本不急于实现 RoPE，但 T18 总结时需标注"真实 DiT 通常使用 RoPE 并配合 QK-norm"。

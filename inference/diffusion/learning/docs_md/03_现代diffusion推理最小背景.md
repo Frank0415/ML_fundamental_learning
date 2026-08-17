@@ -14,7 +14,7 @@
 8. [VAE decode](#7-vae-decode)
 9. [image / video output](#8-image--video-output)
 10. [image 与 video 的 shape 差异](#9-image-与-video-的-shape-差异)
-11. [本页结论](#本页结论)
+11. [结论](#结论)
 12. [和我的 diffusion_engine 的关系](#和我的-diffusion_engine-的关系)
 
 ## 0. 推理全景：一条 prompt 怎么变成一张图（或一段视频）
@@ -57,7 +57,7 @@ prompt
 
 ## 1. prompt → tokenizer → text encoder → prompt embeddings
 
-这是整条流水线的**文本入口**，也是唯一一次和 LLM 世界有交集的地方——但这里的 text encoder 只是 conditioning，不是生成主体。
+这是整条流水线的**文本入口**，也是唯一一次和 LLM 世界有交集的地方，但这里的 text encoder 只是 conditioning，不是生成主体。
 
 ### 1.1 Tokenizer
 
@@ -81,7 +81,7 @@ token ids = [320, 4567, 1234, ...]   # shape: (1, L)
 | CogVideoX | T5-XXL | 4096 | 视频模型用 T5 |
 | LTX-Video | T5-XXL | 4096 | 同上 |
 
-**关键点**：text encoder 只在推理开始时 run 一次，它的输出（prompt embeddings）会在整个去噪循环中被复用。你还可能需要同时 run 两次 text encoder：一次用你的 prompt（positive/conditional），一次用空字符串（negative/unconditional），用于 CFG。这两个 embedding 可以被 cache。
+**Text encoder 的调用次数**：text encoder 只在推理开始时 run 一次，它的输出（prompt embeddings）会在整个去噪循环中被复用。CFG 还可能需要两组编码：一组来自 prompt（positive/conditional），另一组来自空字符串（negative/unconditional）。这两组 embedding 都可以 cache。
 
 ### 1.3 输出 shape
 
@@ -96,11 +96,11 @@ pooled_prompt_embeds: (B, D_pool)     # 有些模型额外输出 pooled embeddin
 
 ### 2.1 Latent space 概念
 
-现代 diffusion 不在像素空间操作，而在 **latent space**（VAE 压缩后的空间）。这是 latent diffusion 的核心思想：先用 VAE 把高分辨率图像/视频压成低分辨率 latent，在 latent 上做 diffusion，最后再用 VAE decoder 还原。
+现代 diffusion 通常在 **latent space**（VAE 压缩后的空间）而不是像素空间操作。Latent diffusion 用 VAE 把高分辨率图像或视频压成低分辨率 latent，在 latent 上完成 diffusion，再由 VAE decoder 还原。
 
 **为什么要用 latent space？**
 - **计算效率**：latent 尺寸通常是像素的 1/8（每边）。512×512 像素 → 64×64 latent，token 数从 262k 降到 4k。
-- **显存友好**：latent 通道数通常为 4 或 16，远小于像素的 3（RGB）。自注意力复杂度和 token 数的平方成正比，latent 化收益巨大。
+- **显存占用**：latent 通道数通常为 4 或 16，虽然高于 RGB 的 3 个通道，但 VAE 会压缩 H、W，因此总 token 数更少。自注意力复杂度与 token 数的平方成正比，空间压缩会直接缩小 attention 矩阵。
 - **解耦**：VAE 可以独立训练、独立替换、独立升级。VAE encoder/decoder 和 diffusion 模型是完全解耦的两个模块。
 
 ### 2.2 Image latent 初始化
@@ -124,7 +124,7 @@ latent_shape: (B, C, T, H, W) = (1, 4, 16, 32, 32)
 - C = 4：同图像 latent。
 - T = 16：16 帧视频。这是常见的小规格设置。
 - H = W = 32：256×256 像素经 8× VAE 压缩。实际生产模型可能用更多帧和更高分辨率。
-- 注意：不同模型对维度的约定不同——有些用 `(B, C, T, H, W)`，有些用 `(B, T, C, H, W)`。在你的 `diffusion_engine/` 里需要统一约定或做显式 rearrange。
+- 注意：不同模型对维度的约定不同，有些用 `(B, C, T, H, W)`，有些用 `(B, T, C, H, W)`。在你的 `diffusion_engine/` 里需要统一约定或做显式 rearrange。
 
 **spacetime patch**：视频 DiT 通常在进入 transformer 之前，把 `(B, C, T, H, W)` 的 latent 进一步按 spacetime patch 切块。例如取 patch size = (1, 2, 2)，表示时间维度不切（patch_t=1），空间维度 2×2 一组。这样：
 
@@ -132,7 +132,7 @@ latent_shape: (B, C, T, H, W) = (1, 4, 16, 32, 32)
 (B, C, T, H, W)  →  (B, N_patches, D_patch)
 ```
 
-其中 `N_patches = T/patch_t × H/patch_h × W/patch_w`，每个 patch 被展平并投影到 transformer 的 hidden dimension。这和 ViT 的 image patchify 思路一致，只是多了一维时间轴。
+其中 \(N_{\mathrm{patches}} = (T / \mathrm{patch}_t) \times (H / \mathrm{patch}_h) \times (W / \mathrm{patch}_w)\)，每个 patch 被展平并投影到 transformer 的 hidden dimension。这和 ViT 的 image patchify 思路一致，只是多了一维时间轴。
 
 ### 2.4 随机性来源与 seed
 
@@ -144,15 +144,15 @@ z_T = torch.randn(1, 4, 64, 64,
     generator=torch.Generator().manual_seed(seed))
 ```
 
-**seed 决定一切**。同样 seed + 同样 prompt + 同样参数 → 完全相同的输出。这是推理可复现性的核心保证。你的 `diffusion_engine/` 的 pipeline 必须暴露 seed 参数。
+**Seed 决定初始噪声**。在相同运行条件下，同样的 seed、prompt 和参数应得到相同输出。`diffusion_engine/` 的 pipeline 因此需要暴露 seed 参数。
 
 ## 3. timestep / sigma schedule
 
 ### 3.1 基本概念
 
-在 flow matching / rectified flow 框架中，时间 t ∈ [0, 1] 表示从噪声（t=0）到数据（t=1）的进度。推理时我们**倒退**：从 t=1（纯噪声）逐步走到 t=0（干净 latent）。
+在 flow matching / rectified flow 框架中，时间 \(t \in [0, 1]\) 表示从噪声（\(t=0\)）到数据（\(t=1\)）的进度。推理时我们**倒退**：从 \(t=1\)（纯噪声）逐步走到 \(t=0\)（干净 latent）。
 
-每一步对应当前的时间值 t_i，以及对应的噪声水平 σ（sigma）。不同的 scheduler 把时间轴离散化成不同的步数。
+每一步对应当前的时间值 \(t_i\)，以及对应的噪声水平 \(\sigma\)（sigma）。不同的 scheduler 把时间轴离散化成不同的步数。
 
 ### 3.2 Image 模型的常用 schedule
 
@@ -166,7 +166,7 @@ z_T = torch.randn(1, 4, 64, 64,
 
 ### 3.3 Video 模型的常用 schedule
 
-视频模型因为帧间一致性要求，通常需要更多步，但蒸馏模型同样可以大幅降步数。
+视频模型因为帧间一致性要求，通常需要更多步；蒸馏模型可以用更少步骤逼近原采样轨迹。
 
 | 模型 | Scheduler | 典型步数 |
 |------|----------|---------|
@@ -191,14 +191,14 @@ timestep → sinusoidal embedding → MLP → (scale, shift, gate)
 
 给定当前 latent `z_t`、timestep `t`、prompt embeddings `c`，denoiser 输出：
 
-- **Flow matching**：vector field `v_θ(z_t, t, c)`，表示从当前位置指向数据方向的速度场。
-- **Score-based / DDPM-style**：noise prediction `ε_θ(z_t, t, c)`，预测当前 latent 中混入的噪声成分。
+- **Flow matching**：vector field \(v_\theta(z_t, t, c)\)，表示从当前位置指向数据方向的速度场。
+- **Score-based / DDPM-style**：noise prediction \(\epsilon_\theta(z_t, t, c)\)，预测当前 latent 中混入的噪声成分。
 
-在 rectified flow 设定下，两者等价关系为 `v_θ = z_1_hat − z_0_hat`（终态减初态估计），或可以互相转换。本文档默认使用 flow matching / rectified flow 的 vector field 视角。
+在 rectified flow 设定下，两者等价关系为 \(v_\theta = \hat{z}_1 - \hat{z}_0\)（终态减初态估计），或可以互相转换。本文档默认使用 flow matching / rectified flow 的 vector field 视角。
 
 ### 4.2 DiT（Diffusion Transformer）架构要点
 
-现代 denoiser 是 **DiT** 或 **MMDiT**（Multimodal DiT），不再是老式的 U-Net。核心模块：
+现代 denoiser 常用 **DiT** 或 **MMDiT**（Multimodal DiT）替代老式 U-Net，包含以下模块：
 
 ```
 input latent  ──► patchify ──► [DiT blocks] × N ──► unpatchify ──► output
@@ -242,11 +242,11 @@ v_pred = denoiser(
 
 ### 5.2 公式
 
-**关键：CFG 在 noise prediction / vector field 层面做，不是在 latent 层面做。**
+**CFG 作用于 noise prediction / vector field，而不是 latent。**
 
-```python
-v_cfg = v_uncond + s × (v_cond − v_uncond)
-```
+\[
+v_{\mathrm{cfg}} = v_{\mathrm{uncond}} + s\left(v_{\mathrm{cond}} - v_{\mathrm{uncond}}\right)
+\]
 
 其中：
 - `v_cond`：用真实 prompt 编码得到的 vector field。
@@ -255,13 +255,13 @@ v_cfg = v_uncond + s × (v_cond − v_uncond)
 
 等价写法（noise prediction 视角）：
 
-```python
-ε_cfg = ε_uncond + s × (ε_cond − ε_uncond)
-```
+\[
+\epsilon_{\mathrm{cfg}} = \epsilon_{\mathrm{uncond}} + s\left(\epsilon_{\mathrm{cond}} - \epsilon_{\mathrm{uncond}}\right)
+\]
 
 ### 5.3 为什么在 vector field 层面做
 
-latent 是 denoiser 的输入和输出，而 CFG 是对 denoiser **输出**的修正。如果在 latent 层面做（即先 update 再 CFG），你实际上是在对已经叠加了 scheduler 更新的结果做插值，这不等价于对模型预测做引导，效果会差很多。正确的顺序是：
+latent 是 denoiser 的输入和输出，而 CFG 修正的是 denoiser 的**输出**。如果在 latent update 后应用 CFG，插值对象已经包含 scheduler 更新，不再等价于对模型预测做引导。计算顺序如下：
 
 ```python
 v_cond   = denoiser(z_t, t, text_embeds)
@@ -272,9 +272,9 @@ z_{t-1}  = scheduler.step(v_cfg, z_t, t)     # 再用合并结果更新 latent
 
 ### 5.4 边界情况
 
-- **s = 1.0**：`v_cfg = v_cond`。等价于只用 conditional 预测，不做 CFG。这在 distilled 模型（如 FLUX schnell）中是默认行为。
-- **s = 0.0**：`v_cfg = v_uncond`。等价于完全忽略 prompt，输出内容与 prompt 无关。仅用于测试或特殊需求。
-- **s > 1.0**：增强 prompt 引导力。值越大图像越"靠拢" prompt 描述，但可能过饱和、失真。7.5 是 SD 时代的常见值，现代 rectified flow 模型通常用 3.0~5.0。
+- **\(s = 1.0\)**：\(v_{\mathrm{cfg}} = v_{\mathrm{cond}}\)。等价于只用 conditional 预测，不做 CFG。这在 distilled 模型（如 FLUX schnell）中是默认行为。
+- **\(s = 0.0\)**：\(v_{\mathrm{cfg}} = v_{\mathrm{uncond}}\)。等价于完全忽略 prompt，输出内容与 prompt 无关。仅用于测试或特殊需求。
+- **\(s > 1.0\)**：增强 prompt 引导力。值越大图像越"靠拢" prompt 描述，但可能过饱和、失真。7.5 是 SD 时代的常见值，现代 rectified flow 模型通常用 3.0~5.0。
 
 ### 5.5 显存代价
 
@@ -286,14 +286,14 @@ CFG 需要**两次 denoiser forward**（conditional + unconditional），这意�
 
 ### 6.1 角色
 
-Scheduler 负责根据 denoiser 的输出（vector field 或 noise prediction），把当前 latent `z_t` 更新到下一步 `z_{t-1}`（或等价地，更新到更接近数据的 `z_{t − Δt}`）。
+Scheduler 负责根据 denoiser 的输出（vector field 或 noise prediction），把当前 latent \(z_t\) 更新到下一步 \(z_{t-1}\)（或等价地，更新到更接近数据的 \(z_{t - \Delta t}\)）。
 
 ### 6.2 三种常见 scheduler
 
 | Scheduler | 更新方式 | 适用框架 | 特点 |
 |-----------|---------|---------|------|
-| **Euler (flow)** | `z_{t-1} = z_t + Δt × v_θ(z_t, t, c)` | Rectified Flow / Flow Matching | 最简单，一阶，少量步即可 |
-| **DDIM** | `z_{t-1} = √ᾱ_{t-1} × (z_t − √(1-ᾱ_t) × ε) / √ᾱ_t + √(1-ᾱ_{t-1}) × ε` | DDPM / Score-based | 确定性，比 DDPM 快，需要更多步 |
+| **Euler (flow)** | \(z_{t-1} = z_t + \Delta t\,v_\theta(z_t, t, c)\) | Rectified Flow / Flow Matching | 最简单，一阶，少量步即可 |
+| **DDIM** | \(z_{t-1} = \sqrt{\bar{\alpha}_{t-1}}\left(z_t - \sqrt{1-\bar{\alpha}_t}\,\epsilon\right) / \sqrt{\bar{\alpha}_t} + \sqrt{1-\bar{\alpha}_{t-1}}\,\epsilon\) | DDPM / Score-based | 确定性，比 DDPM 快，需要更多步 |
 | **Rectified Flow Euler** | 同上 Euler，但时间轴线性插值 | Rectified Flow | 与 Euler 本质相同，区别在于时间轴定义 |
 
 ### 6.3 统一接口（你的 `diffusion_engine/` 中）
@@ -311,7 +311,7 @@ class Scheduler:
 
 你的 `diffusion_engine/` scheduler 至少需要支持 Euler（rectified flow）和可选的 DDIM 两种模式。两者差异在于：
 - Euler 在 rectified flow 的线性时间轴上做简单加法。
-- DDIM 涉及 α 累积乘积（ᾱ）的噪声调度表，数学上更复杂但等价于 ODE 的另一种离散化。
+- DDIM 涉及 \(\alpha\) 累积乘积（\(\bar{\alpha}\)）的噪声调度表，数学上更复杂但等价于 ODE 的另一种离散化。
 
 ## 7. VAE decode
 
@@ -326,7 +326,7 @@ z_0: (B, C, H, W)  latent  →  VAE Decoder  →  pixel: (B, 3, H×8, W×8)
 ### 7.2 为什么 VAE 很重要
 
 - 它决定了最终输出的分辨率和细节质量。
-- 它是 latent diffusion 和像素之间的**唯一桥接**——denoiser 只看到 VAE 压缩后的 latent，而人眼只看到 VAE 解码后的像素。
+- 它是 latent diffusion 和像素之间的**唯一桥接**，denoiser 只看到 VAE 压缩后的 latent，而人眼只看到 VAE 解码后的像素。
 - 不同的 VAE 有不同的压缩比（8× 最常见，Sana 等用 32× 的高压缩比变体以降低计算）、不同的 latent 通道数（4 或 16）、不同的色域和细节保真度。
 
 ### 7.3 推理中的 VAE Decode
@@ -431,9 +431,9 @@ imageio.mimwrite("output.mp4", frames, fps=8,
 
 你的 `diffusion_engine/` 必须在入口（pipeline 层）统一到一种约定，然后在进入 DiT 前做 rearrange。建议默认使用 `(B, C, T, H, W)` 与 PyTorch 的 `Conv3d` 等算子保持一致。
 
-## 本页结论
+## 结论
 
-现代 diffusion 推理的数据流核心是：
+现代 diffusion 推理的数据流是：
 
 **prompt → embedding → latent init → 去噪循环（DiT forward + CFG + scheduler update）→ VAE decode → 输出**
 

@@ -12,7 +12,7 @@
 
 在 `diffusion_engine/core/` 下实现：
 
-- **`attention.py`**：Full attention（非 causal）。支持 self-attention（所有 latent patches 两两 attend）和 joint attention（image tokens × text tokens 的双流）。实现包括 QKV projection、scaled dot-product attention、multi-head 封装。关键设计：不使用 causal mask——DiT 中所有 patches 在同一个去噪步骤内并行处理，没有时序依赖。这是与 LLM 自回归 attention 的本质差异。
+- **`attention.py`**：Full attention（非 causal）。支持 self-attention（所有 latent patches 两两 attend）和 joint attention（image tokens × text tokens 的双流）。实现包括 QKV projection、scaled dot-product attention、multi-head 封装。关键设计：不使用 causal mask，DiT 中所有 patches 在同一个去噪步骤内并行处理，没有时序依赖。这是与 LLM 自回归 attention 的本质差异。
 
 - **`transformer_block.py`**：AdaLN-Zero modulation。与 LLM 的 RMSNorm 不同，DiT 的 normalization 参数是 timestep embedding 和 text embedding 动态生成的。流程：timestep embedding → MLP → (scale, shift, gate) × 6（分别用于 attention 前后的 LN 和 MLP 前后的 LN）。"Zero" 的含义是 gate 初始化为 0，使残差路径初始为恒等映射，有助于训练稳定。
 
@@ -32,7 +32,7 @@
   3. Denoising loop（N 步）：
      a. Timestep embedding（t → sinusoidal → linear）
      b. DiT forward（conditional：noisy latent + text embedding + t embedding）
-     c. DiT forward（unconditional：noisy latent + null text + t embedding）——CFG
+     c. DiT forward（unconditional：noisy latent + null text + t embedding），CFG
      d. CFG combination（v_cond + scale × (v_cond - v_uncond)）
      e. Scheduler step（latent = scheduler.step(velocity, latent, t, t_next)）
   4. VAE decode（latent → image pixels）
@@ -76,11 +76,11 @@ Toy DiT inference 在真实运行时受阻：
 
 ---
 
-## 3. 技术关键发现
+## 3. 技术主要发现
 
 ### 3.1 AdaLN-Zero 的本质
 
-AdaLN-Zero 不同于 LLM 中静态的 RMSNorm。在 DiT 中，每个 transformer block 的 6 个 LN 参数（scale, shift, gate）都是动态生成的——它们是从 timestep embedding 经过一个小型 MLP 计算出来的。这意味着 "normalization" 本身携带了 timestep 信息：不同的去噪阶段，同一个 latent 经过同一个 block 会得到不同的 normalization 参数。
+AdaLN-Zero 不同于 LLM 中静态的 RMSNorm。在 DiT 中，每个 transformer block 的 6 个 LN 参数（scale, shift, gate）都是动态生成的，它们是从 timestep embedding 经过一个小型 MLP 计算出来的。这意味着 "normalization" 本身携带了 timestep 信息：不同的去噪阶段，同一个 latent 经过同一个 block 会得到不同的 normalization 参数。
 
 ### 3.2 Joint Attention 的 token 交互
 
@@ -88,7 +88,7 @@ AdaLN-Zero 不同于 LLM 中静态的 RMSNorm。在 DiT 中，每个 transformer
 
 ### 3.3 CFG 的时机
 
-CFG 发生在 scheduler step **之前**：先得到 conditional 和 unconditional 两个矢量场估计，在矢量场空间做线性插值，然后用插值结果驱动 scheduler step。这一点与直觉可能不同——不是先更新 latent 再混合。
+CFG 发生在 scheduler step **之前**：先得到 conditional 和 unconditional 两个矢量场估计，在矢量场空间做线性插值，然后用插值结果驱动 scheduler step。这一点与直觉可能不同，不是先更新 latent 再混合。
 
 ---
 
