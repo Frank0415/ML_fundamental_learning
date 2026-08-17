@@ -29,11 +29,11 @@ docs_md/
 
 ## 相关目录
 
-- [`../docs/`](../docs/) — 同一内容的 HTML 镜像版
-- [`../paper/`](../paper/) — 12 篇论文 PDF 原件（按 `01_xxx.pdf` ~ `12_xxx.pdf` 命名，与 `learning/papers/` 笔记一一对应）。**PDF 不入 git**，见 `multimodal/.gitignore`。
-- [`../learning/papers/`](../learning/papers/) — 12 篇论文的中文笔记
-- [`../learning/notes/`](../learning/notes/) — 9 篇学习笔记（engine audit → SGLang）
-- [`../reports/`](../reports/) — 6 周周报与最终报告
+- [`../docs/`](../docs/) - 同一内容的 HTML 镜像版
+- [`../paper/`](../paper/) - 12 篇论文 PDF 原件（按 `01_xxx.pdf` ~ `12_xxx.pdf` 命名，与 `learning/papers/` 笔记一一对应）。**PDF 不入 git**，见 `multimodal/.gitignore`。
+- [`../learning/papers/`](../learning/papers/) - 12 篇论文的中文笔记
+- [`../learning/notes/`](../learning/notes/) - 9 篇学习笔记（engine audit → SGLang）
+- [`../reports/`](../reports/) - 6 周周报与最终报告
 
 ## 如何阅读
 

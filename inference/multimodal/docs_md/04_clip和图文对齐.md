@@ -4,7 +4,7 @@ CLIP（Contrastive Language-Image Pre-training）是 OpenAI 提出的图文对�
 
 ## 1. 双塔架构：图像塔 + 文本塔
 
-CLIP 的核心架构是两个独立的编码器，训练目标是让配对的图文在向量空间中距离最近：
+CLIP 使用两个独立编码器，训练目标是让配对的图文在向量空间中距离最近：
 
 <figure style="margin: 1rem 0 1.5rem;">
   <img src="../docs/assets/architecture/clip_summary_of_approach.png" alt="CLIP 双塔对比学习总览图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />
@@ -16,19 +16,21 @@ CLIP 的核心架构是两个独立的编码器，训练目标是让配对的图
 ```
 图像 → ViT (Image Encoder)  →  image_embedding [batch, dim]
 文本 → Transformer (Text Encoder)  →  text_embedding  [batch, dim]
-
-训练目标: image_embedding · text_embedding 最大化（对角线）
-          非匹配对的内积最小化
-
- 批量内计算:
-   logits = image_emb @ text_emb.T    # [batch, batch]
-   labels = [0, 1, 2, ..., batch-1]   # 对角线 = 正样本
-   loss = cross_entropy(logits, labels)
 ```
+
+令 \(I\) 和 \(T\) 分别表示 batch 内的图像与文本 embedding，\(B\) 为 batch size。训练目标是让配对图文的相似度 \(I_i^{\mathsf{T}}T_i\) 最大化，并让非匹配对的内积最小化：
+
+\[
+S = IT^{\mathsf{T}}, \qquad S \in \mathbb{R}^{B \times B}.
+\]
+\[
+y_i = i, \quad i = 0, \ldots, B - 1, \qquad
+\mathcal{L} = \operatorname{CE}(S, y).
+\]
 
 这个训练方式被称为 **InfoNCE 损失**（或对比损失）。在一个 batch 中，只有对角线上的图文对是正样本，其余都是负样本。模型学会将"一张猫的照片"和"a photo of a cat"映射到相近的向量位置，而将"一张狗的照片"和"a photo of a cat"映射到远离的位置。
 
-## 2. 关键特性：零样本分类
+## 2. 零样本分类
 
 CLIP 最出名的能力是零样本分类。不需要在任何分类数据集上微调，只需要把类别名写成文本 prompt，计算图像与每个 prompt 的余弦相似度，取最高分即可：
 
@@ -46,7 +48,7 @@ predicted_class = argmax(scores)
 
 ## 3. CLIP 在 VLM 中的角色
 
-CLIP 的视觉编码器（通常为 ViT-L/14 或 ViT-bigG）被几乎所有主流 VLM 复用，作为视觉塔的初始化权重。Qwen-VL 的视觉编码器就是从 CLIP ViT-bigG 初始化。CLIP 的关键价值在于：
+CLIP 的视觉编码器（通常为 ViT-L/14 或 ViT-bigG）被许多 VLM 复用，作为视觉塔的初始化权重。Qwen-VL 的视觉编码器就是从 CLIP ViT-bigG 初始化。它提供了三类直接用途：
 
 | 作用 | 说明 |
 |------|------|
@@ -58,7 +60,7 @@ CLIP 的视觉编码器（通常为 ViT-L/14 或 ViT-bigG）被几乎所有主�
 
 VLM 通常只使用 CLIP 的视觉塔（图像编码器），丢弃文本塔。这是因为：
 
-- VLM 使用 LLM（如 Qwen-7B）作为文本理解的核心，LLM 的文本能力远超 CLIP 的小型文本塔。
+- VLM 使用 LLM（如 Qwen-7B）处理文本，LLM 的文本能力远超 CLIP 的小型文本塔。
 - CLIP 文本塔的输出维度（通常 512 或 768）与 LLM 的 hidden dimension（如 2560）不匹配，重新投影的意义不大。
 - 视觉塔的输出通过 VL Adapter 投影到 LLM 的 embedding 空间后，LLM 可以直接基于自己的上下文理解 visual token，不需要 CLIP 文本塔的中间表示。
 

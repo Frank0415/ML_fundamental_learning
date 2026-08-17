@@ -1,4 +1,4 @@
-# vlm_minimal_demo — VLM 最小可运行 Demo
+# vlm_minimal_demo - VLM 最小可运行 Demo
 
 本目录包含多模态推理的最小验证实验。
 

@@ -6,9 +6,9 @@
 
 ### 核心问题
 
-纯文本 LLM 常用 **text-only prefix cache**——以文本 token 序列的 hash 作为 cache key, 相同文本前缀的请求可复用 KV cache。
+纯文本 LLM 常用 **text-only prefix cache**，以文本 token 序列的 hash 作为 cache key, 相同文本前缀的请求可复用 KV cache。
 
-**但在多模态推理中**, 请求的视觉输入 (图像) 可能不同而文本前缀相同。此时 text-only cache 会错误地判定"命中", 导致模型基于不匹配的图像 KV 做解码——即 **false hit**。
+**但在多模态推理中**, 请求的视觉输入 (图像) 可能不同而文本前缀相同。此时 text-only cache 会错误地判定"命中", 导致模型基于不匹配的图像 KV 做解码，即 **false hit**。
 
 ### 三种策略
 
@@ -22,13 +22,13 @@
 
 ### 七类测试场景
 
-1. **same_text_same_image** — 相同文本 + 相同图片 → 应命中
-2. **same_text_different_image** — 相同文本 + 不同图片 → **关键**: A false_hit, B/C miss
-3. **same_image_different_question** — 相同图片 + 不同文本 → 应 miss
-4. **same_image_different_resize** — 同一图片不同分辨率 → 应 miss
-5. **multi_image_same_order** — 多图相同顺序 → 应命中
-6. **multi_image_different_order** — 多图不同顺序 → 应 miss
-7. **same_video_different_frame_sampling** — 视频帧采样差异 (说明占位)
+1. **same_text_same_image** - 相同文本 + 相同图片 → 应命中
+2. **same_text_different_image** - 相同文本 + 不同图片 → **关键**: A false_hit, B/C miss
+3. **same_image_different_question** - 相同图片 + 不同文本 → 应 miss
+4. **same_image_different_resize** - 同一图片不同分辨率 → 应 miss
+5. **multi_image_same_order** - 多图相同顺序 → 应命中
+6. **multi_image_different_order** - 多图不同顺序 → 应 miss
+7. **same_video_different_frame_sampling** - 视频帧采样差异 (说明占位)
 
 ## 如何运行
 

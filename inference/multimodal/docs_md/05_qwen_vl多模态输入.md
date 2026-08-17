@@ -73,7 +73,7 @@ Qwen2-VL 及之后的版本引入了 `image_grid_thw` 概念，这是一个三�
 - **h（height grid）**：图像在高度方向上的 patch 数。如 224×224 图像、patch=14 时，h=16。
 - **w（width grid）**：图像在宽度方向上的 patch 数。w=h=16 时，总 token = 256。
 
-**动态分辨率下的 token 计算**：对于大图，Qwen2-VL 会将图像切为多个子图（tile），每个子图单独产生 visual token。总 token 数 = 子图数 × h × w。在受限显存配置下，`max_pixels=512×512` 大约产生 4 个子图，每个 16×16=256 个 visual token，总计约 1024 个 visual token。
+**动态分辨率下的 token 计算**：对于大图，Qwen2-VL 会将图像切为多个子图（tile），每个子图单独产生 visual token。总 token 数为 \(N_{\mathrm{visual}} = n_{\mathrm{tile}} \times h \times w\)。在受限显存配置下，`max_pixels=512×512` 大约产生 4 个子图，每个子图产生 \(16\times 16=256\) 个 visual token，总计约 1024 个 visual token。
 
 ## 5. 各版本输入格式的差异
 

@@ -1,4 +1,4 @@
-# 多模态推理实验工作区 (Atlas Wave 5 — 最终交付)
+# 多模态推理实验工作区 (Atlas Wave 5 - 最终交付)
 
 本目录是 Atlas 计划的多模态推理实验工作区。经过 6 周（Wave 1-5），已完整体成引擎审计、HF 对齐、paged attention 实现、多模态 token pipeline、inputs_embeds 路径接入、最小 VLM demo、4 模型 VLM reference 对照矩阵、以及多模态 KV cache 管理实验。
 
@@ -81,7 +81,7 @@ python3 experiments/text_engine_audit/audit_paged_attention.py
 ### 运行时验证（需 PyTorch + minivLLM）
 
 ```bash
-# HF 对齐验证（核心验收）— 需要网络下载 HF config
+# HF 对齐验证（核心验收）- 需要网络下载 HF config
 PYTHONPATH=minivLLM minivLLM/.venv/bin/python experiments/text_engine_audit/audit_kv_cache_compare.py
 
 # 或直接在 minivLLM 内运行：
@@ -209,34 +209,34 @@ for f in experiments/mm_kv_cache_management/benchmark_*.py; do python3 "$f"; don
 
 ## 8. 当前完成度
 
-### Wave 1 — 目录骨架与文档入口：✅ 完成
+### Wave 1 - 目录骨架与文档入口：✅ 完成
 - [x] 全目录创建
 - [x] engine_inventory.md（18 模块静态审计，标识 2 阻塞 Bug + 2 未接线）
 - [x] 显存预算与模型选型矩阵（4 模型）
 - [x] README.md / TODO.md / reports/ 入口文件
 
-### Wave 2 — 文本引擎审计 + Engine Patch：✅ 完成
+### Wave 2 - 文本引擎审计 + Engine Patch：✅ 完成
 - [x] 文本引擎静态审计（4 个审计脚本）
 - [x] 5 个 Bug 修复（Attn 参数 / act_fn / head_dim / RoPE / rope_theta）
 - [x] HF 对齐 → `verdict: IDENTICAL, max |diff|=8.2e-5, cos_sim=0.99999994`
 - [x] Contiguous KV cache 接入 prefill/decode 路径（seq_len=1/8/64/512 全部通过）
 - [x] docs/ 静态页面（01_已有引擎审计.html 至 02_paged_attention基础.html）
 
-### Wave 3 — Paged Attention + 多模态 Token Pipeline：✅ 完成
+### Wave 3 - Paged Attention + 多模态 Token Pipeline：✅ 完成
 - [x] PagedKVCache correctness-first 实现（BlockManager + BlockTable + gather）
 - [x] contiguous vs paged 对齐通过（torch.allclose）
 - [x] 5 模块教学型 token pipeline（2 种 visual token 模式 + 2 种序列布局）
 - [x] docs/ 静态页面（03_vit和图像patch.html 至 05_qwen_vl多模态输入.html）
 
-### Wave 4 — inputs_embeds + VLM Demo + VLM Reference：✅ 完成（含降级）
+### Wave 4 - inputs_embeds + VLM Demo + VLM Reference：✅ 完成（含降级）
 - [x] inputs_embeds 路径接入（text_parity: max|diff|=0，双输入冲突拒绝）
 - [x] 最小 VLM demo（random projector 工程跑通）
 - [x] 4 模型 VLM reference 对照脚本（cascade + 降级 smoke）
-- [ ] ~~4 个 VLM reference 模型成功运行~~ — **降级**（缺 `accelerate` + 无 CUDA，4 个全失败）
+- [ ] ~~4 个 VLM reference 模型成功运行~~ - **降级**（缺 `accelerate` + 无 CUDA，4 个全失败）
 - [x] 降级路径生效（tokenizer-only smoke 通过）
 - [x] docs/ 静态页面（06_多模态prefill_decode.html 至 09_sglang多模态推理参考.html）
 
-### Wave 5 — 多模态 KV Cache 管理 + 收尾：✅ 完成
+### Wave 5 - 多模态 KV Cache 管理 + 收尾：✅ 完成
 - [x] 3 策略 × 7 场景 mm cache 模拟器（策略 A false_hit 关键验收）
 - [x] 5 份 JSON + 5 份 HTML 结果报告
 - [x] 最终成果说明（docs/10_最终成果说明.html + reports/final_report.md）
@@ -298,8 +298,8 @@ for f in experiments/mm_kv_cache_management/benchmark_*.py; do python3 "$f"; don
 |------|------|
 | **人工总计** | **40-56h**（6 周） |
 | **平均每周** | **7-9h** |
-| **最重的一周** | **Week 2（10-14h）**——4 个 BUG 修到 HF 对齐 + paged KV 实现 |
-| **最轻的一周** | **Week 6（4-6h）**——收尾 + 验收 |
+| **最重的一周** | **Week 2（10-14h）**，4 个 BUG 修到 HF 对齐 + paged KV 实现 |
+| **最轻的一周** | **Week 6（4-6h）**，收尾 + 验收 |
 
 ### 10.3 不同投入强度的时间表
 
@@ -325,7 +325,7 @@ for f in experiments/mm_kv_cache_management/benchmark_*.py; do python3 "$f"; don
 | **有 NVIDIA GPU**（推荐） | **45-50h**，6 周每周 8h | reference VLM 可跑通，4 个模型可对比 |
 | **无 GPU / Mac（本次实际路径）** | **35-40h** | reference VLM 必失败，可省下"调试 VLM 失败"的几小时 |
 
-> **诚实建议**：本机 macOS (MPS, 无 CUDA) 实际节省了时间——因为 VLM reference 必失败，Wave 4 走降级路径反而快于预期。但生产环境请优先使用 NVIDIA GPU。
+> **诚实建议**：本机 macOS (MPS, 无 CUDA) 实际节省了时间，因为 VLM reference 必失败，Wave 4 走降级路径反而快于预期。但生产环境请优先使用 NVIDIA GPU。
 
 ### 10.6 加速建议
 

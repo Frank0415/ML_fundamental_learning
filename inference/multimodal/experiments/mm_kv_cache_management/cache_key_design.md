@@ -51,7 +51,7 @@ key = SHA-256(json(text_token_ids))
 | text=[1,2,3], img=[A] | text=[1,2,3], img=[B] | ✅ | ❌ | **false_hit** |
 | text=[1,2,3], img=[A] | text=[4,5,6], img=[A] | ❌ | - | safe_miss |
 
-**关键**: 策略 A 最危险——相同 text 但不同 image 会产生 false hit, 导致 KV cache 语义错配。
+**关键**: 策略 A 最危险，相同 text 但不同 image 会产生 false hit, 导致 KV cache 语义错配。
 
 ---
 
@@ -140,4 +140,4 @@ key = SHA-256(
 | 碰撞风险 | 高 (语义错配) | 极低 (SHA-256) | 极低 (SHA-256) |
 | Cache 命中率 | 高 (不准确) | 中 | 低 (最严格) |
 
-**核心结论**: text-only prefix cache 策略 (A) 对多模态推理是**不安全**的——相同文本前缀但不同图像输入时, A 会错误地复用 KV cache, 导致模型输出基于错误的 visual context。
+**核心结论**: text-only prefix cache 策略 (A) 对多模态推理是**不安全**的，相同文本前缀但不同图像输入时, A 会错误地复用 KV cache, 导致模型输出基于错误的 visual context。

@@ -1,6 +1,6 @@
 # 06 · 多模态 Prefill 与 Decode
 
-多模态推理的 prefill 和 decode 阶段与纯文本推理有本质区别。核心差异在于 visual token 是一次性写入 KV cache 的（prefill 阶段），之后的 decode 阶段只追加文本 token，不再产生新的 visual token。理解这个差异对于 KV cache 的显存规划和块分配策略至关重要。
+多模态 prefill 会一次写入全部 visual token，随后 decode 只追加文本 token，不再生成新的 visual token。这个执行顺序直接影响 KV cache 的显存预算和 block 分配。
 
 ## 1. 纯文本 Prefill/Decode 的回顾
 
@@ -9,9 +9,9 @@
 | | Prefill | Decode |
 |---|---------|--------|
 | 输入长度 | N 个 token（prompt 全文） | 1 个 token（上次生成的） |
-| Attention 方式 | 双向 causal mask（N × N） | 单向（1 × cached_seq_len） |
+| Attention 方式 | 双向 causal mask（\(N \times N\)） | 单向（\(1 \times \mathrm{cached\_seq\_len}\)） |
 | KV Cache | 写入全部 N 个 token 的 K/V | 追加 1 个 token 的 K/V |
-| 计算量 | O(N²)（但只做一次） | O(N)（每步很小） |
+| 计算量 | \(\mathcal{O}(N^2)\)（但只做一次） | \(\mathcal{O}(N)\)（每步很小） |
 | 输出 | 最后一个 token 的 logits | 新 token 的 logits |
 
 ## 2. 多模态 Prefill 的独特之处
@@ -24,7 +24,7 @@
   → embed_tokens(input) → Transformer → logits
 
 多模态 Prefill:
-  input = [text_token₀, ..., <vision_start>, 
+  input = [text_token₀, ..., <vision_start>,
            visual_embed₀, visual_embed₁, ..., visual_embed_M,
            <vision_end>, text_token_K, ..., text_token_N]
   → 拼接 text embeddings + visual embeddings → Transformer → logits
@@ -38,9 +38,9 @@
 
 - visual token 是一次性写入的，在 prefill 阶段就全部进入了 KV cache。
 - decode 阶段的每一步只生成一个文本 token，走正常的 embed_tokens → Transformer → logits → sample 流程。
-- decode 时不需要再次计算 visual token——KV cache 已经保存了它们的历史 K/V。
+- decode 时不需要再次计算 visual token，KV cache 已经保存了它们的历史 K/V。
 
-> **关键原理**：Visual token 在 decode 阶段作为"已缓存的过去"存在。新生成的 token 做 self-attention 时，会 attend 到所有 visual token 和所有之前生成的文本 token。这个行为由 causal mask 自动保证：visual token 的 KV 已经在 cache 中，decode token 以 `is_causal=True` 的注意力看到它们。
+> **Decode 时的状态**：Visual token 在 decode 阶段作为"已缓存的过去"存在。新生成的 token 做 self-attention 时，会 attend 到所有 visual token 和所有之前生成的文本 token。这个行为由 causal mask 自动保证：visual token 的 KV 已经在 cache 中，decode token 以 `is_causal=True` 的注意力看到它们。
 
 ## 4. 显存开销分析
 
@@ -54,7 +54,7 @@
 | Activation（prefill） | 前向中间激活 | ~500MB ~ 1GB |
 | 剩余 | decode 阶段的 KV 扩展空间 | ~2GB ~ 2.5GB |
 
-Decode 阶段的显存压力比 prefill 小得多：只需要单 token 的 activation，KV cache 的增量也很小（每步只追加 1 个 token 的 K/V，约 72KB）。因此多模态推理的瓶颈在 prefill，优化的关键是控制 visual token 的数量（限制 `max_pixels`）。
+Decode 阶段的显存压力比 prefill 小得多：只需要单 token 的 activation，KV cache 的增量也很小（每步只追加 1 个 token 的 K/V，约 72KB）。多模态推理的显存瓶颈主要在 prefill，控制 visual token 的数量（限制 `max_pixels`）可以直接降低这部分开销。
 
 ## 5. minivLLM 当前状态
 

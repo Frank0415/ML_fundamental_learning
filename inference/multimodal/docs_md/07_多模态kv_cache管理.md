@@ -1,6 +1,6 @@
 # 07 · 多模态 KV Cache 管理
 
-多模态推理的 KV cache 管理与纯文本推理有关键差异。本文档解释为什么多模态场景需要特殊的 cache key 管理策略，以及 text-only prefix 在不同图像下无法简单共享的原因。这是 Task 11（mm kv cache management）的理论基础。
+多模态请求的 cache key 必须包含视觉上下文。即使 text-only prefix 完全相同，只要图片不同，对应的 KV 就不能直接共享。本页给出原因，并据此说明 Task 11（mm kv cache management）的设计约束。
 
 ## 1. 纯文本 KV Cache 的简单性
 
@@ -10,9 +10,9 @@
 
 ## 2. 为什么多模态打破了这条规则？
 
-在多模态推理中，一个文本 prefix 的 K/V 值**不仅取决于它前面的文本 token**，还取决于它**前面的 visual token**。Transformer 的 self-attention 让每个 token 都能 attend 到它之前的所有 token，包括 visual token。因此：
+在多模态推理中，文本 prefix 的 K/V 同时受前置文本 token 和 visual token 影响。Transformer self-attention 会读取当前位置之前的全部 token，因此：
 
-> **核心问题**：两个请求即使有完全相同的文本 system prompt，如果 system prompt 前面的 visual token 不同（不同的图片），那么 system prompt 部分的 K/V 值也会不同。因为 K/V 计算中，attention 会混合 visual token 的信息。
+> **不能只按文本复用**：两个请求即使有完全相同的文本 system prompt，如果 system prompt 前面的 visual token 不同（不同的图片），那么 system prompt 部分的 K/V 值也会不同。因为 K/V 计算中，attention 会混合 visual token 的信息。
 
 具体来说：
 
@@ -37,7 +37,7 @@
 
 ## 4. 正确的多模态序列布局
 
-知道了 self-attention 的混合机制后，多模态 token 的顺序排列就是关键。Qwen-VL 的标准布局是：
+Self-attention 会混合前序状态，因此多模态 token 的排列顺序会直接决定哪些 KV 可以共享。Qwen-VL 的标准布局是：
 
 ```
 [BOS] [系统文本...] [<vision_start>] [visual tokens...] [<vision_end>] [用户问题...] [<im_start>]assistant
@@ -59,11 +59,11 @@
 
 | 阶段 | 内容 | 是否可共享？ | Cache Key |
 |------|------|--------------|-----------|
-| Stage 1 | 视觉 token 之前的纯文本 | ✅ 可共享 | hash(token_ids) |
-| Stage 2 | 视觉 token 区域 | ❌ 不可共享（除非同图） | hash(image_embedding) |
-| Stage 3 | 视觉 token 之后的文本 | ❌ 不可共享（被视觉 token 影响） | hash(image + text postfix) |
+| Stage 1 | 视觉 token 之前的纯文本 | 可共享 | hash(token_ids) |
+| Stage 2 | 视觉 token 区域 | 不可共享（除非同图） | hash(image_embedding) |
+| Stage 3 | 视觉 token 之后的文本 | 不可共享（被视觉 token 影响） | hash(image + text postfix) |
 
-在 Stage 1 中，纯文本 prefix 的安全共享可以节省大量重复计算。如果一个系统提示有 200 个 token，每天被 10000 个请求共享，这 200 个 token 的 prefill 只需要计算一次，之后所有请求复用。在受限显存配置下，这个优化对吞吐量提升显著。
+在 Stage 1 中，纯文本 prefix 可以安全共享。如果一个系统提示有 200 个 token，每天被 10000 个请求共享，这 200 个 token 的 prefill 只需要计算一次，之后所有请求复用。这样能省去其余请求对相同前缀的重复 prefill；实际吞吐收益取决于 batch 和显存余量。
 
 ## 6. 页面导航
 

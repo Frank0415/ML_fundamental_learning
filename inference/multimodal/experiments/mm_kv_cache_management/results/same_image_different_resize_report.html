@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><title>same_image_different_resize — KV Cache Report</title>
+<head><meta charset="utf-8"><title>same_image_different_resize - KV Cache Report</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#333;padding:32px}
@@ -56,7 +56,7 @@ tr:last-child td{border-bottom:none}
           <td>0</td>
         </tr></tbody></table>
 <div class="key-finding">
-  <h3>🔍 关键发现</h3>
+  <h3>🔍 主要发现</h3>
   <p><strong>同一张图片在不同分辨率下, visual token 数量和 layout 可能完全不同。</strong></p>
   <p>即使对于策略 B (含 image SHA-256), 相同图片内容也会产生相同的 key, 导致不同分辨率的 KV cache 被错误复用 (visual tokens: 256 → 576, 拼接后的序列长度和布局不匹配)。</p>
   <p>只有策略 C (full_multimodal) 通过纳入 resized_sizes、patch_grids、num_visual_tokens_list 等参数, 能正确区分不同分辨率下的 cache 条目。</p>

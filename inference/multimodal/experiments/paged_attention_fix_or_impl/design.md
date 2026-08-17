@@ -12,7 +12,7 @@ minivLLM 当前存在 KV 缓存的两种路径风险：
 1. **未实现**：`paged_attention` 是占位，实际 fallback 到 contiguous 实现，显存碎片化未计入。
 2. **阻塞**：如果 contiguous KV 预分配过大会直接 OOM，过小则 max_model_len 受限。
 
-本设计给出最小接口集，使得 minivLLM 能在 中低显存 GPU 上将 KV 缓存切分为 block_size=16 的固定块，按需分配、即时释放。不引入 scheduler 或 continuous batching——那是 Wave 2+ 的范畴。
+本设计给出最小接口集，使得 minivLLM 能在 中低显存 GPU 上将 KV 缓存切分为 block_size=16 的固定块，按需分配、即时释放。不引入 scheduler 或 continuous batching，那是 Wave 2+ 的范畴。
 
 ---
 
@@ -76,7 +76,7 @@ RequestState:
 
 ### 2.4 PagedKVCache
 
-张量容器，持有 `(total_blocks, num_layers, 2, block_size, num_heads, head_dim)` 形状的 GPU 张量——两份子张量分别对应 K 和 V。
+张量容器，持有 `(total_blocks, num_layers, 2, block_size, num_heads, head_dim)` 形状的 GPU 张量，两份子张量分别对应 K 和 V。
 
 ```
 PagedKVCache:
@@ -88,7 +88,7 @@ PagedKVCache:
 
 **`gather_kv_for_attention()` 职责**：
 
-根据 `physical_block_ids` 中 token 的排列，将分布在多个物理块中的 K/V 子段拼接成一个连续张量，供 attention 算子消费。这是 paged attention 与 contiguous attention 唯一的关键切换点——在这一步之前/之后，其余计算（Q 投影、softmax、输出投影）完全相同。
+根据 `physical_block_ids` 中 token 的排列，将分布在多个物理块中的 K/V 子段拼接成一个连续张量，供 attention 算子消费。这是 paged attention 与 contiguous attention 唯一的关键切换点，在这一步之前/之后，其余计算（Q 投影、softmax、输出投影）完全相同。
 
 ---
 
@@ -148,7 +148,7 @@ torch.allclose(logits_paged, logits_contiguous, atol=1e-5, rtol=1e-5)
 6. **不做 speculative decoding**：不考虑 draft model、tree attention 等。
 7. **第一版不做 prefix caching / cascade attention**：这些是 Wave 2+ 的优化项。
 
-以上非目标明确排除后，Wave 1 的唯一交付物是一个可验证的 paged KV 核心——`BlockManager` + `PagedKVCache` + 对齐测试。
+以上非目标明确排除后，Wave 1 的唯一交付物是一个可验证的 paged KV 核心，`BlockManager` + `PagedKVCache` + 对齐测试。
 
 ---
 

@@ -1,6 +1,6 @@
-# 02 · Paged Attention 基础 — 原理与实现进度
+# 02 · Paged Attention 基础 - 原理与实现进度
 
-本页面解释 paged attention 的核心原理，记录 minivLLM 引擎中 paged attention 的实现进度。审计日期：2026-06-07。基于对 `multimodal/minivLLM/` 的完整静态分析。
+这里说明 paged attention 的工作方式，并记录 minivLLM 的实现进度。审计日期：2026-06-07。结论来自对 `multimodal/minivLLM/` 的静态分析。
 
 ## 1. 什么是 Paged Attention？
 
@@ -29,16 +29,16 @@ Paged attention 借鉴了操作系统虚拟内存的页表（page table）思想
 
 ```
 逻辑序列 (token 0..23)
-├─ token  0..15 → block₀  (物理 block 7)
-├─ token 16..23 → block₁  (物理 block 3, 仅使用前 8 个 slot)
+├─ token  0..15 → \(\mathrm{block}_{0}\)  (物理 block 7)
+├─ token 16..23 → \(\mathrm{block}_{1}\)  (物理 block 3, 仅使用前 8 个 slot)
 
 Block Table [序列 → 物理 block 映射]
  序列 A: [7, 3]           (2 个 block, 24 token)
  序列 B: [7, 9]           (与 A 共享 block 7 = prefix caching)
 
 物理 Block 池
- block₀: [layer₀ K/V, layer₁ K/V, ... layer₂₇ K/V]
- block₁: [layer₀ K/V, layer₁ K/V, ... layer₂₇ K/V]
+ \(\mathrm{block}_{0}\): [\(\mathrm{layer}_{0}\) K/V, \(\mathrm{layer}_{1}\) K/V, ... \(\mathrm{layer}_{27}\) K/V]
+ \(\mathrm{block}_{1}\): [\(\mathrm{layer}_{0}\) K/V, \(\mathrm{layer}_{1}\) K/V, ... \(\mathrm{layer}_{27}\) K/V]
  ...
 
 Attention 计算（简化版）
@@ -56,21 +56,21 @@ Attention 计算（简化版）
 
 ### 3.1 A/B/C/D 四部分检查
 
-#### A — 通用实现模式 `[已理解]`
+#### A - 通用实现模式 `[已理解]`
 
-Paged attention 的五个核心组件已明确：Block 分配器、Block Table、Slot Mapping、Paged Attention Kernel、调度器集成。参考 vLLM 的 PagedAttention v1/v2 实现可作为学习指南。
+Paged attention 需要五个组件：Block 分配器、Block Table、Slot Mapping、Paged Attention Kernel 和调度器集成。vLLM 的 PagedAttention v1/v2 实现可作为参考。
 
-#### B — minivLLM 现有脚手架 `[部分存在]`
+#### B - minivLLM 现有脚手架 `[部分存在]`
 
-- ✅ `Context.block_tables` 字段已定义（`utils/context.py` 行 14）
-- ✅ `Context.slot_mapping` 字段已定义（`utils/context.py` 行 12）
-- ✅ `Config.kvcache_block_size` 字段已定义（`config.py` 行 12）
-- ❌ `Context.set_context()` 从未被调用——所有脚手架字段休眠
-- ❌ `KVCache` 为 contiguous buffer，非 block-based
-- ❌ 无 Block Manager（无 allocate/free/copy 逻辑）
-- ❌ 无 Paged Attention Kernel（无 block 级别 attention 计算）
+- 有：`Context.block_tables` 字段已定义（`utils/context.py` 行 14）
+- 有：`Context.slot_mapping` 字段已定义（`utils/context.py` 行 12）
+- 有：`Config.kvcache_block_size` 字段已定义（`config.py` 行 12）
+- 无：`Context.set_context()` 从未被调用，所有脚手架字段休眠
+- 无：`KVCache` 为 contiguous buffer，非 block-based
+- 无：Block Manager（无 allocate/free/copy 逻辑）
+- 无：Paged Attention Kernel（无 block 级别 attention 计算）
 
-#### C — 改造工作量估计 `[已评估]`
+#### C - 改造工作量估计 `[已评估]`
 
 从 contiguous buffer 改为 paged attention 的最小可用实现约 350 行 Python（纯 PyTorch，无 CUDA kernel）：
 
@@ -78,12 +78,12 @@ Paged attention 的五个核心组件已明确：Block 分配器、Block Table�
 |------|------------|------|
 | Block Manager | ~100 行 | 基于 Python list 的 block 分配/释放 |
 | Block Table 管理 | ~50 行 | Tensor 形状 [batch_size, max_blocks_per_seq] |
-| Paged Attention Matmul | ~50 行 | 逐个 block 做 Q×K^T，纯 PyTorch |
+| Paged Attention Matmul | ~50 行 | 逐个 block 做 \(QK^{\mathsf{T}}\)，纯 PyTorch |
 | 调度器 | ~150 行 | FIFO scheduler + prefill/decode 切换 |
 
 前提条件：修复 B1（Attn 参数不匹配）和 B2（act_fn=None），将 KV cache 接入 forward。
 
-#### D — vLLM 接口对比 `[已对比]`
+#### D - vLLM 接口对比 `[已对比]`
 
 minivLLM 的 `Context` 和 `Config` 中的 paged attention 字段与 vLLM 的 `AttentionMetadata` 接口设计一致，说明作者在规划时参考了 vLLM。当前这些字段仅为占位符，无实现。
 
@@ -91,14 +91,14 @@ minivLLM 的 `Context` 和 `Config` 中的 paged attention 字段与 vLLM 的 `A
 
 | 组件 | 存在 | 状态 |
 |------|------|------|
-| Block Manager | ❌ | 不存在 |
-| Block Table（分配逻辑） | ❌ | 不存在（字段定义存在但未使用） |
-| Slot Mapping | ❌ | 不存在（字段定义存在但未使用） |
-| Paged Attention Kernel | ❌ | 不存在（Attn.forward 为标准 MHA） |
-| Scheduler 集成 | ❌ | 不存在 |
-| KVCache（当前实现） | ✅ | Contiguous buffer，未接线 |
-| Config 预留字段 | ✅ | kvcache_block_size / num_kvcache_blocks |
-| Context 预留字段 | ✅ | block_tables / slot_mapping / context_lens |
+| Block Manager | 无 | 不存在 |
+| Block Table（分配逻辑） | 无 | 不存在（字段定义存在但未使用） |
+| Slot Mapping | 无 | 不存在（字段定义存在但未使用） |
+| Paged Attention Kernel | 无 | 不存在（Attn.forward 为标准 MHA） |
+| Scheduler 集成 | 无 | 不存在 |
+| KVCache（当前实现） | 有 | Contiguous buffer，未接线 |
+| Config 预留字段 | 有 | kvcache_block_size / num_kvcache_blocks |
+| Context 预留字段 | 有 | block_tables / slot_mapping / context_lens |
 
 > **注意**：不要把当前的 contiguous KV cache 标为 paged。两者是完全不同的内存管理策略。Contiguous 是静态预分配，Paged 是基于 block table 的动态映射。
 
@@ -128,4 +128,4 @@ minivLLM 的 `Context` 和 `Config` 中的 paged attention 字段与 vLLM 的 `A
 
 ---
 
-Atlas Wave 1 — 任务 2 · Paged Attention 基础 · 2026-06-07
+Atlas Wave 1 - 任务 2 · Paged Attention 基础 · 2026-06-07

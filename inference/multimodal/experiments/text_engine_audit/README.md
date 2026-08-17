@@ -1,4 +1,4 @@
-# text_engine_audit — 文本引擎静态审计实验
+# text_engine_audit - 文本引擎静态审计实验
 
 ## 目的
 
@@ -30,7 +30,7 @@ python audit_paged_attention.py
 
 ## 结果
 
-结果写入 `results/` 目录，每个脚本输出一个 JSON 文件。关键结论：
+结果写入 `results/` 目录，每个脚本输出一个 JSON 文件。主要结论：
 
 - `attention.py` 的 `Attn` 类本身正确，但 `Qwen3Attn.__init__` 向其传输了不存在的参数 → **构建时 TypeError**
 - `Qwen3FFN.act_fn = None` → **前向传播时 TypeError**

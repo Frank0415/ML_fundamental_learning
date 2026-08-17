@@ -4,11 +4,11 @@ Vision Transformer（ViT）是几乎所有现代 VLM 视觉编码器的架构基
 
 ## 1. 图像如何变成 token？
 
-ViT 的核心操作是将一幅图像切为固定大小的小方块（patch），每个 patch 展开成一个一维向量，再通过一个线性投影（patch embedding）映射到 Transformer 的 hidden dimension。整个过程可以看作一个卷积操作：`Conv2d(in_channels=3, out_channels=hidden_dim, kernel_size=patch_size, stride=patch_size)`。卷积的输出展平后就是一个序列：`(num_patches, hidden_dim)`。
+ViT 将图像切成固定大小的小方块（patch），把每个 patch 展开为一维向量，再用线性投影（patch embedding）映射到 Transformer 的 hidden dimension。这个过程可以写成卷积：`Conv2d(in_channels=3, out_channels=hidden_dim, kernel_size=patch_size, stride=patch_size)`。卷积输出展平后得到形状为 `(num_patches, hidden_dim)` 的序列。
 
-例如对于一幅 224×224 的 RGB 图像，当 patch 大小为 16×16 时：总共切出 14×14 = 196 个 patch，每个 patch 是 16×16×3 = 768 个像素值。patch embedding 将这 768 个值投影到 hidden_dim（如 768 或 1280），得到 196 个 token。
+例如对于一幅 224×224 的 RGB 图像，当 patch 大小为 16×16 时：总共切出 \(14\times 14=196\) 个 patch，每个 patch 是 \(16\times 16\times 3=768\) 个像素值。patch embedding 将这 768 个值投影到 hidden_dim（如 768 或 1280），得到 196 个 token。
 
-对于一幅 448×448 的图像，patch 大小仍为 16×16：总共 28×28 = 784 个 patch，visual token 数增加到 784 个。token 数量随分辨率平方增长，这也是为什么 受限显存设备必须严格控制 `max_pixels`。
+对于一幅 448×448 的图像，patch 大小仍为 16×16：总共 \(28\times 28=784\) 个 patch，visual token 数增加到 784 个。token 数量随分辨率平方增长，这也是为什么 受限显存设备必须严格控制 `max_pixels`。
 
 <figure style="margin: 1rem 0 1.5rem;">
   <img src="../docs/assets/architecture/vit_model_overview.png" alt="ViT 模型总览图" style="width: 100%; border: 1px solid #d0d0d0; border-radius: 8px; background: #fff;" />

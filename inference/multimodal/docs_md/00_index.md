@@ -1,18 +1,18 @@
-# minivLLM 多模态推理实验工作区 — 文档导航
+# minivLLM 多模态推理实验工作区 - 文档导航
 
 > 这是 `docs/` 静态 HTML 文档的 Markdown 镜像版本。两个版本内容完全一致：
 > - **HTML 版**（`docs/*.html`）：纯静态网页，可在浏览器直接打开
 > - **Markdown 版**（`docs_md/*.md`）：适合在编辑器、GitHub 预览、grep 搜索
 >
-> 推荐阅读路径：**先看 [01 已有引擎审计](01_已有引擎审计.md)**，再按章节顺序向下。
+> 如果从实现现状开始阅读，可以从 [01 已有引擎审计](01_已有引擎审计.md) 进入；其余章节按编号排列。
 
 ## 项目目标
 
-从纯文本推理引擎出发，逐步构建一个可运行的最小多模态（VLM）推理流水线。最终在 minivLLM 上运行 Qwen3-VL-4B 或同类开源 VLM。本文档区记录引擎审计、模块实现、论文笔记与实验日志。
+这套文档记录 minivLLM 从纯文本引擎扩展到最小可运行 VLM 的过程，目标是在它上面运行 Qwen3-VL-4B 或同类开源模型。内容包括引擎审计、模块实现、论文笔记和实验日志。
 
 ## 文档目录
 
-以下章节按实现顺序编排。所有页面均已发布。
+章节按实现顺序排列，当前页面均已发布。
 
 | # | 标题 | 说明 |
 |---|------|------|
@@ -25,11 +25,11 @@
 | 07 | [多模态 KV Cache 管理](07_多模态kv_cache管理.md) | 为什么 multimodal-aware cache key 必要：text-only prefix 在不同图像下 KV 不同，需分阶段 cache 策略。 |
 | 08 | [vLLM 多模态推理参考](08_vllm多模态推理参考.md) | vLLM 多模态支持：PagedAttention 在 VLM 上的应用、自动前缀缓存、参考实验中的环境阻塞分析。 |
 | 09 | [SGLang 多模态推理参考](09_sglang多模态推理参考.md) | SGLang RadixAttention 的多模态扩展、Radix Tree 与文本-视觉分离、受限显存场景下的对比分析。 |
-| 10 | [最终成果说明](10_最终成果说明.md) | 项目最终交付物：6 周路线总结、关键验证数字（HF IDENTICAL / KV 对齐 / mm cache false_hit）、已知限制与后续建议。 |
+| 10 | [最终成果说明](10_最终成果说明.md) | 6 周路线、验证数字（HF IDENTICAL / KV 对齐 / mm cache false_hit）、已知限制和后续工作。 |
 
 ## 学习资料
 
-- 论文笔记（中文）存放于 [`../learning/papers/`](../learning/papers/) 目录，已完成 12 篇核心论文的精华笔记，覆盖 Transformer 至 SGLang RadixAttention。完整论文清单见 [00 论文清单](../learning/papers/00_论文清单.md)。
+- 中文论文笔记存放在 [`../learning/papers/`](../learning/papers/)，共 12 篇，范围从 Transformer 到 SGLang RadixAttention。完整论文清单见 [00 论文清单](../learning/papers/00_论文清单.md)。
 - 论文 PDF 原件存放于 [`../paper/`](../paper/) 目录，与笔记同名（`01_attention_is_all_you_need.pdf` 等）。**PDF 不入 git**，见 `multimodal/.gitignore`。
 - 学习笔记（engine audit → SGLang）存放于 [`../learning/notes/`](../learning/notes/) 目录，共 9 篇。
 

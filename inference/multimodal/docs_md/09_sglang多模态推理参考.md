@@ -1,10 +1,10 @@
 # 09 · SGLang 多模态推理参考
 
-SGLang 是另一款高性能 LLM 推理 runtime，其核心创新 RadixAttention（基于 Radix Tree 的 prefix caching）提供了比 vLLM 更细粒度的 KV cache 共享机制。SGLang 对多模态（VLM）推理的支持正在快速演进中。
+SGLang 用 RadixAttention 管理 prefix cache。它把 prompt 放进 Radix Tree，并按共享前缀复用 KV block；本页关注这套机制在 VLM 请求中的适用边界。
 
 ## 1. SGLang 的 RadixAttention 与 VLM
 
-SGLang 的 Radix Tree 为纯文本推理提供了非常自然的 prefix 共享：所有到达系统的 prompt 自动插入 Radix Tree，后续请求自动匹配共享 prefix。但在多模态场景中，Radix Tree 遇到了与 vLLM hash-based caching 相同的问题：visual token 的 KV 值因图像而异。
+在纯文本推理中，SGLang 会把所有 prompt 插入 Radix Tree，后续请求自动匹配共享 prefix。VLM 请求仍然遇到和 vLLM hash-based caching 相同的问题：图片变化后，visual token 对应的 KV 也会变化。
 
 SGLang 社区目前对多模态 prefix caching 的讨论集中在以下方向：
 
@@ -21,7 +21,7 @@ SGLang 社区目前对多模态 prefix caching 的讨论集中在以下方向：
 
 ## 2. SGLang 多模态 Serving 的实践经验
 
-尽管 Radix Tree 在多模态场景下尚未完美适配，SGLang 在实际 VLM serving 中仍有以下优势：
+当前的 VLM serving 仍有几处设计可以参考：
 
 | 特性 | SGLang 的做法 | 对受限显存配置的价值 |
 |------|---------------|----------------|
@@ -38,7 +38,7 @@ SGLang 社区目前对多模态 prefix caching 的讨论集中在以下方向：
 | KV Cache 机制 | PagedAttention + hash-based APC | RadixAttention + Radix Tree |
 | 多模态支持 | 已较为成熟（v0.5+） | 快速演进中，部分 VLM 已支持 |
 | Prefix 共享粒度 | Block 级（16 token 对齐） | Token 级（精确到每个 token） |
-| 显存友好度 | 非常友好（block size 可定制） | 友好（相同的 block 管理） |
+| 显存分配 | 可配置（block size 可定制） | 可配置（使用相同的 block 管理） |
 | 社区成熟度 | 更成熟，VLM 文档更完善 | 快速增长，部分 VLM 仍为实验性 |
 | 适用场景 | 通用 VLM serving | 多轮对话 + 渐进式 prefix（如 agent 场景） |
 
@@ -46,9 +46,9 @@ SGLang 社区目前对多模态 prefix caching 的讨论集中在以下方向：
 
 SGLang 的以下几个设计思想对 minivLLM 的多模态扩展具有参考价值：
 
-- **前缀树的自动性**：不需要显式配置哪些 prefix 共享。所有 prompt 自动参与共享。这个"零配置 prefix sharing"的思路很适合 minivLLM 这类教学型引擎——用户不需要关心 KV 共享的内部机制。
+- **前缀树的自动性**：不需要显式配置哪些 prefix 共享。所有 prompt 自动参与共享。这个"零配置 prefix sharing"的思路很适合 minivLLM 这类教学型引擎，用户不需要关心 KV 共享的内部机制。
 - **引用计数释放**：Radix Tree 节点的引用计数机制让 KV 缓存的生命周期管理变得清晰。当最后一个引用该 prefix 的请求完成，KV block 自动释放。vLLM 的 hash-based 方案没有这个内置的引用追踪。
-- **Skip Attention**：对于完全命中的 prefix，SGLang 直接跳过 attention 计算，将结果复用。这在大 batch 场景下节约了大量计算，在小 batch 场景下效果虽有限，但思路值得借鉴。
+- **Skip Attention**：完全命中的 prefix 可以跳过 attention 并直接复用结果。大 batch 时节省较多计算，小 batch 的收益较小。
 
 ## 5. 我们这次实验中的参考状态
 

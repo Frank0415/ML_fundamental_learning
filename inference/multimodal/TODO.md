@@ -41,11 +41,11 @@
 ## Wave 3：Paged Attention + 多模态 Token Pipeline ✅ 完成
 
 - [x] 实现 PagedKVCache correctness-first 版本：
-  - [x] `BlockManager` — block 分配/释放/统计
-  - [x] `BlockTable` — 逻辑-物理 block 映射
-  - [x] `PagedKVCache` — 分页 KV 读写
-  - [x] `gather_kv_for_attention` — 物理 block 拼接（torch.gather fallback）
-  - [x] `RequestState` / `Lifecycle` — 请求状态与生命周期
+  - [x] `BlockManager` - block 分配/释放/统计
+  - [x] `BlockTable` - 逻辑-物理 block 映射
+  - [x] `PagedKVCache` - 分页 KV 读写
+  - [x] `gather_kv_for_attention` - 物理 block 拼接（torch.gather fallback）
+  - [x] `RequestState` / `Lifecycle` - 请求状态与生命周期
 - [x] contiguous vs paged 对齐通过（torch.allclose）
 - [x] 测试用例 → `experiments/paged_attention_fix_or_impl/tests/run_paged_kv_checks.py`
 - [x] 性能基准 → `experiments/paged_attention_fix_or_impl/benchmarks/compare_contiguous_vs_paged.py`
@@ -109,7 +109,7 @@
 - [x] 5 份证据文件（task-11-false-hit.txt 等）
 - [x] 编写 `reports/week_5.md`
 
-目标达成：mm cache 策略 A false_hit 关键发现确认，3 策略完整设计与实验完成。全部文档、报告、TODO 更新完毕。
+目标达成：mm cache 策略 A false_hit 主要发现确认，3 策略完整设计与实验完成。全部文档、报告、TODO 更新完毕。
 
 ---
 

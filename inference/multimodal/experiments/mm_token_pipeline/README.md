@@ -31,19 +31,19 @@ $PY experiments/mm_token_pipeline/patch_embed_demo.py \
     --image experiments/vlm_minimal_demo/sample_images/demo.jpg \
     --size 224 --patch 16
 
-# 3a. Visual Token — Tiny ViT 随机模拟
+# 3a. Visual Token - Tiny ViT 随机模拟
 $PY experiments/mm_token_pipeline/visual_token_demo.py \
     --mode tiny-vit-random
 
-# 3b. Visual Token — CLIP Reference 结构打印
+# 3b. Visual Token - CLIP Reference 结构打印
 $PY experiments/mm_token_pipeline/visual_token_demo.py \
     --mode clip-reference
 
-# 4a. 序列构造 — bos_image_text 布局
+# 4a. 序列构造 - bos_image_text 布局
 $PY experiments/mm_token_pipeline/mm_sequence_builder.py \
     --layout bos_image_text --num-visual 256 --num-text 16
 
-# 4b. 序列构造 — placeholder_expanded 布局
+# 4b. 序列构造 - placeholder_expanded 布局
 $PY experiments/mm_token_pipeline/mm_sequence_builder.py \
     --layout placeholder_expanded --num-visual 256 --num-text 16
 ```
@@ -58,10 +58,10 @@ $PY experiments/mm_token_pipeline/mm_sequence_builder.py \
 ## 输出
 
 所有结果保存到 `experiments/mm_token_pipeline/results/`：
-- `preprocessed.pt` — 预处理后的图像 tensor
-- `sequence_bos_image_text.pt` / `.json` — bos_image_text 布局
-- `sequence_placeholder_expanded.pt` / `.json` — placeholder_expanded 布局
+- `preprocessed.pt` - 预处理后的图像 tensor
+- `sequence_bos_image_text.pt` / `.json` - bos_image_text 布局
+- `sequence_placeholder_expanded.pt` / `.json` - placeholder_expanded 布局
 
 ## 示例图片
 
-`experiments/vlm_minimal_demo/sample_images/demo.jpg` — 224×224 RGB JPEG（"Hello VLM" 文字 + 几何形状）
+`experiments/vlm_minimal_demo/sample_images/demo.jpg` - 224×224 RGB JPEG（"Hello VLM" 文字 + 几何形状）
